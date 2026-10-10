@@ -1,0 +1,16 @@
+# Your own subjects (materials, notes, progress, mistakes) stay local.
+# Only the blank template and the demo subject are tracked.
+/*/
+!/_template/
+!/Example-Subject/
+!/.claude/
+!/.tools/
+
+# Downloaded model and Python cache
+.tools/models/
+__pycache__/
+*.pyc
+
+# OS and local settings
+.DS_Store
+.claude/settings.local.json

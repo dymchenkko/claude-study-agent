@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Study system helper.
+
+  study new <Subject>            create a subject folder from _template
+  study ingest <Subject>         convert new materials into converted/*.md
+  study ingest <Subject> --url URL   download a lecture video (yt-dlp), then ingest
+  study list                     list subjects
+
+Conversion (skips files already converted and unchanged):
+  .pdf                  -> pdftotext, with '--- page N ---' markers
+  .pptx .docx .xlsx     -> markitdown (slides keep '<!-- Slide number: N -->')
+  .mp4 .mov .mkv .webm .m4a .mp3 .wav
+                        -> ffmpeg + whisper.cpp, with [hh:mm:ss] timestamps
+  .md .txt              -> copied as is
+"""
+
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE = ROOT / "_template"
+MODEL = ROOT / ".tools/models/ggml-large-v3-turbo-q5_0.bin"
+SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
+
+DOC_EXT = {".pptx", ".docx", ".xlsx"}
+MEDIA_EXT = {".mp4", ".mov", ".mkv", ".webm", ".m4a", ".mp3", ".wav"}
+TEXT_EXT = {".md", ".txt"}
+
+
+def subjects():
+    return sorted(p.name for p in ROOT.iterdir()
+                  if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith("."))
+
+
+def subject_dir(name):
+    for s in subjects():
+        if s.lower() == name.lower():
+            return ROOT / s
+    sys.exit(f"No subject '{name}'. Existing: {', '.join(subjects()) or 'none'}")
+
+
+def cmd_new(name):
+    dest = ROOT / name
+    if dest.exists():
+        sys.exit(f"{dest} already exists")
+    shutil.copytree(TEMPLATE, dest)
+    for f in dest.rglob("*.md"):
+        f.write_text(f.read_text().replace("{{SUBJECT}}", name))
+    print(f"Created {dest}\nPut files into {dest}/materials/ and run: study ingest {name}")
+
+
+def pdf_to_md(src, out):
+    text = subprocess.run(["pdftotext", "-layout", str(src), "-"],
+                          capture_output=True, text=True, check=True).stdout
+    pages = text.split("\f")
+    body = "\n\n".join(f"--- page {i} ---\n{p.strip()}" for i, p in enumerate(pages, 1) if p.strip())
+    if len(text.strip()) < 100 * max(1, len(pages) - 1):
+        body += "\n\n> NOTE: little text extracted — likely scanned or image-based. Read the original PDF directly."
+    out.write_text(f"# {src.name}\n\nSource: {src}\n\n{body}\n")
+
+
+def doc_to_md(src, out):
+    md = subprocess.run(["markitdown", str(src)], capture_output=True, text=True, check=True).stdout
+    out.write_text(f"# {src.name}\n\nSource: {src}\n\n{md}\n")
+
+
+def srt_to_md(srt, src, out):
+    blocks, cur_min, buf = [], None, []
+    for m in re.finditer(r"(\d\d):(\d\d):(\d\d)[,.]\d+ -->.*?\n(.*?)(?:\n\n|\Z)", srt.read_text(), re.S):
+        h, mi, s, txt = m.groups()
+        key = int(h) * 60 + int(mi)
+        if cur_min is None or key >= cur_min + 1:
+            if buf:
+                blocks.append(" ".join(buf))
+            buf, cur_min = [f"[{h}:{mi}:{s}]"], key
+        buf.append(txt.replace("\n", " ").strip())
+    if buf:
+        blocks.append(" ".join(buf))
+    out.write_text(f"# Transcript: {src.name}\n\nSource: {src}\n\n" + "\n\n".join(blocks) + "\n")
+
+
+def media_to_md(src, out):
+    if not MODEL.exists():
+        sys.exit(f"Whisper model missing: {MODEL}")
+    with tempfile.TemporaryDirectory() as tmp:
+        wav = Path(tmp) / "audio.wav"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src),
+                        "-ar", "16000", "-ac", "1", str(wav)], check=True)
+        base = Path(tmp) / "t"
+        subprocess.run(["whisper-cli", "-m", str(MODEL), "-f", str(wav), "-l", "auto",
+                        "-osrt", "-of", str(base), "-np"],
+                       check=True, stdout=subprocess.DEVNULL)
+        srt_to_md(base.with_suffix(".srt"), src, out)
+
+
+def cmd_ingest(name, url=None):
+    sd = subject_dir(name)
+    mat, conv = sd / "materials", sd / "converted"
+    if url:
+        (mat / "videos").mkdir(parents=True, exist_ok=True)
+        subprocess.run(["yt-dlp", "-x", "--audio-format", "m4a",
+                        "-o", str(mat / "videos/%(title)s.%(ext)s"), url], check=True)
+    done, skipped, failed = [], 0, []
+    for src in sorted(p for p in mat.rglob("*") if p.is_file() and not p.name.startswith(".")):
+        ext = src.suffix.lower()
+        if ext not in DOC_EXT | MEDIA_EXT | TEXT_EXT | {".pdf"}:
+            continue
+        out = conv / src.relative_to(mat).with_suffix(src.suffix + ".md")
+        if out.exists() and out.stat().st_mtime >= src.stat().st_mtime:
+            skipped += 1
+            continue
+        out.parent.mkdir(parents=True, exist_ok=True)
+        print(f"-> {src.relative_to(sd)}", flush=True)
+        try:
+            if ext == ".pdf":
+                pdf_to_md(src, out)
+            elif ext in DOC_EXT:
+                doc_to_md(src, out)
+            elif ext in MEDIA_EXT:
+                media_to_md(src, out)
+            else:
+                shutil.copyfile(src, out)
+            done.append(str(out.relative_to(sd)))
+        except subprocess.CalledProcessError as e:
+            failed.append(f"{src.relative_to(sd)}: {e}")
+    print(f"\nConverted {len(done)}, unchanged {skipped}, failed {len(failed)}")
+    for d in done:
+        print(f"  NEW {d}")
+    for f in failed:
+        print(f"  FAIL {f}")
+
+
+def main(argv):
+    if len(argv) >= 2 and argv[0] == "new":
+        cmd_new(" ".join(argv[1:]))
+    elif len(argv) >= 2 and argv[0] == "ingest":
+        url = argv[argv.index("--url") + 1] if "--url" in argv else None
+        cmd_ingest(argv[1], url)
+    elif argv[:1] == ["list"]:
+        print("\n".join(subjects()) or "no subjects yet")
+    else:
+        print(__doc__)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/Study/**)",
+      "Edit(~/Study/**)",
+      "Write(~/Study/**)",
+      "Bash(~/Study/.tools/study:*)",
+      "Bash(date:*)",
+      "Bash(pdftotext:*)",
+      "Bash(markitdown:*)",
+      "Bash(open ~/Study/*)"
+    ]
+  }
+}
