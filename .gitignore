@@ -5,6 +5,8 @@
 !/Example-Subject/
 !/.claude/
 !/.tools/
+!/docs/
+!/.github/
 
 # Downloaded models, semantic-search env, index and per-machine config
 .tools/models/

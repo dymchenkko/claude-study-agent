@@ -1,0 +1,26 @@
+# Claude Study Agent
+
+> Open-source AI study tutor for university students, built as Claude Code skills. It converts your own lecture slides, PDFs (including scanned, via OCR) and recordings (local Whisper transcription) into searchable text, teaches topic by topic with short tasks and page citations, schedules reviews with spaced repetition (1, 3, 7, 16, 35 days), logs mistakes, and builds mock exams in the course's exam format. Runs on a Claude Pro/Max plan through Claude Code; no API key. Files stay local; optional offline semantic search uses EmbeddingGemma 2.
+
+## Docs
+- [README](https://github.com/dymchenkko/claude-study-agent/blob/main/README.md): features, quick start, commands, requirements, FAQ
+- [Tutor rules](https://github.com/dymchenkko/claude-study-agent/blob/main/CLAUDE.md): how the tutor teaches, grades and records progress
+- [Contributing](https://github.com/dymchenkko/claude-study-agent/blob/main/CONTRIBUTING.md)
+
+## Commands (Claude Code skills)
+- [/today](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/today/SKILL.md): 15-minute daily session
+- [/learn](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/learn/SKILL.md): tutor one topic from the course materials
+- [/review](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/review/SKILL.md): spaced-repetition review
+- [/quiz](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/quiz/SKILL.md): multiple-choice and practice questions
+- [/exam](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/exam/SKILL.md): mock exam with weak-spot report
+- [/ingest](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/ingest/SKILL.md): convert new materials and update the topic map
+- [/status](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/status/SKILL.md): progress dashboard
+- [/setup](https://github.com/dymchenkko/claude-study-agent/blob/main/.claude/skills/setup/SKILL.md): first-run onboarding
+
+## Tools
+- [.tools/study](https://github.com/dymchenkko/claude-study-agent/blob/main/.tools/study): conversion (pdftotext, markitdown, whisper.cpp, OCR), search, doctor, setup
+- [.tools/semantic.py](https://github.com/dymchenkko/claude-study-agent/blob/main/.tools/semantic.py): local semantic index and search
+- [.tools/ocr.swift](https://github.com/dymchenkko/claude-study-agent/blob/main/.tools/ocr.swift): OCR for scanned PDFs with Apple Vision
+
+## Optional
+- [Example-Subject](https://github.com/dymchenkko/claude-study-agent/tree/main/Example-Subject): demo course (cell biology)
