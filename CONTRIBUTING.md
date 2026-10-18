@@ -19,7 +19,3 @@ Thanks for helping students study better! Issues, ideas and pull requests are al
 ## Reporting a bug
 
 Open an issue with your OS, the output of `./.tools/study doctor`, the command you ran and what happened. Please remove anything private from logs.
-
-## Code of conduct
-
-By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
