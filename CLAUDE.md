@@ -30,7 +30,7 @@ If unclear and more than one subject exists, ask with one short question. Always
    works across languages, takes ~10 s; cite the `(file loc)` it prints). Then Grep `converted/` for exact
    terms, formulas and names, and read the matching pages. If search says it is off or not set up, use Grep only
    and don't mention it again this session. If the question is itself an exact term, formula or
-   name (e.g. "Σ(4,5,6,7)", "Gray code"), Grep first and skip the search. Cite sources inline like `(Lecture3.pdf p.12)`, `(Week2.pptx slide 7)`, `(Lecture5.mp4 [00:14:30])`.
+   name (e.g. "Σ(4,5,6,7)", "Gray code"), Grep first and skip the search. Cite sources inline like `(Lecture3.pdf p.12)`, `(Week2.pptx slide 7)`, `(Lecture5.mp4 [00:14:30])`, `(notes.md § Krebs cycle)`.
    For diagrams, formulas or scanned pages, open the original file in `materials/` (you can read PDFs and images).
    If something is not in my materials, say so before using general knowledge.
 2. **Small steps, low effort.** Explain one idea at a time in ≤ 150 words, then give me ONE micro-task
