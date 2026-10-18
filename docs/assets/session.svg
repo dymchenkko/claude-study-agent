@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="396" viewBox="0 0 900 396" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" role="img" aria-label="Example /learn session: the tutor explains osmosis with a citation, gives a micro-task, grades a wrong answer, logs the mistake and gives a simpler step">
+<rect width="900" height="396" rx="14" fill="#15120F"/>
+<rect width="900" height="40" rx="14" fill="#211D18"/><rect y="26" width="900" height="14" fill="#211D18"/>
+<circle cx="26" cy="20" r="6" fill="#FF5F57"/><circle cx="46" cy="20" r="6" fill="#FEBC2E"/><circle cx="66" cy="20" r="6" fill="#28C840"/>
+<text x="450" y="25" fill="#A89F93" font-size="13" text-anchor="middle">~/Study — claude</text>
+<text x="28" y="74" fill="#F08A4B" font-weight="700">❯</text><text x="50" y="74" fill="#F3EEE7" font-weight="600">/learn Example-Subject osmosis</text>
+<text x="28" y="108" fill="#E7E1D8">Osmosis is the passive movement of water across a selectively permeable</text>
+<text x="28" y="130" fill="#E7E1D8">membrane — towards the side with the higher solute concentration.</text>
+<text x="28" y="152" fill="#8FB8DE">(Lecture1-Membrane-transport.pdf p.2)</text>
+<text x="28" y="186" fill="#F0B86E">Micro-task (2 min): a red blood cell is placed in a hypertonic solution.</text>
+<text x="28" y="208" fill="#F0B86E">Does water move in or out, and what happens to the cell?</text>
+<text x="28" y="242" fill="#F08A4B" font-weight="700">❯</text><text x="50" y="242" fill="#F3EEE7" font-weight="600">in, so it swells</text>
+<text x="28" y="276" fill="#F28B82">❌ Not quite: hypertonic = more solute outside, so water moves OUT</text>
+<text x="28" y="298" fill="#F28B82">   and the cell shrinks (crenation). (Lecture1-Membrane-transport.pdf p.2)</text>
+<text x="28" y="320" fill="#7FD49B">→ logged to mistakes.md · re-tested later this session and at the next /review</text>
+<text x="28" y="354" fill="#F0B86E">Simpler step: which side has more solute — inside the cell, or outside?</text>
+</svg>
