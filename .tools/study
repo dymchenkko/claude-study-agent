@@ -5,6 +5,13 @@
   study ingest <Subject>         convert new materials into converted/*.md
   study ingest <Subject> --url URL   download a lecture video (yt-dlp), then ingest
   study list                     list subjects
+  study index <Subject>          (re)build the semantic index over converted/
+  study search <Subject> <query> [-k N]   find the most relevant passages
+  study doctor                   check hardware + tools, recommend a search mode (changes nothing)
+  study setup [--mode auto|cpu|off]   install semantic search (default: the recommended mode)
+
+Semantic search is optional (see .tools/semantic.py). Once set up, ingest refreshes the index
+automatically. The index lives in .tools/index/<Subject>/, the chosen mode in .tools/config.json.
 
 Conversion (skips files already converted and unchanged):
   .pdf                  -> pdftotext, with '--- page N ---' markers
@@ -14,6 +21,9 @@ Conversion (skips files already converted and unchanged):
   .md .txt              -> copied as is
 """
 
+import json
+import os
+import platform
 import re
 import shutil
 import subprocess
@@ -24,6 +34,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "_template"
 MODEL = ROOT / ".tools/models/ggml-large-v3-turbo-q5_0.bin"
+VENV_PY = ROOT / ".tools/.venv/bin/python"
+SEMANTIC = ROOT / ".tools/semantic.py"
+INDEX_DIR = ROOT / ".tools/index"
+CONFIG = ROOT / ".tools/config.json"
+MIN_RAM_GB, MIN_DISK_GB = 8, 4
 SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
 
 DOC_EXT = {".pptx", ".docx", ".xlsx"}
@@ -134,12 +149,170 @@ def cmd_ingest(name, url=None):
         print(f"  FAIL {f}")
 
 
+def search_mode():
+    """'off' | 'auto' | 'cpu' | None (never set up)."""
+    if CONFIG.exists():
+        return json.loads(CONFIG.read_text()).get("mode")
+    return "auto" if VENV_PY.exists() else None
+
+
+def require_semantic():
+    mode = search_mode()
+    if mode == "off":
+        sys.exit("Semantic search is off on this machine. Use Grep over converted/ instead.")
+    if mode is None or not VENV_PY.exists():
+        sys.exit("Semantic search is not set up (optional). Use Grep over converted/ for now,\n"
+                 "or run `study doctor` to see if this machine can run it, then `study setup`.")
+
+
+def hardware():
+    hw = {"os": platform.system(), "arch": platform.machine(), "cores": os.cpu_count() or 1,
+          "python": sys.version_info[:2], "ram_gb": 0.0, "gpu": None,
+          "disk_gb": shutil.disk_usage(ROOT).free / 1e9}
+    try:
+        if hw["os"] == "Darwin":
+            hw["ram_gb"] = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True,
+                                              text=True).stdout) / 2**30
+            if hw["arch"] == "arm64":
+                hw["gpu"] = "apple"
+        elif hw["os"] == "Linux":
+            kb = re.search(r"MemTotal:\s+(\d+)", Path("/proc/meminfo").read_text()).group(1)
+            hw["ram_gb"] = int(kb) / 2**20
+    except (OSError, ValueError, AttributeError):
+        pass
+    if hw["gpu"] is None and shutil.which("nvidia-smi"):
+        hw["gpu"] = "nvidia"
+    return hw
+
+
+def recommend(hw):
+    """(mode, reason). Numbers measured on an M2 Pro: search peaks ~1.3 GB RAM, indexing ~3 GB."""
+    if hw["os"] not in ("Darwin", "Linux"):
+        return "off", "only macOS and Linux are supported (on Windows, use WSL)"
+    if hw["os"] == "Darwin" and hw["arch"] != "arm64":
+        return "off", "Intel Macs have no current PyTorch build"
+    if hw["python"] < (3, 10):
+        return "off", "needs Python 3.10 or newer"
+    if hw["ram_gb"] and hw["ram_gb"] < MIN_RAM_GB:
+        return "off", f"needs at least {MIN_RAM_GB} GB RAM (this machine has {hw['ram_gb']:.0f} GB)"
+    if hw["disk_gb"] < MIN_DISK_GB:
+        return "off", f"needs ~{MIN_DISK_GB} GB free disk (free: {hw['disk_gb']:.1f} GB)"
+    if hw["gpu"]:
+        name = "Apple GPU (mps)" if hw["gpu"] == "apple" else "NVIDIA GPU (cuda)"
+        return "auto", f"index on the {name}, search on the CPU"
+    return "cpu", "no supported GPU: works, but indexing is slow (~1 s per passage)"
+
+
+def cmd_doctor():
+    hw = hardware()
+    print("Machine")
+    print(f"  {hw['os']} {hw['arch']}, {hw['cores']} cores, {hw['ram_gb']:.0f} GB RAM, "
+          f"GPU: {hw['gpu'] or 'none'}, {hw['disk_gb']:.0f} GB free, "
+          f"Python {hw['python'][0]}.{hw['python'][1]}")
+    print("\nTools (each one is only needed for its file type)")
+    for tool, need, fix in [
+        ("claude", "the tutor itself", "https://claude.com/claude-code"),
+        ("pdftotext", "PDF", "brew install poppler  |  apt install poppler-utils"),
+        ("markitdown", "PPTX / DOCX / XLSX", "pip install markitdown"),
+        ("ffmpeg", "video / audio", "brew install ffmpeg  |  apt install ffmpeg"),
+        ("whisper-cli", "video / audio", "brew install whisper-cpp  (Linux: build whisper.cpp)"),
+        ("yt-dlp", "lecture links (--url)", "brew install yt-dlp  |  pip install yt-dlp"),
+    ]:
+        ok = shutil.which(tool)
+        print(f"  {'ok ' if ok else '-- '} {tool:<14} {need:<22} {'' if ok else 'install: ' + fix}")
+    print(f"  {'ok ' if MODEL.exists() else '-- '} {'whisper model':<14} {'video / audio':<22} "
+          f"{'' if MODEL.exists() else 'download: see README (Requirements)'}")
+
+    mode, why = recommend(hw)
+    current = search_mode()
+    print("\nSemantic search (optional, local EmbeddingGemma 2)")
+    print(f"  current:     {current or 'not set up'}" + ("" if VENV_PY.exists() or current == "off"
+                                                        else "  (Grep only)"))
+    print(f"  recommended: {mode}  ({why})")
+    print("\n  auto = index on GPU, search on CPU · cpu = everything on CPU · off = Grep only")
+    if current != mode:
+        print(f"\nNext: study setup --mode {mode}")
+
+
+def cmd_setup(mode=None):
+    hw = hardware()
+    rec, why = recommend(hw)
+    mode = mode or rec
+    if mode not in ("auto", "cpu", "off"):
+        sys.exit("--mode must be auto, cpu or off")
+    if mode != "off" and rec == "off":
+        sys.exit(f"Not supported on this machine: {why}. Use --mode off (Grep only).")
+    if mode == "auto" and not hw["gpu"]:
+        sys.exit("No supported GPU found: use --mode cpu.")
+    print(f"Mode: {mode}" + (f"  ({why})" if mode == rec else ""))
+
+    if mode != "off":
+        venv_pip = ROOT / ".tools/.venv/bin/pip"
+        if not VENV_PY.exists():
+            print("-> creating .tools/.venv", flush=True)
+            subprocess.run([sys.executable, "-m", "venv", str(ROOT / ".tools/.venv")], check=True)
+        if hw["os"] == "Linux" and hw["gpu"] != "nvidia":
+            # the default Linux wheel bundles CUDA (~3 GB); the CPU build is ~200 MB
+            print("-> installing CPU-only PyTorch", flush=True)
+            subprocess.run([str(venv_pip), "install", "-q", "torch",
+                            "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+        print("-> installing sentence-transformers (PyTorch, transformers; ~1 GB)", flush=True)
+        subprocess.run([str(venv_pip), "install", "-q", "sentence-transformers[image]"], check=True)
+
+    gpu = {"apple": "mps", "nvidia": "cuda"}.get(hw["gpu"], "cpu")
+    devices = {"off": ("off", "off"), "cpu": ("cpu", "cpu"), "auto": (gpu, "cpu")}[mode]
+    CONFIG.write_text(json.dumps({"mode": mode, "index_device": devices[0],
+                                  "search_device": devices[1]}, indent=2) + "\n")
+    print(f"Saved {CONFIG.relative_to(ROOT)}")
+    if mode == "off":
+        print("The tutor will use Grep over converted/. Run `study setup` again any time to change.")
+        return
+
+    print("-> loading the model (first time downloads ~1.5 GB)", flush=True)
+    for task in ("index", "search"):
+        subprocess.run([str(VENV_PY), str(SEMANTIC), "check", task], check=True)
+    for s in subjects():
+        if any((ROOT / s / "converted").rglob("*.md")):
+            print(f"-> indexing {s}", flush=True)
+            cmd_index(s)
+    print("Done. Try: study search <Subject> \"<topic in plain words>\"")
+
+
+def cmd_index(name):
+    sd = subject_dir(name)
+    require_semantic()
+    idx = INDEX_DIR / sd.name
+    subprocess.run([str(VENV_PY), str(SEMANTIC), "index", str(sd / "converted"), str(idx)], check=True)
+
+
+def cmd_search(name, query, k):
+    sd = subject_dir(name)
+    require_semantic()
+    idx = INDEX_DIR / sd.name
+    subprocess.run([str(VENV_PY), str(SEMANTIC), "search", str(sd / "converted"), str(idx),
+                    str(k), query], check=True)
+
+
 def main(argv):
     if len(argv) >= 2 and argv[0] == "new":
         cmd_new(" ".join(argv[1:]))
     elif len(argv) >= 2 and argv[0] == "ingest":
         url = argv[argv.index("--url") + 1] if "--url" in argv else None
         cmd_ingest(argv[1], url)
+        if VENV_PY.exists() and search_mode() != "off":
+            cmd_index(argv[1])
+    elif len(argv) >= 2 and argv[0] == "index":
+        cmd_index(argv[1])
+    elif len(argv) >= 3 and argv[0] == "search":
+        rest, k = argv[2:], 5
+        if "-k" in rest:
+            j = rest.index("-k")
+            k, rest = int(rest[j + 1]), rest[:j] + rest[j + 2:]
+        cmd_search(argv[1], " ".join(rest), k)
+    elif argv[:1] == ["doctor"]:
+        cmd_doctor()
+    elif argv[:1] == ["setup"]:
+        cmd_setup(argv[argv.index("--mode") + 1] if "--mode" in argv else None)
     elif argv[:1] == ["list"]:
         print("\n".join(subjects()) or "no subjects yet")
     else:
@@ -147,4 +320,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)  # the tool already printed its own message

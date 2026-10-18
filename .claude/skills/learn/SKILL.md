@@ -7,8 +7,11 @@ argument-hint: "<subject> <topic>"
 # Learn a topic
 
 1. Resolve subject and topic. Read the subject's `CLAUDE.md`, `progress.md`, `mistakes.md`.
-2. Find the topic in my materials: Grep `converted/` for key terms, read the matching pages/slides/transcript
-   sections. Open the original in `materials/` if diagrams or formulas matter. Note the sources.
+2. Find the topic in my materials. Run `~/Study/.tools/study search <Subject> "<topic in plain words>" -k 6`
+   (meaning-based, works across languages; cite the `(file loc)` it prints). Then Grep `converted/` for
+   exact terms, formulas and names the search missed. Read the matching pages/slides/transcript sections.
+   Open the original in `materials/` if diagrams or formulas matter. If the best scores are low (< ~0.6), the
+   topic is probably not in my materials: say so before using general knowledge.
 3. **Diagnose (1 question):** ask one quick question to see what I already know. Skip what I know.
 4. Break the topic into 3–6 small ideas (show the list as a mini roadmap). For each idea:
    - explain in ≤ 150 words with a concrete example and citation,

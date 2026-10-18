@@ -8,7 +8,8 @@ argument-hint: "<subject> [topic|weak|all] [n] [html]"
 
 1. Resolve subject and scope: a topic, `weak` (Level ≤ 2 + unfixed mistakes), or `all` (weighted by exam weight).
    Read `CLAUDE.md` for the exam's question style and mirror it.
-2. Build questions **only from my materials** (Grep `converted/`, read the sources). Mix:
+2. Build questions **only from my materials**: find sources with `~/Study/.tools/study search <Subject> "<topic>" -k 6`
+   and Grep `converted/` for exact terms, then read the sources. Mix:
    ~70 % MCQ (4 options, one correct, distractors from real misconceptions and `mistakes.md`, no "all of the above"),
    ~30 % short practice problems / short answer. Each question stores its source citation.
 3. **Chat mode (default):** show questions in blocks of 5; I answer compactly like `1b 2d 3a …` or text.

@@ -9,7 +9,11 @@ argument-hint: "<subject> [minutes] [html]"
 1. Read the subject's `CLAUDE.md` (exam format, date, emphasis), `syllabus.md`, `progress.md`, `mistakes.md`.
    If the format is unknown, ask once (or default: 20 MCQ + 3 open problems, 60 min).
 2. Build the exam from my materials, cumulative across the syllabus, weighted by exam weight and emphasis,
-   with ~25 % targeted at weak topics and past mistakes. Mix difficulty like a real exam. Keep an answer key
+   with ~25 % targeted at weak topics and past mistakes. For each syllabus topic, find its sources with
+   `~/Study/.tools/study search <Subject> "<topic>" -k 6` (local model, ~10 s per call; batch the topics into
+   one message rather than many calls), then Grep `converted/` for exact formulas and names. Cite every answer.
+   Use the search results for the coverage check too: a topic with only low scores (< ~0.6) is thin in the
+   materials, so say so in the answer key rather than inventing material. Mix difficulty like a real exam. Keep an answer key
    with sources. Save it to `exams/mock-exams/<date>.md` (key in a section at the bottom).
 3. Run it: show all questions (or write an HTML version if `html`), state the time limit, start time
    (`date`), and say "answer when ready". No hints during the exam.
