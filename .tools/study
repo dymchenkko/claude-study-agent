@@ -77,6 +77,27 @@ def cmd_new(name):
     print(f"Created {dest}\nPut files into {dest}/materials/ and run: study ingest {name}")
 
 
+# Old LaTeX PDFs (T1 font encoding, no ToUnicode map) come out of pdftotext as "Przykªad",
+# "Wªasno±ci" and "klasy\x1ckacji". The T1 code points map back exactly.
+T1 = str.maketrans({
+    "\x10": "“", "\x11": "”", "\x15": "–", "\x16": "—",
+    "\x1b": "ff", "\x1c": "fi", "\x1d": "fl", "\x1e": "ffi", "\x1f": "ffl",
+    "\x81": "Ą", "\x82": "Ć", "\x86": "Ę", "\x8a": "Ł", "\x8b": "Ń", "\x91": "Ś", "\x99": "Ź", "\x9b": "Ż",
+    "¡": "ą", "¢": "ć", "¦": "ę", "ª": "ł", "«": "ń", "±": "ś", "¹": "ź", "»": "ż"})
+T1_SIGN = re.compile(r"[A-Za-z][ª±¦¡¢»\x1c][A-Za-z]")
+
+
+def fix_t1(text):
+    return text.translate(T1) if len(T1_SIGN.findall(text)) >= 5 else text
+
+
+def readable(page):
+    """Characters of real text on a page; 0 when it is mostly undecodable glyphs."""
+    s = "".join(page.split())
+    bad = sum(ch == "\ufffd" or ord(ch) < 32 for ch in s)
+    return 0 if bad > len(s) * 0.1 else len(s)
+
+
 _ocr = []
 
 
@@ -121,24 +142,24 @@ def ocr_pages(src, nums):
 def pdf_to_md(src, out):
     text = subprocess.run(["pdftotext", "-layout", str(src), "-"],
                           capture_output=True, text=True, check=True).stdout
-    pages = text.split("\f")
+    pages = fix_t1(text).split("\f")
     if len(pages) > 1 and not pages[-1].strip():
         pages.pop()  # pdftotext ends every page with a form feed
-    thin = [i for i, p in enumerate(pages, 1) if len("".join(p.split())) < THIN_PAGE]
+    thin = [i for i, p in enumerate(pages, 1) if readable(p) < THIN_PAGE]
     notes = []
     if thin and ocr_backend():
         print(f"   OCR {len(thin)} page(s) without a text layer (~2 s each)", flush=True)
         for i, t in ocr_pages(src, thin).items():
-            if len("".join(t.split())) > len("".join(pages[i - 1].split())):
+            if readable(t) > readable(pages[i - 1]):
                 pages[i - 1] = t
-        done = [i for i in thin if len("".join(pages[i - 1].split())) >= THIN_PAGE]
+        done = [i for i in thin if readable(pages[i - 1]) >= THIN_PAGE]
         if done:
             notes.append(f"> OCR: {len(done)} page(s) read from images — "
                          "check formulas and tables against the original.")
-    still_thin = sum(len("".join(p.split())) < THIN_PAGE for p in pages)
+    still_thin = sum(readable(p) < THIN_PAGE for p in pages)
     if still_thin > len(pages) / 2:
         notes.append(NOTE_AFTER_OCR if thin and ocr_backend() else NOTE_NO_OCR)
-    body = "\n\n".join(f"--- page {i} ---\n{p.strip()}" for i, p in enumerate(pages, 1) if p.strip())
+    body = "\n\n".join(f"--- page {i} ---\n{p.strip()}" for i, p in enumerate(pages, 1) if readable(p))
     head = "".join(n + "\n\n" for n in notes)
     out.write_text(f"# {src.name}\n\nSource: {src.relative_to(ROOT)}\n\n{head}{body}\n")
 
