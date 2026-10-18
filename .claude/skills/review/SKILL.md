@@ -11,6 +11,9 @@ argument-hint: "[subject|all] [count]"
    then lowest Level. If nothing is due, say so and offer 3 questions on the weakest topics instead.
 3. Ask ONE question at a time — short active recall (define, why, what happens if, calculate, compare).
    Vary the format; no MCQ unless the topic is about telling similar things apart.
+   Before asking, find the source for the question: for a mistake, use `~/Study/.tools/study search <Subject>
+   "<the misconception in plain words>" -k 3` (local model, ~10 s) and Grep `converted/` for exact terms. Cite
+   what you find in the answer.
 4. After my answer: ✅/⚠️/❌, the correct answer in 1–3 lines with a source citation.
 5. Reschedule each topic with the ladder 1 → 3 → 7 → 16 → 35 days: ✅ → next step (Level +1, max 5),
    ⚠️ → same interval again, ❌ → 1 day (Level −1, min 1) and log it in `mistakes.md`.

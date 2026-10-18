@@ -6,8 +6,11 @@
 !/.claude/
 !/.tools/
 
-# Downloaded model and Python cache
+# Downloaded models, semantic-search env, index and per-machine config
 .tools/models/
+.tools/.venv/
+.tools/index/
+.tools/config.json
 __pycache__/
 *.pyc
 

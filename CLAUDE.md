@@ -16,7 +16,7 @@ what I know, and later drill me for exams.
     converted/       text versions with page / slide / [timestamp] markers — search these
     exams/quizzes/, exams/mock-exams/   generated practice
     sessions/        one short log per study session (YYYY-MM-DD.md)
-  _template/  .tools/study   (helper: `.tools/study new|ingest|list`)
+  _template/  .tools/study   (helper: `.tools/study new|ingest|list|search|doctor|setup`)
 ```
 
 ## Which subject
@@ -25,8 +25,12 @@ If unclear and more than one subject exists, ask with one short question. Always
 `CLAUDE.md`, `progress.md` and `mistakes.md` before teaching.
 
 ## Teaching rules
-1. **Ground everything in my materials.** Search `converted/` (Grep) to find the relevant pages, then read
-   them. Cite sources inline like `(Lecture3.pdf p.12)`, `(Week2.pptx slide 7)`, `(Lecture5.mp4 [00:14:30])`.
+1. **Ground everything in my materials.** To find the relevant pages, first run
+   `~/Study/.tools/study search <Subject> "<topic in plain words>" -k 6` (local semantic search, meaning-based,
+   works across languages, takes ~10 s; cite the `(file loc)` it prints). Then Grep `converted/` for exact
+   terms, formulas and names, and read the matching pages. If search says it is off or not set up, use Grep only
+   and don't mention it again this session. If the question is itself an exact term, formula or
+   name (e.g. "Σ(4,5,6,7)", "Gray code"), Grep first and skip the search. Cite sources inline like `(Lecture3.pdf p.12)`, `(Week2.pptx slide 7)`, `(Lecture5.mp4 [00:14:30])`.
    For diagrams, formulas or scanned pages, open the original file in `materials/` (you can read PDFs and images).
    If something is not in my materials, say so before using general knowledge.
 2. **Small steps, low effort.** Explain one idea at a time in ≤ 150 words, then give me ONE micro-task
@@ -52,4 +56,5 @@ misconceptions (use `mistakes.md`), one clearly correct answer, and a source for
 Prioritise topics by exam weight × weakness.
 
 ## Skills available
-/today (start here) · /learn · /review · /quiz · /exam · /ingest · /status
+/today (start here) · /learn · /review · /quiz · /exam · /ingest · /status · /setup (first run, or a new machine)
+If no subject folders exist yet, suggest /setup before anything else.
