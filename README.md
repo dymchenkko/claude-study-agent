@@ -14,6 +14,7 @@ Unlike a general chatbot that answers from memory, this tutor:
 
 - **Grounds every answer in your materials.** It searches your converted slides, PDFs and lecture transcripts and cites them, like `(Lecture3.pdf p.12)` or `(Lecture5.mp4 [00:14:30])`.
 - **Searches by meaning, offline (optional).** A small local embedding model finds the right slide even when you use other words or another language than the lecturer. It runs on your Mac or PC, not in the cloud.
+- **Reads scanned PDFs.** Pages without a text layer (scanned books, photographed handouts) are OCR'd during import, on your machine. On macOS this uses the built-in Apple Vision, which also reads Japanese, Chinese, Korean, Polish and 25+ other languages.
 - **Transcribes lectures locally.** Video and audio are transcribed on your machine with whisper.cpp, with timestamps, so you can search a 90-minute recording in seconds.
 - **Remembers you.** Each topic has a level and a spaced-repetition schedule (1 → 3 → 7 → 16 → 35 days). Every wrong answer is logged with the misconception behind it, and re-tested until it is fixed.
 - **Teaches like a tutor, not a chatbot.** Short explanations (≤150 words), one micro-task at a time, hints before answers, and honest grading (✅ / ⚠️ / ❌).
@@ -77,6 +78,8 @@ brew install poppler ffmpeg yt-dlp whisper-cpp    # PDF (pdftotext), video/audio
 pip install markitdown                            # PPTX / DOCX / XLSX → text
 ```
 
+OCR for scanned PDFs: on macOS, nothing to install beyond Apple's command line tools (`xcode-select --install`, which you likely already have); the helper is compiled once on first use. On Linux: `apt install tesseract-ocr` plus a language pack per language (e.g. `tesseract-ocr-pol`), and set `STUDY_OCR_LANGS=pol+eng`.
+
 On Linux use your package manager (`apt install poppler-utils ffmpeg`, `pip install yt-dlp`) and build whisper.cpp. `./.tools/study doctor` lists what is missing.
 
 Whisper model for transcription (about 575 MB, not in the repo). Skip it if you only have slides and PDFs:
@@ -139,7 +142,7 @@ It does **not** run for exact terms, formulas or names (the tutor uses Grep for 
 
 Optional: `alias study=~/Study/.tools/study` to make the helper a single word.
 
-Try it without your own files first: the repo includes `Example-Subject/` as a demo subject.
+Try it without your own files first: `Example-Subject/` is a small demo course (Cell Biology: a 3-page lecture PDF and a page of notes, already converted, with a topic map). Type `/learn Example-Subject osmosis`, or after `/setup` try `./.tools/study search Example-Subject "co to jest plazmoliza"` and watch a Polish question find the English page.
 
 ## Tips
 

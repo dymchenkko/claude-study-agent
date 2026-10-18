@@ -11,6 +11,7 @@
 .tools/.venv/
 .tools/index/
 .tools/config.json
+.tools/bin/
 __pycache__/
 *.pyc
 

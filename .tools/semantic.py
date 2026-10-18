@@ -9,6 +9,7 @@ Chunks follow the markers that `study` writes into converted/ files:
   --- page N ---            PDFs         -> loc "p.N"
   <!-- Slide number: N -->  PPTX         -> loc "slide N"
   [hh:mm:ss] paragraph      transcripts  -> loc "[hh:mm:ss]"
+  ## Heading                notes (.md), only in files without the markers above -> loc "§ Heading"
 Each source file gets one JSON cache in index_dir (keyed by the file's sha256),
 so unchanged files are never re-embedded.
 
@@ -47,11 +48,14 @@ SCAN_NOTE = "> NOTE: little text extracted"  # written by `study` for scanned PD
 PAGE = re.compile(r"^--- page (\d+) ---$")
 SLIDE = re.compile(r"^<!-- Slide number: (\d+) -->$")
 STAMP = re.compile(r"^\[(\d+:\d+:\d+)\]")
+HEADING = re.compile(r"^#{2,3} +(.+)$")
 
 
 def chunk_text(text):
     """Yield (loc, text) pairs; loc is '' when the file has no markers."""
     out, loc, buf = [], "", []
+    marked = any(PAGE.match(l.strip()) or SLIDE.match(l.strip()) or STAMP.match(l.strip())
+                 for l in text.splitlines())
 
     def flush():
         body = "\n".join(buf).strip()
@@ -63,14 +67,16 @@ def chunk_text(text):
         line = raw.strip()
         if line.startswith("# ") and not out and not buf:
             continue  # file title line written by `study`
-        if line.startswith("Source: ") or line.startswith(SCAN_NOTE):
-            continue  # absolute path / scan notice, not content
+        if line.startswith(("Source: ", SCAN_NOTE, "> OCR: ")):
+            continue  # absolute path / notices written by `study`, not content
         if m := PAGE.match(line):
             flush(); loc = f"p.{m.group(1)}"; continue
         if m := SLIDE.match(line):
             flush(); loc = f"slide {m.group(1)}"; continue
         if m := STAMP.match(line):
             flush(); loc = f"[{m.group(1)}]"
+        if not marked and (m := HEADING.match(line)):
+            flush(); loc = f"§ {m.group(1).strip()}"
         if not line:
             if sum(len(x) for x in buf) >= FLUSH_CHARS:
                 flush()

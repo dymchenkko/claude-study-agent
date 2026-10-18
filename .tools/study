@@ -14,7 +14,9 @@ Semantic search is optional (see .tools/semantic.py). Once set up, ingest refres
 automatically. The index lives in .tools/index/<Subject>/, the chosen mode in .tools/config.json.
 
 Conversion (skips files already converted and unchanged):
-  .pdf                  -> pdftotext, with '--- page N ---' markers
+  .pdf                  -> pdftotext, with '--- page N ---' markers; pages without a text layer
+                           (scans) are OCR'd: Apple Vision on macOS (.tools/ocr.swift), else tesseract.
+                           STUDY_OCR_LANGS overrides the language (Vision: ja-JP,en-US; tesseract: jpn+eng)
   .pptx .docx .xlsx     -> markitdown (slides keep '<!-- Slide number: N -->')
   .mp4 .mov .mkv .webm .m4a .mp3 .wav
                         -> ffmpeg + whisper.cpp, with [hh:mm:ss] timestamps
@@ -38,6 +40,13 @@ VENV_PY = ROOT / ".tools/.venv/bin/python"
 SEMANTIC = ROOT / ".tools/semantic.py"
 INDEX_DIR = ROOT / ".tools/index"
 CONFIG = ROOT / ".tools/config.json"
+OCR_SRC = ROOT / ".tools/ocr.swift"
+OCR_BIN = ROOT / ".tools/bin/ocr"
+THIN_PAGE = 50  # fewer non-space characters than this = no real text layer
+NOTE_NO_OCR = ("> NOTE: little text extracted — likely scanned or image-based. "
+               "Read the original PDF directly.")
+NOTE_AFTER_OCR = ("> NOTE: little text extracted even with OCR — likely images or handwriting. "
+                  "Read the original PDF directly.")
 MIN_RAM_GB, MIN_DISK_GB = 8, 4
 SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
 
@@ -68,19 +77,75 @@ def cmd_new(name):
     print(f"Created {dest}\nPut files into {dest}/materials/ and run: study ingest {name}")
 
 
+_ocr = []
+
+
+def ocr_backend():
+    """'vision' | 'tesseract' | None. Builds the Vision helper once (needs Xcode command line tools)."""
+    if not _ocr:
+        backend = None
+        if platform.system() == "Darwin" and shutil.which("swiftc") and OCR_SRC.exists():
+            if not OCR_BIN.exists() or OCR_BIN.stat().st_mtime < OCR_SRC.stat().st_mtime:
+                print("   building the OCR helper (once)", flush=True)
+                OCR_BIN.parent.mkdir(exist_ok=True)
+                r = subprocess.run(["swiftc", "-O", str(OCR_SRC), "-o", str(OCR_BIN)],
+                                   capture_output=True, text=True)
+                if r.returncode:
+                    print(f"   OCR helper failed to build:\n{r.stderr[-500:]}", flush=True)
+            if OCR_BIN.exists():
+                backend = "vision"
+        if not backend and shutil.which("tesseract") and shutil.which("pdftoppm"):
+            backend = "tesseract"
+        _ocr.append(backend)
+    return _ocr[0]
+
+
+def ocr_pages(src, nums):
+    """{page number: text} for the given 1-based pages."""
+    langs = os.environ.get("STUDY_OCR_LANGS")
+    if ocr_backend() == "vision":
+        r = subprocess.run([str(OCR_BIN), str(src), ",".join(map(str, nums)), langs or "auto"],
+                           capture_output=True, text=True, check=True)
+        return {int(k): v for k, v in json.loads(r.stdout).items()}
+    found = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for n in nums:
+            img = Path(tmp) / "page"
+            subprocess.run(["pdftoppm", "-r", "300", "-f", str(n), "-l", str(n), "-png", "-singlefile",
+                            str(src), str(img)], check=True)
+            found[n] = subprocess.run(["tesseract", str(img) + ".png", "-", "-l", langs or "eng"],
+                                      capture_output=True, text=True, check=True).stdout
+    return found
+
+
 def pdf_to_md(src, out):
     text = subprocess.run(["pdftotext", "-layout", str(src), "-"],
                           capture_output=True, text=True, check=True).stdout
     pages = text.split("\f")
+    if len(pages) > 1 and not pages[-1].strip():
+        pages.pop()  # pdftotext ends every page with a form feed
+    thin = [i for i, p in enumerate(pages, 1) if len("".join(p.split())) < THIN_PAGE]
+    notes = []
+    if thin and ocr_backend():
+        print(f"   OCR {len(thin)} page(s) without a text layer (~2 s each)", flush=True)
+        for i, t in ocr_pages(src, thin).items():
+            if len("".join(t.split())) > len("".join(pages[i - 1].split())):
+                pages[i - 1] = t
+        done = [i for i in thin if len("".join(pages[i - 1].split())) >= THIN_PAGE]
+        if done:
+            notes.append(f"> OCR: {len(done)} page(s) read from images — "
+                         "check formulas and tables against the original.")
+    still_thin = sum(len("".join(p.split())) < THIN_PAGE for p in pages)
+    if still_thin > len(pages) / 2:
+        notes.append(NOTE_AFTER_OCR if thin and ocr_backend() else NOTE_NO_OCR)
     body = "\n\n".join(f"--- page {i} ---\n{p.strip()}" for i, p in enumerate(pages, 1) if p.strip())
-    if len(text.strip()) < 100 * max(1, len(pages) - 1):
-        body += "\n\n> NOTE: little text extracted — likely scanned or image-based. Read the original PDF directly."
-    out.write_text(f"# {src.name}\n\nSource: {src}\n\n{body}\n")
+    head = "".join(n + "\n\n" for n in notes)
+    out.write_text(f"# {src.name}\n\nSource: {src.relative_to(ROOT)}\n\n{head}{body}\n")
 
 
 def doc_to_md(src, out):
     md = subprocess.run(["markitdown", str(src)], capture_output=True, text=True, check=True).stdout
-    out.write_text(f"# {src.name}\n\nSource: {src}\n\n{md}\n")
+    out.write_text(f"# {src.name}\n\nSource: {src.relative_to(ROOT)}\n\n{md}\n")
 
 
 def srt_to_md(srt, src, out):
@@ -95,7 +160,7 @@ def srt_to_md(srt, src, out):
         buf.append(txt.replace("\n", " ").strip())
     if buf:
         blocks.append(" ".join(buf))
-    out.write_text(f"# Transcript: {src.name}\n\nSource: {src}\n\n" + "\n\n".join(blocks) + "\n")
+    out.write_text(f"# Transcript: {src.name}\n\nSource: {src.relative_to(ROOT)}\n\n" + "\n\n".join(blocks) + "\n")
 
 
 def media_to_md(src, out):
@@ -125,7 +190,10 @@ def cmd_ingest(name, url=None):
         if ext not in DOC_EXT | MEDIA_EXT | TEXT_EXT | {".pdf"}:
             continue
         out = conv / src.relative_to(mat).with_suffix(src.suffix + ".md")
-        if out.exists() and out.stat().st_mtime >= src.stat().st_mtime:
+        up_to_date = out.exists() and out.stat().st_mtime >= src.stat().st_mtime
+        if up_to_date and ext == ".pdf" and NOTE_NO_OCR in out.read_text(errors="replace"):
+            up_to_date = not ocr_backend()  # converted before OCR was available: redo it
+        if up_to_date:
             skipped += 1
             continue
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -147,6 +215,7 @@ def cmd_ingest(name, url=None):
         print(f"  NEW {d}")
     for f in failed:
         print(f"  FAIL {f}")
+    sys.stdout.flush()  # before the index subprocess writes
 
 
 def search_mode():
@@ -222,6 +291,10 @@ def cmd_doctor():
         print(f"  {'ok ' if ok else '-- '} {tool:<14} {need:<22} {'' if ok else 'install: ' + fix}")
     print(f"  {'ok ' if MODEL.exists() else '-- '} {'whisper model':<14} {'video / audio':<22} "
           f"{'' if MODEL.exists() else 'download: see README (Requirements)'}")
+    ocr = ("Apple Vision" if hw["os"] == "Darwin" and shutil.which("swiftc")
+           else "tesseract" if shutil.which("tesseract") else None)
+    print(f"  {'ok ' if ocr else '-- '} {'OCR':<14} {'scanned PDFs':<22} " + (f"({ocr})" if ocr else
+          "install: xcode-select --install  |  apt install tesseract-ocr tesseract-ocr-<lang>"))
 
     mode, why = recommend(hw)
     current = search_mode()
