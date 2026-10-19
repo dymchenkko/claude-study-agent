@@ -8,8 +8,9 @@
 !/docs/
 !/.github/
 
-# Downloaded models, semantic-search env, index and per-machine config
+# Downloaded models and llama.cpp, old semantic-search env, index and per-machine config
 .tools/models/
+.tools/llama/
 .tools/.venv/
 .tools/index/
 .tools/config.json

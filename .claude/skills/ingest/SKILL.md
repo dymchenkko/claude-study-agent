@@ -10,8 +10,8 @@ argument-hint: "<subject> [video-url]"
 2. Run `~/Study/.tools/study ingest "<Subject>"` (add `--url <URL>` for a video link).
    Video transcription runs locally and takes a few minutes per lecture — tell me before starting long ones
    and run it in the background if there are several.
-   If semantic search is set up, ingest also indexes the new files (seconds on a GPU, ~1 s per passage on CPU-only
-   machines); a `Semantic search is not set up` line is fine, just mention `/setup` once.
+   If semantic search is set up, ingest also indexes the new files (~0.1 s per passage, a lecture in
+   seconds); a `Semantic search is not set up` line is fine, just mention `/setup` once.
 3. Read the NEW converted files. Scanned pages are OCR'd automatically (~2 s per page; marked `> OCR:`) — check
    formulas, tables and diagrams against the original PDF. If a PDF is still flagged as scanned/image-based
    (no OCR available, or handwriting), read the original PDF directly and mention `/setup` once.
