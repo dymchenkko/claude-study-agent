@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Study Agent — AI tutor that studies from your own lecture PDFs</title>
+<meta name="description" content="Open-source AI study tutor for university students, built on Claude Code. It learns from your own lecture slides, PDFs and recordings, teaches topic by topic with citations, quizzes you with spaced repetition, logs mistakes and builds mock exams in your real exam format. Runs locally, no API key.">
+<link rel="canonical" href="https://dymchenkko.github.io/claude-study-agent/">
+<meta name="keywords" content="AI study tutor, study from lecture PDFs, Claude Code, NotebookLM alternative, Anki alternative, spaced repetition, mock exams, turn slides into flashcards, local RAG for students, semantic search PDF, lecture transcription, exam prep AI">
+<meta name="author" content="dymchenkko">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Claude Study Agent">
+<meta property="og:title" content="Claude Study Agent — AI tutor that studies from your own lecture PDFs">
+<meta property="og:description" content="Open-source AI study tutor built on Claude Code. Learns from your slides, PDFs and lecture recordings, teaches with citations, schedules spaced repetition, and builds mock exams in your real exam format. Local-first, no API key.">
+<meta property="og:url" content="https://dymchenkko.github.io/claude-study-agent/">
+<meta property="og:image" content="https://dymchenkko.github.io/claude-study-agent/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Claude Study Agent — AI tutor that studies from your own lecture PDFs">
+<meta name="twitter:description" content="Open-source AI study tutor built on Claude Code. Teaches from your own materials with citations, spaced repetition and mock exams. Local-first, no API key.">
+<meta name="twitter:image" content="https://dymchenkko.github.io/claude-study-agent/assets/social-preview.png">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2315803D'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E2%9C%93%3C/text%3E%3C/svg%3E">
+
+<!-- Structured data: the single strongest signal for AI search engines -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Claude Study Agent",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "macOS, Linux, Windows (WSL)",
+  "description": "Open-source AI study tutor for university students, built on Claude Code. It learns from your own lecture slides, PDFs and recordings, teaches topic by topic with citations, quizzes you with spaced repetition, logs your mistakes and builds mock exams in your real exam format. Conversion, OCR, transcription and semantic search run locally.",
+  "url": "https://dymchenkko.github.io/claude-study-agent/",
+  "codeRepository": "https://github.com/dymchenkko/claude-study-agent",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "dymchenkko" },
+  "keywords": "AI study tutor, Claude Code, spaced repetition, mock exams, lecture PDFs, NotebookLM alternative, Anki alternative, local-first, OCR, semantic search",
+  "featureList": [
+    "Teaches from your own course materials with page and timestamp citations",
+    "Spaced repetition schedule per topic (1, 3, 7, 16, 35 days)",
+    "Logs every mistake and re-tests it until fixed",
+    "Mock exams in your course's real exam format",
+    "Local lecture transcription with whisper.cpp",
+    "Offline cross-language semantic search over your files"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Claude Study Agent?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It is an open-source AI tutor for university courses, built as a set of Claude Code skills. You put your lecture slides, PDFs and recordings in a folder; it converts them to searchable text, teaches you topic by topic with short tasks and citations, schedules reviews with spaced repetition, logs your mistakes and builds mock exams in your course's exam format." }
+    },
+    {
+      "@type": "Question",
+      "name": "How is it different from NotebookLM, ChatGPT or Anki?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Unlike a general chatbot, every answer is grounded in your own course materials with page citations. Unlike a flashcard app like Anki, it writes the questions for you and remembers why you got something wrong. It adds spaced repetition, mock exams in your real exam format, and local transcription and search of lecture recordings." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need an API key and what does it cost?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No API key. It runs on your existing Claude Pro or Max subscription through Claude Code. Conversion, OCR, transcription and semantic search are free, open-source and run on your own machine." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do my lecture files get uploaded anywhere?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Your files stay on your computer. Conversion, OCR, transcription and the search index all run locally. Only the passages the tutor reads while teaching are sent to Claude, like any Claude Code session." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which file types and languages does it support?",
+      "acceptedAnswer": { "@type": "Answer", "text": "PDF (including scanned PDFs via OCR), PPTX, DOCX, XLSX, Markdown and text, plus video and audio (MP4, MOV, MKV, WEBM, M4A, MP3, WAV) and lecture links. Materials can be in any language Claude reads, and semantic search works across languages." }
+    }
+  ]
+}
+</script>
+
+<style>
+  :root{
+    --green:#15803D; --orange:#C2410C; --ink:#1F1B16; --muted:#6B6359;
+    --cream:#FBF8F3; --card:#FFFFFF; --line:#E7E0D5;
+  }
+  :root:not([data-theme="light"]){}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#F2ECE3; --muted:#B4AA9C; --cream:#17140F; --card:#211C16; --line:#352E25;
+      --green:#4ADE80; --orange:#FB923C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F2ECE3; --muted:#B4AA9C; --cream:#17140F; --card:#211C16; --line:#352E25;
+    --green:#4ADE80; --orange:#FB923C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+  a{color:var(--orange);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{text-align:center;padding:64px 0 24px}
+  .logo{width:60px;height:60px;border-radius:14px;background:var(--green);display:inline-flex;
+    align-items:center;justify-content:center;color:#fff;font-size:34px;margin-bottom:18px}
+  h1{font-size:2.3rem;line-height:1.15;margin:.2em 0}
+  .tag{font-size:1.2rem;color:var(--muted);max-width:620px;margin:0 auto 1.4em}
+  .cta{display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-block;padding:11px 20px;border-radius:9px;font-weight:600}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-ghost{border:1px solid var(--line);color:var(--ink)}
+  .badges{margin-top:18px;color:var(--muted);font-size:.9rem}
+  section{padding:30px 0;border-top:1px solid var(--line)}
+  h2{font-size:1.5rem;margin:.2em 0 .6em}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}h1{font-size:1.9rem}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{margin:.1em 0 .3em;font-size:1.05rem}
+  .card p{margin:0;color:var(--muted);font-size:.96rem}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+    overflow:auto;font-size:.92rem}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  table{width:100%;border-collapse:collapse;font-size:.95rem}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600}
+  .yes{color:var(--green);font-weight:700}
+  .no{color:var(--muted)}
+  details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:2px 16px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;padding:12px 0}
+  details p{color:var(--muted);margin:.2em 0 1em}
+  footer{text-align:center;color:var(--muted);font-size:.9rem;padding:40px 0}
+  ol{padding-left:1.2em} ol li{margin:.3em 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">✓</div>
+  <h1>Claude Study Agent</h1>
+  <p class="tag">An open-source AI tutor that studies from <i>your own</i> lecture slides, PDFs and recordings — then quizzes you with spaced repetition and builds mock exams in your real exam format.</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/dymchenkko/claude-study-agent">View on GitHub</a>
+    <a class="btn btn-ghost" href="#quick-start">Quick start</a>
+  </div>
+  <div class="badges">MIT licensed · built for Claude Code · macOS / Linux / WSL · no API key · your files stay local</div>
+</header>
+
+<section id="what">
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><h3>📚 Teaches from your materials</h3><p>Every explanation cites your own files, like <code>(Lecture3.pdf p.12)</code> or <code>(Lecture5.mp4 [00:14:30])</code>. No answers from thin air.</p></div>
+    <div class="card"><h3>🧠 Remembers what you forgot</h3><p>Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it is fixed.</p></div>
+    <div class="card"><h3>✍️ Tutors, doesn't lecture</h3><p>One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading.</p></div>
+    <div class="card"><h3>📝 Mock exams in your format</h3><p>Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan.</p></div>
+    <div class="card"><h3>🎥 Transcribes lectures locally</h3><p>Video and audio become timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it.</p></div>
+    <div class="card"><h3>🔎 Finds things by meaning</h3><p>Optional offline semantic search: a question in one language finds the slide in another. Scanned PDFs are read with OCR.</p></div>
+  </div>
+</section>
+
+<section id="who">
+  <h2>Who it is for</h2>
+  <p>University and college students who learn from their own course materials and want an AI tutor that is grounded in those materials rather than the open web — especially anyone revising for exams, juggling several courses, or working with lecture recordings and scanned notes. It is a local-first, open-source alternative to pasting slides into a general chatbot, and a more active companion than a flashcard deck.</p>
+</section>
+
+<section id="quick-start">
+  <h2>Quick start</h2>
+  <pre><code>git clone https://github.com/dymchenkko/claude-study-agent.git ~/Study
+cd ~/Study &amp;&amp; claude          # then type /setup</code></pre>
+  <ol>
+    <li><b>/setup</b> checks your machine, installs what is missing and creates your first subject.</li>
+    <li>Drop files into <code>&lt;Subject&gt;/materials/</code> — slides, PDFs, videos, notes.</li>
+    <li>Type <b>/ingest &lt;Subject&gt;</b>. It converts everything and builds a topic map.</li>
+    <li>Type <b>/today</b> every day. That's it.</li>
+  </ol>
+  <p>No files yet? <code>/learn Example-Subject osmosis</code> uses the included demo course.</p>
+</section>
+
+<section id="different">
+  <h2>How is it different?</h2>
+  <table>
+    <tr><th></th><th>General AI chatbot</th><th>Flashcard app (Anki)</th><th>Claude Study Agent</th></tr>
+    <tr><td>Answers from <i>your</i> materials, with citations</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Creates the questions for you</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Spaced repetition schedule</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    <tr><td>Remembers <i>why</i> you got it wrong</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Mock exams in your real format</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Transcribes &amp; searches recordings</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓ (locally)</td></tr>
+  </table>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details open><summary>What is Claude Study Agent?</summary><p>An open-source AI tutor for university courses, built as a set of Claude Code skills. You put your lecture slides, PDFs and recordings in a folder; it converts them to searchable text, teaches you topic by topic with short tasks and citations, schedules reviews with spaced repetition, logs your mistakes and builds mock exams in your course's exam format.</p></details>
+  <details><summary>How is it different from NotebookLM, ChatGPT or Anki?</summary><p>Unlike a general chatbot, every answer is grounded in your own course materials with page citations. Unlike a flashcard app like Anki, it writes the questions for you and remembers why you got something wrong. It adds spaced repetition, mock exams in your real exam format, and local transcription and search of lecture recordings.</p></details>
+  <details><summary>Do I need an API key? What does it cost?</summary><p>No API key. It runs on your existing Claude Pro or Max subscription through Claude Code. Conversion, OCR, transcription and semantic search are free, open-source and run on your own machine.</p></details>
+  <details><summary>Do my lecture files get uploaded anywhere?</summary><p>Your files stay on your computer. Conversion, OCR, transcription and the search index all run locally. Only the passages the tutor reads while teaching are sent to Claude, like any Claude Code session.</p></details>
+  <details><summary>Which file types and languages does it support?</summary><p>PDF (including scanned PDFs via OCR), PPTX, DOCX, XLSX, Markdown and text, plus video and audio (MP4, MOV, MKV, WEBM, M4A, MP3, WAV) and lecture links. Materials can be in any language Claude reads, and semantic search works across languages.</p></details>
+  <details><summary>Does it work on Windows?</summary><p>Yes, through WSL (Windows Subsystem for Linux). Native Windows is not supported.</p></details>
+</section>
+
+<footer>
+  <p>Open source under the MIT license · <a href="https://github.com/dymchenkko/claude-study-agent">github.com/dymchenkko/claude-study-agent</a><br>
+  If this helped you study, a ⭐ helps other students find it.</p>
+</footer>
+
+</div>
+</body>
+</html>
