@@ -141,30 +141,31 @@ curl -L -o ~/Study/.tools/models/ggml-large-v3-turbo-q5_0.bin \
 <details>
 <summary><b>Optional semantic search: which mode fits your machine</b></summary>
 
-Plain search only finds the exact words you type. Semantic search compares *meaning*: "how do I simplify a logic function" finds the Karnaugh-map slides. It uses [EmbeddingGemma 2](https://huggingface.co/google/embeddinggemma-2) (Google, Apache 2.0), loaded text-only (270M parameters), on your own machine. Without it everything still works; the tutor just uses exact-word search.
+Plain search only finds the exact words you type. Semantic search compares *meaning*: "how do I simplify a logic function" finds the Karnaugh-map slides. It uses [EmbeddingGemma 2](https://huggingface.co/google/embeddinggemma-2) (Google, Apache 2.0), text-only, run by [llama.cpp](https://github.com/ggml-org/llama.cpp) on your own machine. No Python packages and no GPU needed. Without it everything still works; the tutor just uses exact-word search.
 
-| | Minimum | Recommended |
-|---|---|---|
-| Hardware | macOS on Apple Silicon (M1+), or Linux | Apple Silicon or an NVIDIA GPU |
-| RAM | 8 GB | 16 GB |
-| Free disk | ~4 GB (packages + model) | |
-| Python | 3.10+ | |
-| Network | once, to download the model | then fully offline |
+| | Minimum |
+|---|---|
+| Hardware | any Mac, or Linux (x64 / arm64) |
+| RAM | 4 GB (uses ~0.6 GB while it runs, nothing between searches) |
+| Free disk | ~1 GB (it takes ~330 MB: llama.cpp ~30 MB + model 310 MB) |
+| Python | 3.10+ (standard library only) |
+| Network | once, to download llama.cpp and the model |
 
 | Your machine | Mode | Indexing new files | Each search |
 |---|---|---|---|
-| Mac with Apple Silicon (M1–M4) | `auto` | Apple GPU: a 90-min lecture in seconds | CPU, ~8–10 s |
-| Linux with an NVIDIA GPU | `auto` | CUDA GPU | CPU, ~8–10 s |
-| No GPU, 8 GB+ RAM | `cpu` | ~1 s per passage (a lecture ≈ 1–2 min, once) | ~8–10 s |
-| Intel Mac, < 8 GB RAM, < 4 GB free disk | `off` | – | exact-word search only |
+| Mac with Apple Silicon (M1–M4) | `auto` | ~0.03 s per passage (Apple GPU) | ~1.5 s |
+| Any other Mac or Linux, 4 GB+ RAM | `cpu` | ~0.1 s per passage (a lecture ≈ 10 s, once) | ~1.5 s |
+| < 4 GB RAM, < 1 GB free disk, or "keep it light" | `off` | – | exact-word search only |
 
-`auto` searches on the CPU on purpose: one short query is faster there than starting the GPU (measured on an M2 Pro: 8 s and 1.3 GB vs 18 s and 2.6 GB). Indexing hundreds of passages is ~30× faster on the GPU. Results are identical.
+Measured on an M2 Pro with a real 24-file course (432 passages). Each search starts llama.cpp, embeds your one question (~0.02 s) and stops it again, so it holds no memory while you study. Downloads are pinned and checked by SHA-256.
 
 **When does the local model run?**
-- **`/setup`:** downloads the model once (~1.5 GB) and indexes existing subjects.
+- **`/setup`:** downloads llama.cpp and the model once (~330 MB) and indexes existing subjects.
 - **`/ingest`:** embeds only new or changed files.
 - **Search:** the tutor calls `study search` in `/learn`, `/quiz`, `/exam`, `/review` and when you ask about a topic. It embeds your one question and returns the best passages with citations.
 - **Never:** for exact terms or formulas (those use exact-word search), for transcription (whisper.cpp), or for the teaching itself (Claude).
+
+**Upgrading from the PyTorch version:** run `study setup` once. Old indexes are rebuilt automatically on the first search, and `.tools/.venv` (~1 GB) plus the old model in `~/.cache/huggingface` (~1.5 GB) can be deleted.
 
 `study setup --mode auto|cpu|off` saves the choice in `.tools/config.json`. To override once: `STUDY_DEVICE=cpu ./.tools/study search …`.
 </details>
