@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="546" viewBox="0 0 880 546" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+<rect x="28" y="28" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="48" y="58" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">SOURCES</text>
+<text x="48" y="86" fill="#F2ECE3" font-size="16.5" font-weight="650">Teaches from your materials</text>
+<text x="48" y="112" fill="#B4AA9C" font-size="13.5">Every answer cites your own files, like</text>
+<text x="48" y="131" fill="#B4AA9C" font-size="13.5">(Lecture3.pdf p.12). Nothing from thin air.</text>
+<rect x="450" y="28" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="470" y="58" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">MEMORY</text>
+<text x="470" y="86" fill="#F2ECE3" font-size="16.5" font-weight="650">Remembers what you forgot</text>
+<text x="470" y="112" fill="#B4AA9C" font-size="13.5">Spaced repetition (1 to 35 days) and a log of</text>
+<text x="470" y="131" fill="#B4AA9C" font-size="13.5">every mistake, re-tested until fixed.</text>
+<rect x="28" y="198" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="48" y="228" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">METHOD</text>
+<text x="48" y="256" fill="#F2ECE3" font-size="16.5" font-weight="650">Tutors, doesn't lecture</text>
+<text x="48" y="282" fill="#B4AA9C" font-size="13.5">One idea at a time, then a short task. Hints</text>
+<text x="48" y="301" fill="#B4AA9C" font-size="13.5">before answers, honest grading.</text>
+<rect x="450" y="198" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="470" y="228" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">EXAMS</text>
+<text x="470" y="256" fill="#F2ECE3" font-size="16.5" font-weight="650">Mock exams in your format</text>
+<text x="470" y="282" fill="#B4AA9C" font-size="13.5">Quizzes and full mock exams in your course's</text>
+<text x="470" y="301" fill="#B4AA9C" font-size="13.5">real format, with a weak-spot report.</text>
+<rect x="28" y="368" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="48" y="398" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">RECORDINGS</text>
+<text x="48" y="426" fill="#F2ECE3" font-size="16.5" font-weight="650">Transcribes lectures locally</text>
+<text x="48" y="452" fill="#B4AA9C" font-size="13.5">Video and audio become timestamped text with</text>
+<text x="48" y="471" fill="#B4AA9C" font-size="13.5">whisper.cpp; paste a link to download it.</text>
+<rect x="450" y="368" width="402" height="150" rx="14" fill="#1B1712" stroke="#352E25" stroke-width="1"/>
+<text x="470" y="398" fill="#4ADE80" font-size="11.5" font-weight="700" letter-spacing="1.1">SEARCH</text>
+<text x="470" y="426" fill="#F2ECE3" font-size="16.5" font-weight="650">Finds things by meaning</text>
+<text x="470" y="452" fill="#B4AA9C" font-size="13.5">Offline semantic search across languages;</text>
+<text x="470" y="471" fill="#B4AA9C" font-size="13.5">scanned PDFs are read with OCR.</text>
+</svg>
