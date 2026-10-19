@@ -122,11 +122,14 @@
   .badges{margin-top:18px;color:var(--muted);font-size:.9rem}
   section{padding:30px 0;border-top:1px solid var(--line)}
   h2{font-size:1.5rem;margin:.2em 0 .6em}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:620px){.grid{grid-template-columns:1fr}h1{font-size:1.9rem}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-  .card h3{margin:.1em 0 .3em;font-size:1.05rem}
-  .card p{margin:0;color:var(--muted);font-size:.96rem}
+  .features{display:flex;flex-direction:column}
+  .feature{display:grid;grid-template-columns:118px 1fr;gap:24px;padding:18px 0;border-top:1px solid var(--line)}
+  .feature:first-child{border-top:0}
+  .feature .cat{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--green);padding-top:3px}
+  .feature h3{margin:0 0 3px;font-size:1.04rem;letter-spacing:-.01em}
+  .feature p{margin:0;color:var(--muted);font-size:.95rem}
+  .feature code{border:1px solid var(--line);border-radius:5px;padding:.5px 5px;font-size:.85em}
+  @media(max-width:620px){.feature{grid-template-columns:1fr;gap:5px}.feature .cat{padding-top:0}h1{font-size:1.9rem}}
   pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
     overflow:auto;font-size:.92rem}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -158,13 +161,13 @@
 
 <section id="what">
   <h2>What it does</h2>
-  <div class="grid">
-    <div class="card"><h3>📚 Teaches from your materials</h3><p>Every explanation cites your own files, like <code>(Lecture3.pdf p.12)</code> or <code>(Lecture5.mp4 [00:14:30])</code>. No answers from thin air.</p></div>
-    <div class="card"><h3>🧠 Remembers what you forgot</h3><p>Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it is fixed.</p></div>
-    <div class="card"><h3>✍️ Tutors, doesn't lecture</h3><p>One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading.</p></div>
-    <div class="card"><h3>📝 Mock exams in your format</h3><p>Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan.</p></div>
-    <div class="card"><h3>🎥 Transcribes lectures locally</h3><p>Video and audio become timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it.</p></div>
-    <div class="card"><h3>🔎 Finds things by meaning</h3><p>Optional offline semantic search: a question in one language finds the slide in another. Scanned PDFs are read with OCR.</p></div>
+  <div class="features">
+    <div class="feature"><div class="cat">Sources</div><div><h3>Teaches from your materials</h3><p>Every explanation cites your own files, like <code>(Lecture3.pdf p.12)</code> or <code>(Lecture5.mp4 [00:14:30])</code>. No answers from thin air.</p></div></div>
+    <div class="feature"><div class="cat">Memory</div><div><h3>Remembers what you forgot</h3><p>Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it is fixed.</p></div></div>
+    <div class="feature"><div class="cat">Method</div><div><h3>Tutors, doesn't lecture</h3><p>One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading.</p></div></div>
+    <div class="feature"><div class="cat">Exams</div><div><h3>Mock exams in your format</h3><p>Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan.</p></div></div>
+    <div class="feature"><div class="cat">Recordings</div><div><h3>Transcribes lectures locally</h3><p>Video and audio become timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it.</p></div></div>
+    <div class="feature"><div class="cat">Search</div><div><h3>Finds things by meaning</h3><p>Optional offline semantic search: a question in one language finds the slide in another. Scanned PDFs are read with OCR.</p></div></div>
   </div>
 </section>
 

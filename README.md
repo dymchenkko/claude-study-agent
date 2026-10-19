@@ -35,11 +35,14 @@
 
 ## ✨ What it does
 
-| | |
-|---|---|
-| 📚 **Teaches from your materials** <br> Every explanation cites your own files, like `(Lecture3.pdf p.12)` or `(Lecture5.mp4 [00:14:30])`. No answers from thin air. | 🧠 **Remembers what you forgot** <br> Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it's fixed. |
-| ✍️ **Tutors, doesn't lecture** <br> One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading ✅ ⚠️ ❌. | 📝 **Mock exams in your format** <br> Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan. |
-| 🎥 **Transcribes lectures locally** <br> Video and audio → timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it. | 🔎 **Finds things by meaning** <br> Optional offline semantic search: a question in Polish finds the English slide. Scanned PDFs are read with OCR. |
+| Area | Feature | What it does |
+|---|---|---|
+| **Sources** | Teaches from your materials | Every explanation cites your own files, like `(Lecture3.pdf p.12)` or `(Lecture5.mp4 [00:14:30])`. No answers from thin air. |
+| **Memory** | Remembers what you forgot | Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it's fixed. |
+| **Method** | Tutors, doesn't lecture | One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading. |
+| **Exams** | Mock exams in your format | Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan. |
+| **Recordings** | Transcribes lectures locally | Video and audio become timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it. |
+| **Search** | Finds things by meaning | Optional offline semantic search: a question in Polish finds the English slide. Scanned PDFs are read with OCR. |
 
 ## 🎓 Who is this for
 
