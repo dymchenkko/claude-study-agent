@@ -6,7 +6,7 @@ argument-hint: "[auto|cpu|off]"
 
 # Setup / onboarding
 
-1. Run `~/Study/.tools/study doctor` and read the report (machine, tools, current and recommended search mode).
+1. Run `~/Study/.tools/study doctor` and read the report (machine, tutor backend, tools, current and recommended search mode).
 2. Tell me in ≤ 120 words, in plain words:
    - which file types I can already import, and which tools are missing (only the ones for file types I said I
      have — ask if unsure);

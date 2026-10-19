@@ -301,15 +301,52 @@ def recommend(hw):
     return "cpu", "no GPU needed: indexing ~0.1 s per passage, each search ~1.5 s"
 
 
+def tutor_backends():
+    """Agent-neutral: which backend could drive the tutor skills. Returns (working, notes).
+
+    A local OpenAI-compatible endpoint is used when STUDY_TUTOR_URL is set and reachable;
+    otherwise any installed agent CLI (Claude Code or Gemini CLI) can run the skills."""
+    working, notes = [], []
+    url = os.environ.get("STUDY_TUTOR_URL")
+    if url:
+        try:
+            import urllib.error
+            import urllib.request
+            try:
+                urllib.request.urlopen(url, timeout=1.5).close()
+            except urllib.error.HTTPError:
+                pass  # the server answered (e.g. 404): it is reachable
+            working.append(f"local endpoint ({url})")
+        except Exception:
+            notes.append(f"STUDY_TUTOR_URL={url} is set but not reachable")
+    if shutil.which("claude"):
+        working.append("Claude Code (claude)")
+    if shutil.which("gemini"):
+        working.append("Gemini CLI (gemini)")
+    return working, notes
+
+
 def cmd_doctor():
     hw = hardware()
     print("Machine")
     print(f"  {hw['os']} {hw['arch']}, {hw['cores']} cores, {hw['ram_gb']:.0f} GB RAM, "
           f"GPU: {hw['gpu'] or 'none'}, {hw['disk_gb']:.0f} GB free, "
           f"Python {hw['python'][0]}.{hw['python'][1]}")
+
+    working, notes = tutor_backends()
+    print("\nTutor backend (any one runs the tutor)")
+    if working:
+        print(f"  ok  {', '.join(working)}")
+    else:
+        print("  --  none found. Install one:")
+        print("        Claude Code   https://claude.com/claude-code")
+        print("        Gemini CLI    https://github.com/google-gemini/gemini-cli")
+        print("        or set STUDY_TUTOR_URL to a local OpenAI-compatible endpoint")
+    for n in notes:
+        print(f"      note: {n}")
+
     print("\nTools (each one is only needed for its file type)")
     for tool, need, fix in [
-        ("claude", "the tutor itself", "https://claude.com/claude-code"),
         ("pdftotext", "PDF", "brew install poppler  |  apt install poppler-utils"),
         ("markitdown", "PPTX / DOCX / XLSX", "pip install markitdown"),
         ("ffmpeg", "video / audio", "brew install ffmpeg  |  apt install ffmpeg"),

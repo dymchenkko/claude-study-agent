@@ -1,9 +1,10 @@
 <h1 align="center">Claude Study Agent</h1>
 
 <p align="center">
-  <b>An open-source AI study tutor for university students.</b><br>
-  It teaches from <i>your own</i> lecture slides, PDFs and recordings, quizzes you with spaced repetition,<br>
-  and builds mock exams in your real exam format — all from a folder on your computer.
+  <b>An open-source AI study tutor that learns from your own lecture PDFs, slides and recordings.</b><br>
+  It teaches topic by topic with citations, quizzes you with spaced repetition,<br>
+  and builds mock exams in your real exam format — all from a folder on your computer, no API key.<br>
+  <sub>A local-first, open-source alternative to NotebookLM, ChatGPT and Anki for exam revision.</sub>
 </p>
 
 <p align="center">
@@ -16,10 +17,12 @@
 </p>
 
 <p align="center">
+  <a href="https://dymchenkko.github.io/claude-study-agent/">Website</a> ·
   <a href="#-quick-start">Quick start</a> ·
   <a href="#-what-it-does">Features</a> ·
   <a href="#-commands">Commands</a> ·
   <a href="#%EF%B8%8F-how-it-works">How it works</a> ·
+  <a href="#-how-is-it-different">Vs NotebookLM / Anki</a> ·
   <a href="#-faq">FAQ</a>
 </p>
 
@@ -37,6 +40,10 @@
 | 📚 **Teaches from your materials** <br> Every explanation cites your own files, like `(Lecture3.pdf p.12)` or `(Lecture5.mp4 [00:14:30])`. No answers from thin air. | 🧠 **Remembers what you forgot** <br> Spaced repetition per topic (1 → 3 → 7 → 16 → 35 days) and a log of every mistake, re-tested until it's fixed. |
 | ✍️ **Tutors, doesn't lecture** <br> One idea at a time (≤ 150 words), then a 2–5 minute task. Hints before answers, honest grading ✅ ⚠️ ❌. | 📝 **Mock exams in your format** <br> Quizzes and full mock exams that match your course's real exam, with a weak-spot report and revision plan. |
 | 🎥 **Transcribes lectures locally** <br> Video and audio → timestamped text with whisper.cpp, on your machine. Paste a lecture link and it downloads it. | 🔎 **Finds things by meaning** <br> Optional offline semantic search: a question in Polish finds the English slide. Scanned PDFs are read with OCR. |
+
+## 🎓 Who is this for
+
+University and college students who learn from **their own course materials** and want a tutor grounded in those files rather than the open web — especially anyone revising for exams, taking several courses at once, or working with lecture recordings and scanned notes. If you have slides, PDFs and recordings but no time to turn them into flashcards, this builds the study loop for you.
 
 ## 📸 Example session
 
@@ -185,7 +192,7 @@ Optional: `alias study=~/Study/.tools/study`.
 
 ## 🆚 How is it different?
 
-| | General AI chatbot | Flashcard app (e.g. Anki) | **Claude Study Agent** |
+| | Chatbot / NotebookLM | Flashcard app (e.g. Anki) | **Claude Study Agent** |
 |---|:---:|:---:|:---:|
 | Answers from *your* course materials, with page citations | ✗ | ✗ | ✅ |
 | Creates the questions for you | ✅ | ✗ (you write cards) | ✅ |
@@ -200,6 +207,12 @@ Optional: `alias study=~/Study/.tools/study`.
 <summary><b>What is Claude Study Agent?</b></summary>
 
 An open-source AI tutor for university courses, built as a set of [Claude Code](https://claude.com/claude-code) skills. You put your lecture slides, PDFs and recordings in a folder; it converts them to searchable text, teaches you topic by topic with short tasks, schedules reviews with spaced repetition, logs your mistakes and builds mock exams in your course's exam format.
+</details>
+
+<details>
+<summary><b>How is it different from NotebookLM, ChatGPT or Anki?</b></summary>
+
+Unlike a general chatbot or NotebookLM, it is a full study loop, not just Q&A over your documents: it decides what to teach next, tests you with one task at a time, grades honestly and schedules spaced-repetition reviews. Unlike a flashcard app like Anki, it writes the questions for you and remembers *why* you got something wrong. And every answer is cited from your own files, with local transcription and cross-language search of lecture recordings. See the [comparison table](#-how-is-it-different) above.
 </details>
 
 <details>
