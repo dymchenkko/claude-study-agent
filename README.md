@@ -48,6 +48,22 @@
 
 University and college students who learn from **their own course materials** and want a tutor grounded in those files rather than the open web — especially anyone revising for exams, taking several courses at once, or working with lecture recordings and scanned notes. If you have slides, PDFs and recordings but no time to turn them into flashcards, this builds the study loop for you.
 
+## 🚉 Offline-first: deferred escalation
+
+> Experimental — lives on the [`deferred-escalation`](https://github.com/dymchenkko/claude-study-agent/tree/deferred-escalation) branch.
+
+A tiny local model (Qwen3.5 0.8B, on llama.cpp) is the front desk: for a lookup it shows the exact passage from your slides; anything that needs real reasoning it refuses to fake and drops into a queue. When you're back online, the queue is handed to a stronger model (Claude) in one batch and the answers land as cards. **`study watch`** does this by itself the moment the signal returns.
+
+```bash
+study ask <Subject> "<question>"   # answer now from your notes, or queue the hard ones
+study tutor <Subject>              # an interactive session (both local models kept warm)
+study drain <Subject>              # online: let Claude clear the queue into cards/
+study watch <Subject>              # auto-drain the moment the connection returns
+study cards <Subject>              # the answers Claude wrote back
+```
+
+A tiny model can *route*, but it can't reliably judge its own limits — so the local model proposes and deterministic rules (is this in your notes? does it look like reasoning?) get the final say. Model proposes, rules dispose.
+
 ## 📸 Example session
 
 <p align="center">

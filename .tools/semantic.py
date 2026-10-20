@@ -302,30 +302,48 @@ def cmd_index(conv, idx):
     print(f"Indexed {len(todo)} file(s), {total} chunks.")
 
 
-def cmd_search(conv, idx, k, query):
-    conv, idx = Path(conv), Path(idx)
-    if any(json.loads(c.read_text()).get("model") != MODEL_PATH.name for c in idx.rglob("*.json")):
-        print("Rebuilding this index for the new search engine (once, ~0.1 s per passage)...", flush=True)
-        cmd_index(conv, idx)
-    rows = []
-    for cache in sorted(idx.rglob("*.json")):
-        rel = cache.relative_to(idx).as_posix()[: -len(".json")]
-        name = rel[: -len(".md")] if rel.endswith(".md") else rel  # e.g. pdfs/Lecture3.pdf
-        for ch in json.loads(cache.read_text())["chunks"]:
-            if ch["text"].startswith(SCAN_NOTE):
-                continue  # indexed by an older chunker
-            rows.append((name, ch))
-    if not rows:
-        if any(idx.rglob("*.json")):
-            sys.exit("No searchable text: the converted files are empty or scanned PDFs. "
-                     "Read the originals in materials/ instead.")
-        sys.exit("Index is empty. Run: study index <Subject>")
+class Searcher:
+    """Load the index rows once and keep the embedding engine warm, for repeated queries (REPL)."""
 
-    with Engine("search") as eng:
-        q = eng.embed([QUERY_PROMPT + query[:1500]])[0]
-    scored = sorted(((sum(a * b for a, b in zip(ch["vec"], q)), name, ch) for name, ch in rows),
-                    key=lambda r: -r[0])
-    for score, name, ch in scored[:k]:
+    def __init__(self, conv, idx):
+        self.conv, self.idx = Path(conv), Path(idx)
+        if any(json.loads(c.read_text()).get("model") != MODEL_PATH.name for c in self.idx.rglob("*.json")):
+            print("Rebuilding this index for the new search engine (once, ~0.1 s per passage)...", flush=True)
+            cmd_index(self.conv, self.idx)
+        self.rows = []
+        for cache in sorted(self.idx.rglob("*.json")):
+            rel = cache.relative_to(self.idx).as_posix()[: -len(".json")]
+            name = rel[: -len(".md")] if rel.endswith(".md") else rel  # e.g. pdfs/Lecture3.pdf
+            for ch in json.loads(cache.read_text())["chunks"]:
+                if not ch["text"].startswith(SCAN_NOTE):
+                    self.rows.append((name, ch))
+        if not self.rows:
+            if any(self.idx.rglob("*.json")):
+                sys.exit("No searchable text: the converted files are empty or scanned PDFs.")
+            sys.exit("Index is empty. Run: study index <Subject>")
+        self._eng = Engine("search")
+
+    def __enter__(self):
+        self._eng.__enter__()
+        return self
+
+    def __exit__(self, *exc):
+        self._eng.__exit__(*exc)
+
+    def topk(self, query, k):
+        q = self._eng.embed([QUERY_PROMPT + query[:1500]])[0]
+        return sorted(((sum(a * b for a, b in zip(ch["vec"], q)), name, ch) for name, ch in self.rows),
+                      key=lambda r: -r[0])[:k]
+
+
+def rank(conv, idx, k, query):
+    """One-shot top-k [(score, name, chunk)] for a query. Importable by `study` (ask/drain)."""
+    with Searcher(conv, idx) as s:
+        return s.topk(query, k)
+
+
+def cmd_search(conv, idx, k, query):
+    for score, name, ch in rank(conv, idx, k, query):
         snippet = " ".join(ch["text"].split())[:280]
         loc = f" {ch['loc']}" if ch["loc"] else ""
         print(f"{score:.3f}  ({name}{loc})")

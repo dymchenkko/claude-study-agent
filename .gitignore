@@ -21,3 +21,5 @@ __pycache__/
 # OS and local settings
 .DS_Store
 .claude/settings.local.json
+.tools/noise.txt
+.tools/reason-words.txt

@@ -1,0 +1,27 @@
+# Fallback reasoning words for when no local chat model is installed — copy to .tools/reason-words.txt
+# (gitignored, so your language's words never ship in the template).
+#
+# When the local orchestrator model IS installed, routing uses self-consistency voting instead and
+# this list is only a backstop. One Python regex fragment per line; joined as a case-insensitive
+# alternation, each anchored at a word boundary. Use stems (no trailing boundary) to match endings.
+# Lines starting with # are ignored. Built-in default is English-only; add your language here.
+#
+# English (already the default):
+why
+how
+compare
+contrast
+deriv
+prove
+explain
+differ
+relat
+evaluat
+reason
+# Add your language, e.g. Polish:
+# dlaczego
+# porówn
+# wyjaśn
+# różnic
+# po\s+co
+# w\s+jaki\s+sposób

@@ -1,0 +1,10 @@
+# Per-install boilerplate filters for clean_passage — copy this to .tools/noise.txt
+# (that file is gitignored, so your course's headers/footers never end up in the repo).
+#
+# One Python regex per line; every match is removed from the passages the tutor shows.
+# This is cosmetic only — it never touches indexing or search. Lines starting with # are ignored.
+#
+# Examples — uncomment and adapt to YOUR materials:
+# \(c\)\s+(?:[A-Z][\w-]+\s*){1,3}     # a "(c) Author Name" byline
+# MY\.UNIVERSITY\.DOMAIN              # a repeated footer domain
+# \bSummary\b                        # a repeated slide/section label

@@ -7,8 +7,21 @@
   study list                     list subjects
   study index <Subject>          (re)build the semantic index over converted/
   study search <Subject> <query> [-k N]   find the most relevant passages
+  study ask <Subject> <question>  answer now if grounded, else queue it for when you're online
+  study tutor <Subject> [message]  local orchestrator: with a message, one turn; without, an
+                                   interactive session (both models kept warm between questions)
+  study queue <Subject>          list the deferred (escalation) questions still pending
+  study drain <Subject>          if online, let Claude (headless CLI) clear the queue into cards/
+  study watch <Subject>          run in the background: auto-drain the moment the connection returns
+  study resolve <Subject> <id>   write a resolved answer (from stdin) into cards/, mark it done
+  study cards <Subject>          show the cards built from resolved (escalated) questions
   study doctor                   check hardware + tools, recommend a search mode (changes nothing)
   study setup [--mode auto|cpu|off]   install semantic search (default: the recommended mode)
+
+Deferred escalation (offline-first): `ask` runs locally. A question that is not grounded in your
+materials, or that needs real reasoning, is not answered with a weak guess — it goes into
+<Subject>/queue.jsonl. `drain` checks connectivity and, when online, bundles the pending questions
+for the strong model; resolved answers land as cards in <Subject>/cards/.
 
 Semantic search is optional (see .tools/semantic.py): llama.cpp + a 310 MB model, ~330 MB in all,
 no Python packages. Once set up, ingest refreshes the index automatically. The index lives in
@@ -24,6 +37,8 @@ Conversion (skips files already converted and unchanged):
   .md .txt              -> copied as is
 """
 
+import datetime
+import hashlib
 import json
 import os
 import platform
@@ -32,10 +47,15 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import semantic  # noqa: E402  (standard library only)
+import chat      # noqa: E402  (local orchestrator model, optional)
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "_template"
@@ -52,6 +72,27 @@ NOTE_AFTER_OCR = ("> NOTE: little text extracted even with OCR — likely images
                   "Read the original PDF directly.")
 MIN_RAM_GB, MIN_DISK_GB = 4, 1
 SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
+
+# --- deferred escalation ---
+GROUND_THRESHOLD = float(os.environ.get("STUDY_GROUND_THRESHOLD", "0.73"))  # below this: not in materials
+CONNECT_URL = "https://www.gstatic.com/generate_204"  # tiny, returns 204 when online
+
+
+def _load_reason_re():
+    """Fallback reasoning detector, only used when no local chat model is installed (then there is
+    no self-consistency vote). Patterns load from .tools/reason-words.txt (gitignored) if present,
+    else a small English default. One regex fragment per line, joined as a case-insensitive
+    alternation. Stems only (no trailing \\b) so "differ" matches "difference"; the leading \\b keeps
+    them word-initial. Returns None when the list is empty."""
+    f = ROOT / ".tools/reason-words.txt"
+    default = ["why", "how", "compare", "contrast", "deriv", "prove", "explain", "differ",
+               "relat", "evaluat", "reason"]
+    words = ([l.strip() for l in f.read_text().splitlines() if l.strip() and not l.startswith("#")]
+             if f.exists() else default)
+    return re.compile(r"\b(" + "|".join(words) + ")", re.I) if words else None
+
+
+REASON_RE = _load_reason_re()
 
 DOC_EXT = {".pptx", ".docx", ".xlsx"}
 MEDIA_EXT = {".mp4", ".mov", ".mkv", ".webm", ".m4a", ".mp3", ".wav"}
@@ -418,6 +459,403 @@ def cmd_search(name, query, k):
                     str(k), query], check=True)
 
 
+def queue_path(sd):
+    return sd / "queue.jsonl"
+
+
+def load_queue(sd):
+    p = queue_path(sd)
+    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
+
+
+def save_queue(sd, items):
+    queue_path(sd).write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items))
+
+
+def online(timeout=2.5):
+    try:
+        urllib.request.urlopen(CONNECT_URL, timeout=timeout)
+        return True
+    except urllib.error.HTTPError:
+        return True  # the server answered: we are online
+    except Exception:
+        return False
+
+
+def retrieve(sd, question, k=3):
+    """[(score, 'pdfs/File.pdf p.N', text)] for a question, most relevant first."""
+    hits = semantic.rank(sd / "converted", INDEX_DIR / sd.name, k, question)
+    return [(s, f"{n}{(' ' + c['loc']) if c['loc'] else ''}", c["text"]) for s, n, c in hits]
+
+
+def enqueue(sd, question, why, top, refs):
+    qid = hashlib.sha1(" ".join(question.lower().split()).encode()).hexdigest()[:10]
+    items = load_queue(sd)
+    existing = next((i for i in items if i["id"] == qid), None)
+    if existing and existing["status"] in ("pending", "ready"):
+        print("Already in the queue.")
+        return
+    if existing:  # asked before and already resolved — ask again
+        existing.update(why=why, top=round(top, 3), ctx=refs, status="pending",
+                        ts=time.strftime("%Y-%m-%d"))
+    else:
+        items.append({"id": qid, "ts": time.strftime("%Y-%m-%d"), "q": question, "why": why,
+                      "top": round(top, 3), "ctx": refs, "status": "pending"})
+    save_queue(sd, items)
+    reason = ("this isn't in your notes" if why == "ungrounded" else "this needs reasoning")
+    n = sum(i["status"] == "pending" for i in items)
+    print(f"Not sure yet — {reason}. Saved for Claude when you're back online. [{n} waiting]")
+
+
+def cmd_ask(name, question):
+    sd = subject_dir(name)
+    require_semantic()
+    hits = retrieve(sd, question)
+    top = hits[0][0] if hits else 0.0
+    refs = [r for _, r, _ in hits]
+    if top < GROUND_THRESHOLD:
+        enqueue(sd, question, "ungrounded", top, refs)  # not in the materials
+        return
+    if REASON_RE and REASON_RE.search(question):
+        # reasoning-type question -> escalate; the local model never tries to reason or invent
+        enqueue(sd, question, "needs_reasoning", top, refs)
+        return
+    # plain grounded lookup: show the student's own passage (cleaned, not generated — no hallucination)
+    show_passage(hits, top)
+
+
+def _load_noise():
+    """Per-install boilerplate filters: one regex per line in .tools/noise.txt (gitignored, so your
+    course's headers/footers never ship in the template). None by default — see noise.txt.example."""
+    pats, f = [], ROOT / ".tools/noise.txt"
+    if f.exists():
+        for line in f.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                try:
+                    pats.append(re.compile(line))
+                except re.error:
+                    pass
+    return pats
+
+
+NOISE_PATTERNS = _load_noise()
+
+
+def clean_passage(text, limit=260):
+    """A short readable lead: keep the first sentence(s); strip any boilerplate from .tools/noise.txt.
+    PDF columns often merge into one long run with no periods — then we show the clean opening."""
+    t = " ".join(text.split())
+    for pat in NOISE_PATTERNS:
+        t = pat.sub("", t)
+    t = re.sub(r"\s{2,}", " ", t).strip()
+    t = re.sub(r"\b([\w ]{3,40}?)\s+\1\b", r"\1", t)  # collapse a repeated slide-title phrase
+    out = ""
+    for s in re.split(r"(?<=[.!?]) ", t):
+        if out and len(out) + 1 + len(s) > limit:
+            break
+        out = f"{out} {s}".strip()
+        if len(out) >= limit - 60:
+            break
+    return out + (" …" if len(out) < len(t) else "")
+
+
+def show_passage(hits, top):
+    _, ref, text = hits[0]
+    print(clean_passage(text))
+    print(f"  ↳ your notes · {ref.split('/')[-1].replace('.pdf', '')}")
+
+
+def _parse_date(s):
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y"):
+        try:
+            return datetime.datetime.strptime(s.strip(), fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def _progress_rows(sd):
+    """Yield [topic, level, last, next_review, ...] for each data row of progress.md."""
+    p = sd / "progress.md"
+    if not p.exists():
+        return
+    for line in p.read_text().splitlines():
+        if not line.startswith("| ") or line.startswith("| Topic") or set(line) <= set("| -"):
+            continue
+        yield [c.strip() for c in line.strip("|").split("|")]
+
+
+def due_topics(sd):
+    today = datetime.date.today()
+    out = []
+    for cols in _progress_rows(sd):
+        if len(cols) >= 4:
+            d = _parse_date(cols[3])
+            if d and d <= today:
+                out.append(cols[0])
+    return out
+
+
+def next_new_topic(sd):
+    for cols in _progress_rows(sd):
+        if len(cols) >= 2 and cols[1] == "0":
+            return cols[0]
+    return None
+
+
+def next_deadline_days(sd):
+    p = sd / "CLAUDE.md"
+    if not p.exists():
+        return None
+    today, best = datetime.date.today(), None
+    for m in re.finditer(r"\d{4}-\d\d-\d\d|\d{1,2}\.\d{1,2}\.\d{2,4}", p.read_text()):
+        d = _parse_date(m.group(0))
+        if d and d >= today and (best is None or d < best):
+            best = d
+    return (best - today).days if best else None
+
+
+def tutor_banner(sd):
+    bits = [sd.name]
+    days = next_deadline_days(sd)
+    if days is not None:
+        bits.append(f"next deadline in {days}d")
+    bits.append(f"due to review: {len(due_topics(sd))}")
+    pend = sum(i["status"] == "pending" for i in load_queue(sd))
+    if pend:
+        bits.append(f"queued: {pend}")
+    cards = sd / "cards" / "escalated.md"
+    n = cards.read_text().count("\n## ") if cards.exists() else 0
+    if n:
+        bits.append(f"cards ready: {n}")
+    return "  ·  ".join(bits)
+
+
+def tutor_turn(sd, message, searcher=None, session=None):
+    """One agent turn: the local model picks a tool, deterministic rails keep it honest.
+    Pass a warm searcher/session (REPL) to avoid reloading the models each line."""
+    def topk(q, k=3):
+        if searcher is not None:
+            hits = searcher.topk(q, k)
+            return [(s, f"{n}{(' ' + c['loc']) if c['loc'] else ''}", c["text"]) for s, n, c in hits]
+        return retrieve(sd, q, k)
+
+    if session is not None:
+        tool, query = session.route(message)
+    elif chat.installed():
+        tool, query = chat.route(message)
+    else:
+        tool, query = ("escalate" if (REASON_RE and REASON_RE.search(message)) else "search"), message
+    if tool == "search" and REASON_RE and REASON_RE.search(message):
+        tool = "escalate"  # rail: reasoning always escalates, even if the tiny model said search
+    if tool == "search":
+        hits = topk(query)
+        top = hits[0][0] if hits else 0.0
+        if top >= GROUND_THRESHOLD:
+            show_passage(hits, top)
+            return
+        enqueue(sd, message, "ungrounded", top, [r for _, r, _ in hits])  # rail: weak retrieval escalates
+        return
+    hits = topk(message)
+    enqueue(sd, message, "needs_reasoning", hits[0][0] if hits else 0.0, [r for _, r, _ in hits])
+
+
+def cmd_tutor(name, message):
+    sd = subject_dir(name)
+    require_semantic()
+    if not chat.installed():
+        sys.exit("Local orchestrator model is not installed (.tools/models/Qwen3.5-0.8B-Q8_0.gguf).")
+    tutor_turn(sd, message)
+
+
+def cmd_tutor_repl(name):
+    """Interactive session: keep both models warm; type questions, 'queue', or 'exit'."""
+    sd = subject_dir(name)
+    require_semantic()
+    print(tutor_banner(sd))
+    print("ask in plain words · 'next' = what to study · 'queue' = what's waiting · 'exit'"
+          + ("" if claude_cli() else "   (no `claude` CLI — queued questions stay for later)"))
+    stop = threading.Event()
+
+    def watcher():
+        """In the background: whenever there's a connection, let Claude clear any queued questions."""
+        while not stop.wait(8):
+            pending = [i for i in load_queue(sd) if i["status"] == "pending"]
+            if pending and claude_cli() and online():
+                print(f"\n[auto] online — asking Claude to clear {len(pending)} queued "
+                      f"question(s)...", flush=True)
+                answers = resolve_with_claude(sd, pending)
+                items, done = load_queue(sd), 0
+                for it in items:
+                    if it["status"] == "pending" and answers.get(it["id"]):
+                        write_card(sd, it, answers[it["id"]])
+                        it["status"] = "resolved"
+                        done += 1
+                save_queue(sd, items)
+                print(f"[auto] done — {done} answer(s) now in cards (type 'cards' to read).")
+                print(f"{sd.name}> ", end="", flush=True)
+
+    with semantic.Searcher(sd / "converted", INDEX_DIR / sd.name) as searcher:
+        threading.Thread(target=watcher, daemon=True).start()
+
+        def loop(session):
+            while True:
+                try:
+                    line = input(f"\n{sd.name}> ").strip()
+                except EOFError:
+                    break
+                if not line:
+                    continue
+                if line in ("exit", "quit"):
+                    break
+                if line == "queue":
+                    cmd_queue(name)
+                    continue
+                if line == "cards":
+                    cmd_cards(name)
+                    continue
+                if line == "next":
+                    due = due_topics(sd)
+                    if due:
+                        print("Due today: " + ", ".join(due))
+                    else:
+                        nt = next_new_topic(sd)
+                        print(f"Nothing due. Next new topic: {nt}" if nt else "Nothing due; no new topics.")
+                    continue
+                tutor_turn(sd, line, searcher=searcher, session=session)
+        try:
+            if chat.installed():
+                with chat.Session() as session:
+                    loop(session)
+            else:
+                loop(None)
+        finally:
+            stop.set()
+    print("bye")
+
+
+def cmd_cards(name):
+    sd = subject_dir(name)
+    card = sd / "cards" / "escalated.md"
+    text = card.read_text().strip() if card.exists() else ""
+    if not text:
+        print("No cards yet. Deferred questions become cards after `drain` + a Claude session.")
+        return
+    n = text.count("## ")
+    print(f"{sd.name}: {n} card(s) from resolved questions\n")
+    print(text)
+
+
+def cmd_queue(name):
+    sd = subject_dir(name)
+    pending = [i for i in load_queue(sd) if i["status"] == "pending"]
+    if not pending:
+        print(f"{sd.name}: queue empty.")
+        return
+    print(f"{sd.name}: {len(pending)} pending")
+    for i in pending:
+        print(f"  [{i['id']}] ({i['why']}, top {i.get('top')})  {i['q']}")
+
+
+def write_card(sd, it, answer):
+    (sd / "cards").mkdir(exist_ok=True)
+    src = it["ctx"][0].split("/")[-1].replace(".pdf", "") if it.get("ctx") else "your notes"
+    with open(sd / "cards" / "escalated.md", "a") as f:
+        f.write(f"\n## {it['q']}\n_resolved by Claude · {src}_\n\n{answer.strip()}\n")
+
+
+def claude_cli():
+    return shutil.which("claude")
+
+
+def resolve_with_claude(sd, items):
+    """Batch-answer deferred questions with the headless Claude CLI, grounded in retrieved passages."""
+    blocks = []
+    for it in items:
+        ctx = "\n".join(f"[{ref}] {text[:600]}" for _, ref, text in retrieve(sd, it["q"], 6))
+        blocks.append(f"@@@ {it['id']}\nQUESTION: {it['q']}\nPASSAGES:\n{ctx}")
+    prompt = (
+        "You are the student's exam tutor. Answer each QUESTION in 2-4 sentences, grounded ONLY in its "
+        "PASSAGES (the student's own course slides), in the same language as the question. Be concrete and "
+        "exam-focused; if the passages do not contain the answer, say so in one line. For each question, "
+        "output a line '@@@ <id>' then the answer on the next lines. Questions:\n\n" + "\n\n".join(blocks))
+    r = subprocess.run([claude_cli(), "-p"], input=prompt, capture_output=True, text=True, timeout=300)
+    answers = {}
+    for part in r.stdout.split("@@@ ")[1:]:
+        head, _, body = part.partition("\n")
+        answers[head.strip()] = body.strip()
+    return answers
+
+
+def cmd_drain(name):
+    sd = subject_dir(name)
+    items = load_queue(sd)
+    pending = [i for i in items if i["status"] == "pending"]
+    if not pending:
+        print("Nothing to drain.")
+        return
+    if not online():
+        print(f"Offline — {len(pending)} question(s) waiting. They'll resolve when you reconnect.")
+        return
+    if claude_cli():
+        print(f"Online — asking Claude to clear {len(pending)} question(s)...", flush=True)
+        answers = resolve_with_claude(sd, pending)
+        done = 0
+        for it in pending:
+            if answers.get(it["id"]):
+                write_card(sd, it, answers[it["id"]])
+                it["status"] = "resolved"
+                done += 1
+        save_queue(sd, items)
+        print(f"Done — {done} answer(s) now in {sd.name}/cards/.  (see: study cards {sd.name})")
+        return
+    # no claude CLI: prepare a batch for a manual Claude Code session
+    batch = sd / ".drain-batch.md"
+    out = [f"# Escalation batch — {sd.name} — {time.strftime('%Y-%m-%d %H:%M')}", ""]
+    for i in pending:
+        out += [f"## [{i['id']}] {i['q']}", f"- sources: {', '.join(i['ctx'])}", ""]
+        i["status"] = "ready"
+    batch.write_text("\n".join(out))
+    save_queue(sd, items)
+    print(f"Online — {len(pending)} ready, but the `claude` CLI isn't on PATH. Batch at "
+          f"{batch.relative_to(ROOT)} for a Claude Code session.")
+
+
+def cmd_watch(name):
+    sd = subject_dir(name)
+    print(f"Watching the connection for {sd.name}. Deferred questions resolve by themselves when you're "
+          f"back online. Ctrl-C to stop.")
+    was = online()
+    try:
+        while True:
+            time.sleep(15)
+            now = online()
+            pend = sum(i["status"] == "pending" for i in load_queue(sd))
+            if now and not was and pend:
+                print(f"[{time.strftime('%H:%M')}] back online — clearing {pend} queued question(s)...")
+                cmd_drain(name)
+            was = now
+    except KeyboardInterrupt:
+        print("\nstopped.")
+
+
+def cmd_resolve(name, qid, answer):
+    sd = subject_dir(name)
+    items = load_queue(sd)
+    it = next((i for i in items if i["id"] == qid), None)
+    if not it:
+        sys.exit(f"No queued item {qid} in {sd.name}.")
+    answer = (answer or sys.stdin.read()).strip()
+    if not answer:
+        sys.exit("No answer text (pass it as an argument or on stdin).")
+    write_card(sd, it, answer)
+    it["status"] = "resolved"
+    save_queue(sd, items)
+    left = sum(i["status"] in ("pending", "ready") for i in items)
+    print(f"Card written to {sd.name}/cards/escalated.md; {qid} resolved. [{left} still open]")
+
+
 def main(argv):
     if len(argv) >= 2 and argv[0] == "new":
         cmd_new(" ".join(argv[1:]))
@@ -434,6 +872,22 @@ def main(argv):
             j = rest.index("-k")
             k, rest = int(rest[j + 1]), rest[:j] + rest[j + 2:]
         cmd_search(argv[1], " ".join(rest), k)
+    elif len(argv) >= 3 and argv[0] == "ask":
+        cmd_ask(argv[1], " ".join(argv[2:]))
+    elif len(argv) == 2 and argv[0] == "tutor":
+        cmd_tutor_repl(argv[1])
+    elif len(argv) >= 3 and argv[0] == "tutor":
+        cmd_tutor(argv[1], " ".join(argv[2:]))
+    elif len(argv) == 2 and argv[0] == "queue":
+        cmd_queue(argv[1])
+    elif len(argv) == 2 and argv[0] == "cards":
+        cmd_cards(argv[1])
+    elif len(argv) == 2 and argv[0] == "drain":
+        cmd_drain(argv[1])
+    elif len(argv) == 2 and argv[0] == "watch":
+        cmd_watch(argv[1])
+    elif len(argv) >= 3 and argv[0] == "resolve":
+        cmd_resolve(argv[1], argv[2], " ".join(argv[3:]) if len(argv) > 3 else None)
     elif argv[:1] == ["doctor"]:
         cmd_doctor()
     elif argv[:1] == ["setup"]:
