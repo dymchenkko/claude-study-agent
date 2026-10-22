@@ -8,6 +8,7 @@ Fill in what you know; leave the rest blank. The tutor reads this before every s
 - **What the lecturer emphasises:**
 - **My current level / goal:** (e.g. "starting from zero, aim for a 4.0")
 - **Language of materials:** 
+- **Diagrams:** (leave blank if none; e.g. "UML class + sequence diagrams on the exam")
 
 ## Notes for the tutor
 - (anything specific: "focus on proofs", "skip chapter 7", "I struggle with notation")

@@ -7,6 +7,7 @@ argument-hint: "<subject> <topic>"
 # Learn a topic
 
 1. Resolve subject and topic. Read the subject's `CLAUDE.md`, `progress.md`, `mistakes.md`.
+   If it has a **Diagrams** entry, diagram tasks follow the Diagrams rules in `~/Study/CLAUDE.md`.
 2. Find the topic in my materials. Run `~/Study/.tools/study search <Subject> "<topic in plain words>" -k 6`
    (meaning-based, works across languages; cite the `(file loc)` it prints). Then Grep `converted/` for
    exact terms, formulas and names the search missed. Read the matching pages/slides/transcript sections.
