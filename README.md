@@ -138,6 +138,7 @@ pip install markitdown                            # PPTX / DOCX / XLSX
 ```
 
 - **Linux:** `apt install poppler-utils ffmpeg`, `pip install yt-dlp`, and build whisper.cpp.
+- **Diagrams (UML, ER…), only if a subject needs them:** `brew install --cask drawio`, or the VS Code "Draw.io Integration" extension, or nothing (the browser). The tutor asks once, when a subject first needs a diagram. `study draw <Subject> <name>` opens `<Subject>/diagrams/<name>.drawio`: you draw and save, and the tutor reads the file back and grades it.
 - **OCR for scanned PDFs:** on macOS nothing to install beyond `xcode-select --install`. On Linux: `apt install tesseract-ocr` plus a language pack (e.g. `tesseract-ocr-pol`), and set `STUDY_OCR_LANGS=pol+eng`.
 - **Whisper model** for transcription (≈575 MB). Skip it if you only have slides and PDFs:
 
@@ -188,6 +189,7 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 ./.tools/study setup                       # install semantic search (or --mode auto|cpu|off)
 ./.tools/study new "Biology"
 ./.tools/study ingest "Biology"            # or: --url <video-link> for a recorded lecture
+./.tools/study draw "Biology" cell-cycle     # open a diagram in draw.io (--show prints its contents)
 ```
 
 Optional: `alias study=~/Study/.tools/study`.

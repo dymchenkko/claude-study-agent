@@ -7,6 +7,9 @@
   study list                     list subjects
   study index <Subject>          (re)build the semantic index over converted/
   study search <Subject> <query> [-k N]   find the most relevant passages
+  study draw --which             which draw.io editor is installed (or none = browser)
+  study draw <Subject> <name> [--browser]   open/create <Subject>/diagrams/<name>.drawio in draw.io
+  study draw <Subject> <name> --show        print what the diagram contains (shapes, links, labels)
   study doctor                   check hardware + tools, recommend a search mode (changes nothing)
   study setup [--mode auto|cpu|off]   install semantic search (default: the recommended mode)
 
@@ -36,6 +39,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import semantic  # noqa: E402  (standard library only)
+import diagram   # noqa: E402  (standard library only)
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "_template"
@@ -361,6 +365,9 @@ def cmd_doctor():
            else "tesseract" if shutil.which("tesseract") else None)
     print(f"  {'ok ' if ocr else '-- '} {'OCR':<14} {'scanned PDFs':<22} " + (f"({ocr})" if ocr else
           "install: xcode-select --install  |  apt install tesseract-ocr tesseract-ocr-<lang>"))
+    drawio, _ = diagram.editor()
+    print(f"  {'ok ' if drawio else '-- '} {'draw.io':<14} {'drawing diagrams':<22} "
+          + (f"({drawio})" if drawio else "optional: brew install --cask drawio  (else the browser)"))
 
     mode, why = recommend(hw)
     current = search_mode()
@@ -434,6 +441,11 @@ def main(argv):
             j = rest.index("-k")
             k, rest = int(rest[j + 1]), rest[:j] + rest[j + 2:]
         cmd_search(argv[1], " ".join(rest), k)
+    elif argv[:2] == ["draw", "--which"]:
+        print(diagram.editor()[0] or "none")
+    elif len(argv) >= 3 and argv[0] == "draw":
+        sd, name = subject_dir(argv[1]), argv[2]
+        diagram.cmd_show(sd, name) if "--show" in argv else diagram.cmd_draw(sd, name, "--browser" in argv)
     elif argv[:1] == ["doctor"]:
         cmd_doctor()
     elif argv[:1] == ["setup"]:

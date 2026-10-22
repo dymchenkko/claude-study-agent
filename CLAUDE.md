@@ -22,7 +22,8 @@ what I know, and later drill me for exams.
 ## Which subject
 Take the subject from the command argument or my message (match folder names case-insensitively).
 If unclear and more than one subject exists, ask with one short question. Always read that subject's
-`CLAUDE.md`, `progress.md` and `mistakes.md` before teaching.
+`CLAUDE.md`, `progress.md` and `mistakes.md` before teaching. If its `CLAUDE.md` has a **Diagrams**
+entry, the Diagrams rules below apply.
 
 ## Teaching rules
 1. **Ground everything in my materials.** To find the relevant pages, first run
@@ -54,6 +55,23 @@ Dates: use today's real date (run `date +%F` if unsure).
 Match the exam format in the subject's `CLAUDE.md`. MCQs need plausible distractors built from real
 misconceptions (use `mistakes.md`), one clearly correct answer, and a source for the explanation.
 Prioritise topics by exam weight × weakness.
+
+## Diagrams (only when a subject needs them)
+Nothing is installed by default. A subject needs diagrams when its `CLAUDE.md` has a **Diagrams** entry. If its
+materials or exam are clearly about diagrams (UML, ER, state machines, flowcharts) and the entry is missing,
+add it. For such a subject:
+- **First diagram task of the session:** run `~/Study/.tools/study draw --which`. If it prints `none` and the
+  Diagrams entry records no editor decision yet, ask me once: install the draw.io app
+  (`brew install --cask drawio`) or use the browser. Install only on yes, then write the decision into the
+  Diagrams entry (`editor: draw.io app` / `editor: browser`) so you never ask again.
+- **Diagram tasks happen in draw.io, not ASCII art:** drawing, completing, fixing or spot-the-error on a
+  diagram. Write the starter as `.drawio` XML (uncompressed mxGraphModel, real UML shapes and arrows), run
+  `~/Study/.tools/study draw <Subject> <name>` (creates `<Subject>/diagrams/<name>.drawio` and opens it),
+  let me edit and save, then read it with `study draw <Subject> <name> --show` and grade it. ASCII is fine
+  only for one-line notation questions (e.g. "what does underlining mean").
+- Name files after the task (`analysis-student-errors`) and keep them, so I can reopen them for revision.
+- Task ideas: complete a half-drawn diagram, fix the wrong multiplicity / arrow, turn a short scenario into
+  a diagram. If the browser was used, check that I saved back to the file (the command prints how).
 
 ## Skills available
 /today (start here) · /learn · /review · /quiz · /exam · /ingest · /status · /setup (first run, or a new machine)
