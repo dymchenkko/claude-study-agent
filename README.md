@@ -125,7 +125,7 @@ Everything the tutor knows about you is plain Markdown that you can read and edi
 
 ## 💻 Requirements
 
-**Minimum:** [Claude Code](https://claude.com/claude-code) with a Claude Pro or Max plan, macOS or Linux (Windows: WSL), Python 3. Run `./.tools/study doctor` to see exactly what your machine has and what is missing.
+**Minimum:** [Claude Code](https://claude.com/claude-code) with a Claude Pro or Max plan, macOS or Linux (Windows: WSL), Python 3 (the built-in one works; semantic search needs 3.10+, and `/setup` offers to install it). Run `./.tools/study doctor` to see exactly what your machine has and what is missing.
 
 <details>
 <summary><b>Tools per file type</b></summary>
@@ -159,7 +159,7 @@ Plain search only finds the exact words you type. Semantic search compares *mean
 | Hardware | any Mac, or Linux (x64 / arm64) |
 | RAM | 4 GB (uses ~0.6 GB while it runs, nothing between searches) |
 | Free disk | ~1 GB (it takes ~330 MB: llama.cpp ~30 MB + model 310 MB) |
-| Python | 3.10+ (standard library only) |
+| Python | 3.10+ (standard library only; `/setup` installs it if yours is older) |
 | Network | once, to download llama.cpp and the model |
 
 | Your machine | Mode | Indexing new files | Each search |

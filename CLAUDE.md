@@ -21,6 +21,8 @@ what I know, and later drill me for exams.
 
 ## Which subject
 Take the subject from the command argument or my message (match folder names case-insensitively).
+A subject is a folder with its own `CLAUDE.md`; create one only with `~/Study/.tools/study new "<Subject>"`
+(it also turns a folder I made by hand into a subject, keeping its files), never with mkdir.
 If unclear and more than one subject exists, ask with one short question. Always read that subject's
 `CLAUDE.md`, `progress.md` and `mistakes.md` before teaching. If its `CLAUDE.md` has a **Diagrams**
 entry, the Diagrams rules below apply.
