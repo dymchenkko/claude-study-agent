@@ -7,6 +7,13 @@ argument-hint: "[auto|cpu|off]"
 # Setup / onboarding
 
 1. Run `~/Study/.tools/study doctor` and read the report (machine, tutor backend, tools, current and recommended search mode).
+   If it can't run because there is no Python at all (rare): on macOS run `xcode-select --install` (I click
+   Install in the dialog; it's also what reads scanned PDFs), on Linux `sudo apt install python3`; then rerun it.
+   If the `Python` line says `needs 3.10+`: ask me in one line, e.g. "Your Python is too old for
+   meaning-based search (3.9). Install a newer one? ~1 min, no password." On yes, if `brew` exists run
+   `brew install python`, else `curl -LsSf https://astral.sh/uv/install.sh | sh` and then
+   `~/.local/bin/uv python install 3.13`. Rerun `study doctor`: the line now says `ok` (`study` switches to the
+   newer Python by itself) and the recommended mode is no longer `off` because of Python.
 2. Tell me in ≤ 120 words, in plain words:
    - which file types I can already import, and which tools are missing (only the ones for file types I said I
      have — ask if unsure);

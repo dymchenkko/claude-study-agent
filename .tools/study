@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""Study system helper.
-
-  study new <Subject>            create a subject folder from _template
-  study ingest <Subject>         convert new materials into converted/*.md
-  study ingest <Subject> --url URL   download a lecture video (yt-dlp), then ingest
-  study list                     list subjects
-  study index <Subject>          (re)build the semantic index over converted/
-  study search <Subject> <query> [-k N]   find the most relevant passages
-  study draw --which             which draw.io editor is installed (or none = browser)
-  study draw <Subject> <name> [--browser]   open/create <Subject>/diagrams/<name>.drawio in draw.io
-  study draw <Subject> <name> --show        print what the diagram contains (shapes, links, labels)
-  study doctor                   check hardware + tools, recommend a search mode (changes nothing)
-  study setup [--mode auto|cpu|off]   install semantic search (default: the recommended mode)
+"""Study system helper: `study --help` lists the commands, `study <command> --help` explains one.
 
 Semantic search is optional (see .tools/semantic.py): llama.cpp + a 310 MB model, ~330 MB in all,
 no Python packages. Once set up, ingest refreshes the index automatically. The index lives in
@@ -27,6 +15,7 @@ Conversion (skips files already converted and unchanged):
   .md .txt              -> copied as is
 """
 
+import argparse
 import json
 import os
 import platform
@@ -36,6 +25,16 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+# Apple's built-in python3 is 3.9, and semantic search needs 3.10+. When a newer Python is installed
+# (Homebrew, uv and python.org all add a python3.1x command), run with that one instead.
+if sys.version_info < (3, 10) and not os.environ.get("STUDY_PYTHON_CHECKED"):
+    os.environ["STUDY_PYTHON_CHECKED"] = "1"
+    _path = os.pathsep.join([os.environ.get("PATH", ""), str(Path.home() / ".local/bin")])
+    for _minor in range(20, 9, -1):
+        _newer = shutil.which(f"python3.{_minor}", path=_path)
+        if _newer:
+            os.execv(_newer, [_newer, __file__, *sys.argv[1:]])
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import semantic  # noqa: E402  (standard library only)
@@ -63,25 +62,44 @@ TEXT_EXT = {".md", ".txt"}
 
 
 def subjects():
+    """Folders with their own CLAUDE.md. `study new` creates a subject, and it is what writes that
+    CLAUDE.md (from _template), so other folders in ~/Study (docs/, notes, anything made by hand)
+    are never mistaken for subjects."""
     return sorted(p.name for p in ROOT.iterdir()
-                  if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith("."))
+                  if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")
+                  and (p / "CLAUDE.md").is_file())
 
 
 def subject_dir(name):
     for s in subjects():
         if s.lower() == name.lower():
             return ROOT / s
+    if (ROOT / name).is_dir():
+        sys.exit(f"'{name}' is a folder but not a subject yet. Make it one: study new \"{name}\"")
     sys.exit(f"No subject '{name}'. Existing: {', '.join(subjects()) or 'none'}")
 
 
 def cmd_new(name):
+    """Create a subject from _template. On a folder made by hand, add only the missing template
+    files: whatever is already in it (e.g. materials) stays as it is."""
     dest = ROOT / name
-    if dest.exists():
-        sys.exit(f"{dest} already exists")
-    shutil.copytree(TEMPLATE, dest)
-    for f in dest.rglob("*.md"):
-        f.write_text(f.read_text().replace("{{SUBJECT}}", name))
-    print(f"Created {dest}\nPut files into {dest}/materials/ and run: study ingest {name}")
+    if (dest / "CLAUDE.md").is_file():
+        sys.exit(f"{dest} is already a subject")
+    existed = dest.exists()
+    added = []
+
+    def copy_missing(src, dst):
+        if not Path(dst).exists():
+            shutil.copy2(src, dst)
+            added.append(Path(dst))
+        return dst
+
+    shutil.copytree(TEMPLATE, dest, dirs_exist_ok=True, copy_function=copy_missing)
+    for f in added:
+        if f.suffix == ".md":
+            f.write_text(f.read_text().replace("{{SUBJECT}}", name))
+    print(f"{'Made ' + str(dest) + ' a subject (kept its files)' if existed else 'Created ' + str(dest)}"
+          f"\nPut files into {dest}/materials/ and run: study ingest {name}")
 
 
 # Old LaTeX PDFs (T1 font encoding, no ToUnicode map) come out of pdftotext as "Przykªad",
@@ -350,6 +368,10 @@ def cmd_doctor():
         print(f"      note: {n}")
 
     print("\nTools (each one is only needed for its file type)")
+    new_py = hw["python"] >= (3, 10)
+    print(f"  {'ok ' if new_py else '-- '} {'Python ' + '.'.join(map(str, hw['python'])):<14} "
+          f"{'semantic search':<22} "
+          + ("" if new_py else "needs 3.10+, install: brew install python  |  uv python install 3.13"))
     for tool, need, fix in [
         ("pdftotext", "PDF", "brew install poppler  |  apt install poppler-utils"),
         ("markitdown", "PPTX / DOCX / XLSX", "pip install markitdown"),
@@ -425,36 +447,70 @@ def cmd_search(name, query, k):
                     str(k), query], check=True)
 
 
-def main(argv):
-    if len(argv) >= 2 and argv[0] == "new":
-        cmd_new(" ".join(argv[1:]))
-    elif len(argv) >= 2 and argv[0] == "ingest":
-        url = argv[argv.index("--url") + 1] if "--url" in argv else None
-        cmd_ingest(argv[1], url)
-        if search_ready():
-            cmd_index(argv[1])
-    elif len(argv) >= 2 and argv[0] == "index":
-        cmd_index(argv[1])
-    elif len(argv) >= 3 and argv[0] == "search":
-        rest, k = argv[2:], 5
-        if "-k" in rest:
-            j = rest.index("-k")
-            k, rest = int(rest[j + 1]), rest[:j] + rest[j + 2:]
-        cmd_search(argv[1], " ".join(rest), k)
-    elif argv[:2] == ["draw", "--which"]:
-        print(diagram.editor()[0] or "none")
-    elif len(argv) >= 3 and argv[0] == "draw":
-        sd, name = subject_dir(argv[1]), argv[2]
-        diagram.cmd_show(sd, name) if "--show" in argv else diagram.cmd_draw(sd, name, "--browser" in argv)
-    elif argv[:1] == ["doctor"]:
-        cmd_doctor()
-    elif argv[:1] == ["setup"]:
-        cmd_setup(argv[argv.index("--mode") + 1] if "--mode" in argv else None)
-    elif argv[:1] == ["list"]:
-        print("\n".join(subjects()) or "no subjects yet")
-    else:
-        print(__doc__)
+def run_ingest(a):
+    cmd_ingest(a.subject, a.url)
+    if search_ready():
+        cmd_index(a.subject)
 
+
+def run_draw(a):
+    if a.which:
+        print(diagram.editor()[0] or "none")
+    elif not a.name:
+        a.parser.error("needs <Subject> <name>, or --which")
+    elif a.show:
+        diagram.cmd_show(subject_dir(a.subject), a.name)
+    else:
+        diagram.cmd_draw(subject_dir(a.subject), a.name, a.browser)
+
+
+def build_parser():
+    summary, _, notes = __doc__.partition("\n\n")
+    p = argparse.ArgumentParser(prog="study", description=summary, epilog=notes,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="cmd", metavar="<command>")
+
+    def command(name, run, text):
+        s = sub.add_parser(name, help=text, description=text)
+        s.set_defaults(run=run, parser=s)
+        return s
+
+    command("new", lambda a: cmd_new(" ".join(a.subject)),
+            "create a subject folder from _template").add_argument("subject", nargs="+")
+    s = command("ingest", run_ingest, "convert new materials into converted/*.md (then index them)")
+    s.add_argument("subject")
+    s.add_argument("--url", help="first download a lecture video with yt-dlp")
+    command("list", lambda a: print("\n".join(subjects()) or "no subjects yet"), "list subjects")
+    command("index", lambda a: cmd_index(a.subject),
+            "(re)build the semantic index over converted/").add_argument("subject")
+    s = command("search", lambda a: cmd_search(a.subject, " ".join(a.query), a.k),
+                "find the most relevant passages")
+    s.add_argument("subject")
+    s.add_argument("query", nargs="+")
+    s.add_argument("-k", type=int, default=5, help="how many passages (default 5)")
+    s = command("draw", run_draw, "open/create <Subject>/diagrams/<name>.drawio in draw.io")
+    s.add_argument("subject", nargs="?")
+    s.add_argument("name", nargs="?")
+    s.add_argument("--which", action="store_true",
+                   help="print which draw.io editor is installed (or none = browser)")
+    s.add_argument("--browser", action="store_true", help="open it in the browser editor")
+    s.add_argument("--show", action="store_true",
+                   help="print what the diagram contains (shapes, links, labels)")
+    command("doctor", lambda a: cmd_doctor(),
+            "check hardware + tools, recommend a search mode (changes nothing)")
+    command("setup", lambda a: cmd_setup(a.mode),
+            "install semantic search (default: the recommended mode)").add_argument(
+        "--mode", choices=["auto", "cpu", "off"])
+    return p
+
+
+def main(argv):
+    p = build_parser()
+    args = p.parse_args(argv)
+    if not args.cmd:
+        p.print_help()
+        return
+    args.run(args)
 
 if __name__ == "__main__":
     try:
