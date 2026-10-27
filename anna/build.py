@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the Anna App in anna/app/ from the Claude Code sources, so there is one copy of the tutor to edit.
 
-  CLAUDE.md               -> executas/study-tutor/SKILL.md   (the tutor rules)
+  CLAUDE.md               -> executas/study-tutor/SKILL.md   (the tutor rules, plus anna/anna-rules.md)
   .claude/skills/<x>/     -> executas/study-<x>/SKILL.md     (today, learn, review, quiz, ...)
   anna/addendum.md        -> manifest.json system_prompt_addendum
 
@@ -63,7 +63,10 @@ def executa_json(name, description):
 def build():
     """Return {path relative to anna/app: content}."""
     files = {}
-    skills = {"tutor": (TUTOR_DESCRIPTION, anna_text((ROOT / "CLAUDE.md").read_text()), "prompt")}
+    # The Anna-only rules go right before the layout, so the agent reads them before anything else.
+    tutor = anna_text((ROOT / "CLAUDE.md").read_text())
+    tutor = tutor.replace("## Layout", (ROOT / "anna/anna-rules.md").read_text() + "\n## Layout", 1)
+    skills = {"tutor": (TUTOR_DESCRIPTION, tutor, "prompt")}
     for src in sorted((ROOT / ".claude/skills").glob("*/SKILL.md")):
         meta, body = split_frontmatter(src.read_text())
         body = anna_text(body)

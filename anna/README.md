@@ -7,7 +7,7 @@ merge `main` into `anna-app`, then run `python3 anna/build.py` and commit the re
 
 | Source | Becomes |
 |---|---|
-| `CLAUDE.md` (tutor rules) | `app/executas/study-tutor/SKILL.md` |
+| `CLAUDE.md` (tutor rules) + `anna/anna-rules.md` | `app/executas/study-tutor/SKILL.md` |
 | `.claude/skills/<x>/SKILL.md` | `app/executas/study-<x>/SKILL.md` (today, learn, review, quiz, exam, ingest, status, setup) |
 | `anna/addendum.md` | `system_prompt_addendum` in `app/manifest.json` (max 4000 characters) |
 
