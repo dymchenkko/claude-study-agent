@@ -1,0 +1,69 @@
+# Build the Anna study-tools plugin for each platform and attach it to a GitHub pre-release.
+# Lives on the anna-app branch only. Trigger: push a tag study-tools-v<version> on an anna-app commit,
+# where <version> matches anna/study-tools/executa.json.
+name: study-tools release
+
+on:
+  push:
+    tags: ["study-tools-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: macos-14, platform: darwin-arm64 }
+          - { os: macos-15-intel, platform: darwin-x86_64 }
+          # Oldest available Ubuntu, so the binary needs only an old glibc.
+          - { os: ubuntu-22.04, platform: linux-x86_64 }
+          - { os: ubuntu-22.04-arm, platform: linux-aarch64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the tag matches executa.json
+        run: |
+          want=$(python3 -c "import json; print(json.load(open('anna/study-tools/executa.json'))['version'])")
+          test "${GITHUB_REF_NAME}" = "study-tools-v$want" || { echo "tag ${GITHUB_REF_NAME} != study-tools-v$want"; exit 1; }
+      - name: Test
+        run: python3 -m unittest discover -s anna/study-tools
+      - name: Build
+        run: |
+          pip install pyinstaller==6.22.3
+          anna/study-tools/build_binary.sh ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: study-tools-${{ matrix.platform }}
+          path: anna/study-tools/dist/study-tools-${{ matrix.platform }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum *.tar.gz | tee SHA256SUMS
+      # A pre-release that is never marked latest: these are Anna plugin builds, not study-agent releases.
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          make_latest: false
+          name: study-tools ${{ github.ref_name }} (Anna plugin)
+          body: |
+            Anna Executa plugin builds of `study-tools` from the `anna-app` branch. Not a release of the study agent itself.
+            Install through the Anna App; checksums are in SHA256SUMS.
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS

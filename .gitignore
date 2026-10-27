@@ -22,3 +22,8 @@ __pycache__/
 # OS and local settings
 .DS_Store
 .claude/settings.local.json
+
+# study-tools binary builds (anna-app branch)
+anna/study-tools/build/
+anna/study-tools/dist/
+anna/study-tools/*.spec

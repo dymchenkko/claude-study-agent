@@ -37,6 +37,18 @@ anna-app executa dev --describe                     # needs uv; without it add
                                                     # --spec 'tool_id=tool-dev-study-tools,type=python,command=python3 study_tools.py'
 ```
 
+### Releasing the binaries
+
+`.github/workflows/study-tools-release.yml` builds `study-tools-<platform>.tar.gz` (PyInstaller `--onedir`:
+`bin/study-tools`, `bin/_internal/`, `manifest.json`) for macOS arm64 / x86_64 and Linux x86_64 / aarch64, and
+attaches them to a GitHub pre-release that is never marked latest. To release, on `anna-app` (never `main`):
+
+1. Bump `version` in `anna/study-tools/executa.json`, `pyproject.toml` and `VERSION` in `study_tools.py`, and the
+   tag in the `binary_urls` of `executa.json`; run `python3 anna/build.py`; commit.
+2. `git push origin anna-app && git tag study-tools-v<version> && git push origin study-tools-v<version>`
+
+`./build_binary.sh` builds the current platform locally (needs `pip install pyinstaller`).
+
 ## Build
 
 ```bash
@@ -60,9 +72,10 @@ to **Zen Mode** to start a fresh conversation that loads the skills again.
 
 ## Limits of this version
 
-- **study-tools has only a local distribution profile.** A Cloud Agent can only install it once it is
-  published with a download it can reach: a per-platform binary on a GitHub Release (`binary_urls`), or a uv
-  install from the repo. Until then the skills fall back to the manual rules in `anna-rules.md`.
+- **study-tools is not published to Anna yet.** The binaries are on GitHub Releases (`binary_urls` in
+  `executa.json`), but the tool still has to be published to the Executa Hub (`anna-app executa publish`, or
+  `apps publish` for the whole app), which needs an Anna developer login. Until then the skills fall back to
+  the manual rules in `anna-rules.md`.
 - **Memory lives in the agent's workspace.** A Cloud Agent's volume is reclaimed after ~3 days idle; keeping
   progress safe there means mirroring `progress.md` / `mistakes.md` to Anna's persistent storage (APS).
 - **Ingest needs the local converters** (`pdftotext`, `markitdown`, `ffmpeg`, `whisper-cli`), as in Claude

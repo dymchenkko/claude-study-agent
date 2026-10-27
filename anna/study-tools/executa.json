@@ -10,7 +10,18 @@
   "distribution": {
     "active": "local",
     "profiles": {
-      "local": { "type": "local", "supports_protocol": true }
+      "local": { "type": "local", "supports_protocol": true },
+      "binary": {
+        "type": "binary",
+        "executable_name": "study-tools",
+        "supports_protocol": true,
+        "binary_urls": {
+          "darwin-arm64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-darwin-arm64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "darwin-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-darwin-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "linux-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-linux-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "linux-aarch64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-linux-aarch64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" }
+        }
+      }
     }
   }
 }
