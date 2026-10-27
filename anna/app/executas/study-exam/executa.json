@@ -1,0 +1,7 @@
+{
+  "slug": "study-exam",
+  "name": "Study Exam",
+  "version": "0.1.0",
+  "executa_type": "skill",
+  "description": "Run a realistic mock exam matching the real exam format, grade it, and produce a weak-spot report and revision plan. Use when the user wants a mock exam, practice exam, exam simulation or exam readiness check."
+}

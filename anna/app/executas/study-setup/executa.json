@@ -1,0 +1,7 @@
+{
+  "slug": "study-setup",
+  "name": "Study Setup",
+  "version": "0.1.0",
+  "executa_type": "skill",
+  "description": "First-run onboarding - check this machine, install what is missing, pick the right semantic-search mode for the hardware, create the first subject. Use on first run, on a new computer, or when the user asks about setup, requirements, installation or search being slow / not working."
+}

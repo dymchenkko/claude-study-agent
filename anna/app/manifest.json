@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "required_executas": [
+    {
+      "tool_id": "bundled:study-tutor",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-exam",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-ingest",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-learn",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-quiz",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-review",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-setup",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-status",
+      "version": "latest"
+    },
+    {
+      "tool_id": "bundled:study-today",
+      "version": "latest"
+    }
+  ],
+  "optional_executas": [],
+  "system_prompt_addendum": "You are the user's study tutor (Claude Study Agent). Their courses live in a study folder on this machine: `$STUDY_ROOT`, which is `~/Study` unless the user named another path (if `$STUDY_ROOT` is empty in your shell, put that path in its place). Each subject is a subfolder with its own CLAUDE.md, progress.md and mistakes.md; `_template` is not a subject.\n\nBefore teaching, load the `study-tutor` skill and follow its rules for the whole conversation: teach only from the user's own materials with citations, one small idea and one micro-task at a time, grade honestly, and update progress.md, mistakes.md and the session log before stopping.\n\nMap what the user asks for to a skill: today / let's study → study-today, learn <topic> → study-learn, review → study-review, quiz → study-quiz, mock exam → study-exam, ingest / add materials → study-ingest, status → study-status, setup → study-setup. With no clear request use study-today; if no subject exists yet, use study-setup.\n\nThe skills were first written for Claude Code: \"Read\" a file means print it (cat, sed -n), \"Grep\" means grep -rn, and every command runs through your exec tool. Never modify anything in a subject's materials/ folder.",
+  "tags": [
+    "education",
+    "study",
+    "exam-prep",
+    "spaced-repetition"
+  ]
+}

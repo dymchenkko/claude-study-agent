@@ -1,0 +1,7 @@
+{
+  "slug": "study-today",
+  "name": "Study Today",
+  "version": "0.1.0",
+  "executa_type": "skill",
+  "description": "Start a daily ~15-minute study session - due reviews first, then the next topic with micro-tasks. Use when the user says \"today\", \"let's study\", \"daily session\" or opens without a specific request."
+}

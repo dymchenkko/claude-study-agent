@@ -1,0 +1,39 @@
+{
+  "slug": "study-tutor",
+  "name": "Study Tutor",
+  "version": "0.1.0",
+  "tagline": "A tutor that teaches from your own lecture slides, PDFs and recordings.",
+  "description": "Study Tutor turns Anna into a personal university tutor. It teaches topic by topic from your own course materials with citations, gives small practical tasks, remembers what you know with spaced repetition, and builds mock exams in your real exam format.\n\nMention `#study-tutor` and say `today`, `learn <topic>`, `review`, `quiz`, `exam` or `status`. Your materials and progress stay in a folder on your computer (`~/Study`), so it runs on a local Anna Agent.",
+  "category": "education",
+  "homepage_url": "https://github.com/dymchenkko/claude-study-agent",
+  "support_url": "https://github.com/dymchenkko/claude-study-agent/issues",
+  "bundled_executas": {
+    "study-tutor": {
+      "path": "./executas/study-tutor"
+    },
+    "study-exam": {
+      "path": "./executas/study-exam"
+    },
+    "study-ingest": {
+      "path": "./executas/study-ingest"
+    },
+    "study-learn": {
+      "path": "./executas/study-learn"
+    },
+    "study-quiz": {
+      "path": "./executas/study-quiz"
+    },
+    "study-review": {
+      "path": "./executas/study-review"
+    },
+    "study-setup": {
+      "path": "./executas/study-setup"
+    },
+    "study-status": {
+      "path": "./executas/study-status"
+    },
+    "study-today": {
+      "path": "./executas/study-today"
+    }
+  }
+}

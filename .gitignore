@@ -7,6 +7,7 @@
 !/.tools/
 !/docs/
 !/.github/
+!/anna/
 
 # Downloaded models and llama.cpp, old semantic-search env, index and per-machine config
 .tools/models/

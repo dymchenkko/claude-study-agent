@@ -1,0 +1,7 @@
+{
+  "slug": "study-learn",
+  "name": "Study Learn",
+  "version": "0.1.0",
+  "executa_type": "skill",
+  "description": "Tutor a specific topic from the course materials with short explanations and practical micro-tasks, then record progress. Use when the user wants to learn, understand or study a named topic."
+}

@@ -1,0 +1,7 @@
+{
+  "slug": "study-quiz",
+  "name": "Study Quiz",
+  "version": "0.1.0",
+  "executa_type": "skill",
+  "description": "Generate a multiple-choice or practice quiz from the course materials, in chat or as a self-grading HTML file, and record results. Use when the user asks for a quiz, test, MCQ, practice questions or problems."
+}
