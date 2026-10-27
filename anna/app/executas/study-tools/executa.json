@@ -1,0 +1,16 @@
+{
+  "slug": "study-tools",
+  "name": "Study Tools",
+  "version": "0.1.0",
+  "executa_type": "tool",
+  "description": "Opens or downloads the study folder, searches course materials, and records progress, mistakes and session notes one row at a time.",
+  "tool_id": "tool-dev-study-tools",
+  "type": "python",
+  "enabled": true,
+  "distribution": {
+    "active": "local",
+    "profiles": {
+      "local": { "type": "local", "supports_protocol": true }
+    }
+  }
+}

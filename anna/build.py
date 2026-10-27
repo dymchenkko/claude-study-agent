@@ -4,6 +4,7 @@
   CLAUDE.md               -> executas/study-tutor/SKILL.md   (the tutor rules, plus anna/anna-rules.md)
   .claude/skills/<x>/     -> executas/study-<x>/SKILL.md     (today, learn, review, quiz, ...)
   anna/addendum.md        -> manifest.json system_prompt_addendum
+  anna/study-tools/       -> executas/study-tools/           (the Tool plugin, copied without its tests)
 
 Run `python3 anna/build.py` after changing any of those, and `python3 anna/build.py --check` to verify that
 anna/app/ is up to date (exits 1 if not). Standard library only.
@@ -24,6 +25,7 @@ SLUG = "study-tutor"
 EMOJI = {"tutor": "🎓", "today": "📅", "learn": "📖", "review": "🔁", "quiz": "❓",
          "exam": "📝", "ingest": "📥", "status": "📊", "setup": "🛠️"}
 COMMANDS = "|".join(EMOJI)
+TOOL_FILES = ["study_tools.py", "pyproject.toml", "executa.json"]
 
 TUTOR_DESCRIPTION = ("Core rules of the study tutor: the study folder layout, how to teach from the user's own "
                      "course materials with citations and micro-tasks, spaced-repetition memory and exam prep. "
@@ -80,13 +82,17 @@ def build():
         runs_study = ".tools/study" in body
         files[f"executas/study-{name}/SKILL.md"] = skill_md(name, description, body, mode, runs_study)
         files[f"executas/study-{name}/executa.json"] = executa_json(name, description)
+    # The study-tools plugin is copied as is; its tests stay in anna/study-tools/.
+    for name in TOOL_FILES:
+        files[f"executas/study-tools/{name}"] = (ROOT / "anna/study-tools" / name).read_text()
+    handles = ["study-tools"] + [f"study-{name}" for name in skills]
 
     addendum = (ROOT / "anna/addendum.md").read_text().strip()
     if len(addendum) > 4000:
         sys.exit(f"anna/addendum.md is {len(addendum)} characters; Anna allows 4000")
     manifest = {
         "schema": 1,
-        "required_executas": [{"tool_id": f"bundled:study-{name}", "version": "latest"} for name in skills],
+        "required_executas": [{"tool_id": f"bundled:{h}", "version": "latest"} for h in handles],
         "optional_executas": [],
         "system_prompt_addendum": addendum,
         "tags": ["education", "study", "exam-prep", "spaced-repetition"],
@@ -107,7 +113,7 @@ def build():
         "category": "education",
         "homepage_url": "https://github.com/dymchenkko/claude-study-agent",
         "support_url": "https://github.com/dymchenkko/claude-study-agent/issues",
-        "bundled_executas": {f"study-{name}": {"path": f"./executas/study-{name}"} for name in skills},
+        "bundled_executas": {h: {"path": f"./executas/{h}"} for h in handles},
     }
     files["app.json"] = json.dumps(app, indent=2, ensure_ascii=False) + "\n"
     return files

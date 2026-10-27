@@ -8,6 +8,9 @@
   "homepage_url": "https://github.com/dymchenkko/claude-study-agent",
   "support_url": "https://github.com/dymchenkko/claude-study-agent/issues",
   "bundled_executas": {
+    "study-tools": {
+      "path": "./executas/study-tools"
+    },
     "study-tutor": {
       "path": "./executas/study-tutor"
     },

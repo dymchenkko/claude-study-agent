@@ -1,0 +1,18 @@
+[project]
+name = "study-tools"
+version = "0.1.0"
+description = "Study Tutor Executa plugin: open the study folder, search materials, record progress safely"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+study-tools = "study_tools:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+only-include = ["study_tools.py"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
