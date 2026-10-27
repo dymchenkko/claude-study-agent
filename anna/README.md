@@ -36,6 +36,10 @@ anna-app apps publish          # publishes each skill, then the app (needs devel
 the skills before publishing, point a local Anna Agent at them with `MATRIX_SKILLS_DIR=anna/app/executas`.
 Then `#study-tutor` it and ask for `today`.
 
+**Test in Zen Mode.** Main Soul is one long conversation per account: "New chat" keeps adding to it, and Anna
+reuses the skill text it loaded earlier in it, so edits to a skill don't show up there. Switch the chat input
+to **Zen Mode** to start a fresh conversation that loads the skills again.
+
 ## Limits of this first version
 
 - **Local Anna Agent only.** The skills read and write `~/Study` (materials, `progress.md`, `mistakes.md`)
