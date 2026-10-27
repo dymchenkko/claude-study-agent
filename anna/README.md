@@ -1,8 +1,9 @@
 # Study Tutor for Anna
 
-This folder packages the study tutor as an [Anna App](https://staging.anna.partners/developers/apps/app-intro.md)
-so it can run inside the Anna assistant as well as in Claude Code. Claude Code stays the main target. The
-sources are still `CLAUDE.md` and `.claude/skills/`, and everything in `app/` is generated from them.
+This folder packages the study tutor as an [Anna App](https://staging.anna.partners/developers/apps/app-intro.md).
+It lives only on the `anna-app` branch and is never merged into `main`. The sources are still `CLAUDE.md` and
+`.claude/skills/`, and everything in `app/` is generated from them. To pick up tutor improvements from `main`,
+merge `main` into `anna-app`, then run `python3 anna/build.py` and commit the regenerated `app/`.
 
 | Source | Becomes |
 |---|---|
