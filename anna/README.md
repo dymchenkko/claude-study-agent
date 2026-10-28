@@ -72,10 +72,10 @@ to **Zen Mode** to start a fresh conversation that loads the skills again.
 
 ## Limits of this version
 
-- **study-tools is not published to Anna yet.** The binaries are on GitHub Releases (`binary_urls` in
-  `executa.json`), but the tool still has to be published to the Executa Hub (`anna-app executa publish`, or
-  `apps publish` for the whole app), which needs an Anna developer login. Until then the skills fall back to
-  the manual rules in `anna-rules.md`.
+- **study-tools is published as a private tool** (`tool-dymchenko-study-tools-maz2f4cv`, see
+  `study-tools/.anna/executa.json`) from `anna-app executa publish --profile binary`, and works on a cloud
+  agent. Publishing the whole App (`anna-app apps publish`) needs Verified Developer status; until then the
+  skills and the tool are installed one by one in the Executa Hub.
 - **Memory lives in the agent's workspace.** A Cloud Agent's volume is reclaimed after ~3 days idle; keeping
   progress safe there means mirroring `progress.md` / `mistakes.md` to Anna's persistent storage (APS).
 - **Ingest needs the local converters** (`pdftotext`, `markitdown`, `ffmpeg`, `whisper-cli`), as in Claude
