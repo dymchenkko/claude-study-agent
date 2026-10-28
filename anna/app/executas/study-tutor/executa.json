@@ -1,7 +1,7 @@
 {
   "slug": "study-tutor",
   "name": "Study Tutor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "executa_type": "skill",
   "description": "Core rules of the study tutor: the study folder layout, how to teach from the user's own course materials with citations and micro-tasks, spaced-repetition memory and exam prep. Load first whenever the user studies, learns, reviews or prepares for an exam."
 }

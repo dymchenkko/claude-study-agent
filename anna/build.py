@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "anna/app"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 SLUG = "study-tutor"
 REPO = "https://github.com/dymchenkko/claude-study-agent"
 RAW = "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app"  # served from the pushed branch

@@ -1,7 +1,7 @@
 {
   "slug": "study-review",
   "name": "Study Review",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "executa_type": "skill",
   "description": "Spaced-repetition review of topics that are due and past mistakes, quick active-recall questions, reschedules each topic. Use when the user asks to review, revise, repeat or do flashcards."
 }

@@ -1,7 +1,7 @@
 {
   "slug": "study-ingest",
   "name": "Study Ingest",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "executa_type": "skill",
   "description": "Convert newly added lecture materials (slides, PDFs, videos, notes) to searchable text and update the subject's topic map. Use after the user adds files to materials/ or asks to add/import/process materials or a lecture video URL."
 }

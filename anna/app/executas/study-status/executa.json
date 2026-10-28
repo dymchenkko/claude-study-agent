@@ -1,7 +1,7 @@
 {
   "slug": "study-status",
   "name": "Study Status",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "executa_type": "skill",
   "description": "Show a short study dashboard - per subject progress, due reviews, weak topics, days to exam. Use when the user asks for status, progress, overview or what to study."
 }

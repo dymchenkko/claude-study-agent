@@ -1,7 +1,7 @@
 {
   "slug": "study-tutor",
   "name": "Study Tutor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "tagline": "A tutor that teaches from your own lecture slides, PDFs and recordings.",
   "description": "Study Tutor turns Anna into a personal university tutor that teaches from course materials, not from general knowledge. It goes topic by topic with page citations, gives one small practical task at a time, grades your answers, and schedules reviews with spaced repetition (1 → 3 → 7 → 16 → 35 days).\n\n**Try it:** mention #Study Tutor and say `today`, `learn <topic>`, `review`, `quiz`, `exam` or `status`. The first time, it sets up a study folder in your agent's workspace with a demo Cell Biology course, so you can start right away.\n\n**What's inside:** nine skills (daily session, learn, review, quiz, mock exam, status and more) and the Study Tools plugin, which searches the course materials and records progress, mistakes and session notes one row at a time, so your study history is never overwritten.\n\n**Your own courses:** a course is a folder of lecture PDFs, slides, notes or recordings converted to searchable text. Today this works with a local Anna Agent and the open-source study folder; importing your own files on a cloud agent is not supported yet. On a cloud agent, files live in the agent workspace, which Anna reclaims after a few days without use.\n\nOpen source (MIT): https://github.com/dymchenkko/claude-study-agent",
   "category": "education",
