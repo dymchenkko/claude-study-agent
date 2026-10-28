@@ -1,10 +1,10 @@
 [project]
 name = "study-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = "Study Tutor Executa plugin: open the study folder, search materials, record progress safely"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-dependencies = []
+dependencies = ["pypdf>=5"]
 
 [project.scripts]
 study-tools = "study_tools:main"

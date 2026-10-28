@@ -3,7 +3,10 @@
 
 The skills teach; this plugin does the file work that a model gets wrong: it finds or downloads the study
 folder, runs the real `.tools/study search`, and changes progress.md, mistakes.md and the session log one row
-at a time, applying the review ladder in code. Standard library only.
+at a time, applying the review ladder in code. It also brings the user's own files in: material_add downloads
+a chat attachment into materials/ and converts it to converted/*.md, with `.tools/study ingest` where its
+converters are installed (local agent) and built in otherwise (cloud agent: pypdf for PDFs, zip+XML for
+PPTX/DOCX). Standard library plus pypdf.
 
 Smoke test:
   echo '{"jsonrpc":"2.0","method":"describe","id":1}' | python3 study_tools.py
@@ -18,13 +21,24 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import unicodedata
+import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 REPO_TARBALL = "https://github.com/dymchenkko/claude-study-agent/archive/refs/heads/main.tar.gz"
 LADDER = [1, 3, 7, 16, 35]
 OUTCOMES = ["correct", "partial", "wrong", "learned"]
+# materials/ subfolder per file type, as in _template; converted/ mirrors it with ".md" appended.
+KINDS = {".pdf": "pdfs", ".pptx": "slides", ".docx": "notes", ".md": "notes", ".txt": "notes"}
+MEDIA = {".mp4", ".mov", ".mkv", ".webm", ".m4a", ".mp3", ".wav"}
+MAX_DOWNLOAD = 100 * 1024 * 1024
+THIN_PAGE = 50  # characters; fewer means a scanned page or one without a text layer
+NOTE_NO_TEXT = ("> NOTE: little text extracted — likely scanned or image-based. "
+                "Read the original PDF directly.")
 
 
 def _param(name, type_, description, required=True, **extra):
@@ -36,8 +50,9 @@ MANIFEST = {
     "name": "study-tools",
     "display_name": "Study Tools",
     "version": VERSION,
-    "description": "Study folder tools for the study tutor: open or download the study folder, search the "
-                   "course materials, and record progress, mistakes and session notes safely.",
+    "description": "Study folder tools for the study tutor: open or download the study folder, create "
+                   "subjects, import the user's own course files, search the course materials, and record "
+                   "progress, mistakes and session notes safely.",
     "homepage": "https://github.com/dymchenkko/claude-study-agent",
     "icon": "🎓",
     "category": "education",
@@ -47,6 +62,23 @@ MANIFEST = {
          "description": "Call first. Finds the study folder (downloads it if missing) and lists the subjects "
                         "with their file paths.",
          "parameters": []},
+        {"name": "subject_new",
+         "description": "Create a new subject (course) folder from the template: CLAUDE.md, syllabus.md, "
+                        "progress.md, mistakes.md, materials/, converted/.",
+         "parameters": [_param("name", "string", "Subject name, e.g. Cell-Biology (letters, digits, - _ .).")]},
+        {"name": "material_add",
+         "description": "Import one course file the user attached in chat: downloads it into the subject's "
+                        "materials/ and converts it to searchable converted/*.md with page / slide markers. "
+                        "Pass the attachment's download URL and its original file name. PDF, PPTX, DOCX, MD "
+                        "and TXT; video and audio are not supported on a cloud agent yet.",
+         "timeout": 300,
+         "parameters": [SUBJECT, _param("url", "string", "HTTPS download URL of the attached file."),
+                        _param("filename", "string", "Original file name, e.g. Lecture3.pdf.")]},
+        {"name": "topics_add",
+         "description": "Add new topics to progress.md as Level 0 rows, after reading new materials. "
+                        "Existing rows are left as they are.",
+         "parameters": [SUBJECT, _param("topics", "array", "Topic names in course order.",
+                                        items={"type": "string"})]},
         {"name": "study_search",
          "description": "Meaning-based search over a subject's converted materials. Returns passages with "
                         "(file loc) citations, or a note that search is not set up (then grep converted/).",
@@ -232,6 +264,145 @@ def fix_mistakes(text, question):
     return "\n".join(lines) + "\n", count
 
 
+def add_topics(text, topics):
+    """Return (new_text, added). Appends Level 0 rows for topics not in the progress table yet."""
+    lines = text.splitlines()
+    head, end = find_table(lines, "Topic")
+    cols = split_row(lines[head])
+    have = {split_row(lines[i])[0].lower() for i in range(head + 2, end + 1)}
+    added = []
+    for topic in topics:
+        name = cell(topic)
+        if name and name.lower() not in have:
+            have.add(name.lower())
+            added.append(name)
+            values = dict.fromkeys(cols, "")
+            values.update({"Topic": name, "Level": "0"})
+            end += 1
+            lines.insert(end, "| " + " | ".join(values[c] for c in cols) + " |")
+    return "\n".join(lines) + "\n", added
+
+
+# ---------- importing the user's files ----------
+
+def safe_filename(name):
+    name = Path(str(name).replace("\\", "/")).name.strip()
+    if not name or name.startswith(".") or not re.fullmatch(r"[\w .()+,&'-]+", name):
+        raise ToolError(f"unusable file name {name!r}; use letters, digits, spaces and - _ . ( )")
+    return name
+
+
+def download(url, dest):
+    if urllib.parse.urlparse(url).scheme != "https":
+        raise ToolError("the file URL must be https")
+    with urllib.request.urlopen(url, timeout=120) as resp, open(dest, "wb") as f:
+        size = 0
+        while chunk := resp.read(1 << 20):
+            size += len(chunk)
+            if size > MAX_DOWNLOAD:
+                raise ToolError(f"file is larger than {MAX_DOWNLOAD >> 20} MB")
+            f.write(chunk)
+    return size
+
+
+def readable(text):
+    """Characters of real text; 0 when it is mostly undecodable glyphs (same rule as .tools/study)."""
+    s = "".join(text.split())
+    bad = sum(ch == "�" or ord(ch) < 32 for ch in s)
+    return 0 if bad > len(s) * 0.1 else len(s)
+
+
+def pdf_pages(src):
+    from pypdf import PdfReader  # bundled into the binary; only needed where pdftotext is missing
+    # NFKC turns ligatures ("ﬂuid") into plain letters, so grep finds "fluid".
+    return [unicodedata.normalize("NFKC", page.extract_text() or "") for page in PdfReader(src).pages]
+
+
+def ooxml_parts(src, kind):
+    """Text of a PPTX (one part per slide) or DOCX (one part per paragraph), read from its XML."""
+    with zipfile.ZipFile(src) as z:
+        if kind == "slides":
+            names = sorted((n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)),
+                           key=lambda n: int(re.search(r"(\d+)\.xml$", n).group(1)))
+            tag, unit = "t", "p"  # a:t runs inside a:p paragraphs
+        else:
+            names, tag, unit = ["word/document.xml"], "t", "p"  # w:t runs inside w:p paragraphs
+        parts = []
+        for name in names:
+            root = ET.fromstring(z.read(name))
+            paras = ["".join(t.text or "" for t in p.iter() if t.tag.endswith("}" + tag))
+                     for p in root.iter() if p.tag.endswith("}" + unit)]
+            parts.append("\n".join(x for x in paras if x.strip()))
+    return parts
+
+
+def convert_builtin(src, out, source_label):
+    """Write converted/*.md for src in the format `.tools/study ingest` uses. Returns a short summary."""
+    ext, notes = src.suffix.lower(), []
+    if ext == ".pdf":
+        pages = pdf_pages(src)
+        thin = sum(readable(p) < THIN_PAGE for p in pages)
+        if thin > len(pages) / 2:
+            notes.append(NOTE_NO_TEXT)
+        body = "\n\n".join(f"--- page {i} ---\n{p.strip()}" for i, p in enumerate(pages, 1) if readable(p))
+        summary = {"pages": len(pages), "pages_without_text": thin}
+    elif ext in (".pptx", ".docx"):
+        parts = ooxml_parts(src, KINDS[ext])
+        if ext == ".pptx":
+            body = "\n\n".join(f"<!-- Slide number: {i} -->\n{p}" for i, p in enumerate(parts, 1))
+            summary = {"slides": len(parts)}
+        else:
+            body = parts[0] if parts else ""
+            summary = {"paragraphs": body.count("\n") + 1 if body else 0}
+    else:
+        body = src.read_text(errors="replace")
+        summary = {"lines": body.count("\n") + 1}
+    head = "".join(n + "\n\n" for n in notes)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write_atomic(out, f"# {src.name}\n\nSource: {source_label}\n\n{head}{body.strip()}\n")
+    summary["chars"] = len(body)
+    if notes:
+        summary["note"] = notes[0]
+    return summary
+
+
+def add_material(root, sd, url, filename):
+    name = safe_filename(filename)
+    ext = Path(name).suffix.lower()
+    if ext in MEDIA:
+        raise ToolError("video and audio can't be transcribed on a cloud agent yet; attach slides, PDFs or notes")
+    if ext not in KINDS:
+        raise ToolError(f"unsupported file type {ext or '(none)'}; use PDF, PPTX, DOCX, MD or TXT")
+    src = sd / "materials" / KINDS[ext] / name
+    if src.exists():
+        raise ToolError(f"{src.relative_to(root)} already exists; rename the file to add it again")
+    src.parent.mkdir(parents=True, exist_ok=True)
+    tmp = src.with_name(f".{name}.part")
+    try:
+        size = download(url, tmp)
+        os.replace(tmp, src)
+    finally:
+        tmp.unlink(missing_ok=True)
+    out = sd / "converted" / KINDS[ext] / (name + ".md")
+    rel = str(src.relative_to(root))
+    # The real ingest (pdftotext + OCR, markitdown, semantic index) wherever its converters exist.
+    needs = {".pdf": "pdftotext", ".pptx": "markitdown", ".docx": "markitdown"}.get(ext)
+    if needs and shutil.which(needs):
+        r = subprocess.run([study_python(), str(root / ".tools/study"), "ingest", sd.name],
+                           capture_output=True, text=True, timeout=280)
+        if r.returncode == 0 and out.exists():
+            return {"material": rel, "converted": str(out.relative_to(root)), "bytes": size,
+                    "converter": "study ingest", "log": r.stdout.strip()[-1500:]}
+    summary = convert_builtin(src, out, rel)
+    return {"material": rel, "converted": str(out.relative_to(root)), "bytes": size, "converter": "built-in",
+            **summary}
+
+
+def study_python():
+    # A frozen binary's sys.executable is the binary itself; .tools/study needs a real Python.
+    return shutil.which("python3") if getattr(sys, "frozen", False) else sys.executable
+
+
 # ---------- tools ----------
 
 def run_tool(tool, args, today=None):
@@ -243,10 +414,25 @@ def run_tool(tool, args, today=None):
         subjects = [{"name": s.name, "path": str(s)} for s in subjects_in(root)]
         return {"study_root": str(root), "downloaded_now": downloaded, "subjects": subjects,
                 "today": today.isoformat()}
+    if tool == "subject_new":
+        name = args["name"].strip()
+        if not re.fullmatch(r"[\w][\w .-]{0,79}", name) or name.startswith("_"):
+            raise ToolError("subject names use letters, digits, spaces and - _ . (not starting with _)")
+        r = subprocess.run([study_python(), str(root / ".tools/study"), "new", name],
+                           capture_output=True, text=True, timeout=60)
+        if r.returncode:
+            raise ToolError((r.stdout + r.stderr).strip() or f"study new exited with {r.returncode}")
+        return {"subject": name, "path": str(root / name), "output": r.stdout.strip()}
     sd = subject_dir(root, args["subject"])
+    if tool == "material_add":
+        return add_material(root, sd, args["url"], args["filename"])
+    if tool == "topics_add":
+        path = sd / "progress.md"
+        text, added = add_topics(path.read_text(), args["topics"])
+        write_atomic(path, text)
+        return {"added": added}
     if tool == "study_search":
-        python = shutil.which("python3") if getattr(sys, "frozen", False) else sys.executable
-        r = subprocess.run([python, str(root / ".tools/study"), "search", sd.name, args["query"],
+        r = subprocess.run([study_python(), str(root / ".tools/study"), "search", sd.name, args["query"],
                             "-k", str(args.get("k") or 6)], capture_output=True, text=True, timeout=110)
         message = (r.stdout + r.stderr).strip()
         if r.returncode and "not set up" in message:

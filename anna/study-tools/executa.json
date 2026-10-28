@@ -1,9 +1,9 @@
 {
   "slug": "study-tools",
   "name": "Study Tools",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "executa_type": "tool",
-  "description": "Opens or downloads the study folder, searches course materials, and records progress, mistakes and session notes one row at a time.",
+  "description": "Opens or downloads the study folder, imports your own course files (PDF, PPTX, DOCX, notes) from chat, searches course materials, and records progress, mistakes and session notes one row at a time.",
   "tool_id": "tool-dev-study-tools",
   "type": "python",
   "enabled": true,
@@ -16,10 +16,10 @@
         "executable_name": "study-tools",
         "supports_protocol": true,
         "binary_urls": {
-          "darwin-arm64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-darwin-arm64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
-          "darwin-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-darwin-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
-          "linux-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-linux-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
-          "linux-aarch64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.1.0/study-tools-linux-aarch64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" }
+          "darwin-arm64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.2.0/study-tools-darwin-arm64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "darwin-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.2.0/study-tools-darwin-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "linux-x86_64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.2.0/study-tools-linux-x86_64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" },
+          "linux-aarch64": { "url": "https://github.com/dymchenkko/claude-study-agent/releases/download/study-tools-v0.2.0/study-tools-linux-aarch64.tar.gz", "entrypoint": "bin/study-tools", "format": "tar.gz" }
         }
       }
     }

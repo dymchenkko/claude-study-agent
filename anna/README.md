@@ -25,6 +25,9 @@ both impossible.
 | Tool | What it does |
 |---|---|
 | `study_open` | Finds the study folder (`$STUDY_ROOT`, `~/Study`, or `$ANNA_WORKSPACE_DIR/Study`), downloads it from GitHub if missing, lists subjects |
+| `subject_new` | Creates a subject with the real `study new` |
+| `material_add` | Imports a file the user attached in chat (download URL + file name) into `materials/` and converts it to `converted/*.md`: with `study ingest` where `pdftotext` / `markitdown` exist (local agent), built in otherwise (cloud agent: pypdf for PDF, zip + XML for PPTX / DOCX). No OCR and no video / audio on a cloud agent yet |
+| `topics_add` | Adds new topics to `progress.md` as Level 0 rows, leaving existing rows alone |
 | `study_search` | Runs the real `.tools/study search`; says when semantic search is not set up so the tutor greps instead |
 | `progress_update` | Changes one row of `progress.md`: `correct` / `partial` / `wrong` apply the 1 → 3 → 7 → 16 → 35 ladder, `learned` sets the teach-back level |
 | `mistake_add`, `mistake_fixed` | Append to `mistakes.md`, mark rows `Fixed? ✅` |

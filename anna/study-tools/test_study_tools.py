@@ -1,6 +1,7 @@
 """Tests for study_tools.py. Run: python3 -m unittest discover anna/study-tools"""
 
 import datetime
+import importlib.util
 import json
 import os
 import shutil
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -79,6 +81,91 @@ class MistakesTest(unittest.TestCase):
             st.fix_mistakes(text, "water go")
 
 
+class TopicsTest(unittest.TestCase):
+    def test_adds_only_new_topics_at_level_0(self):
+        text, added = st.add_topics(PROGRESS, ["Fermentation", "Water potential", "water potential", "Turgor"])
+        self.assertEqual(added, ["Water potential", "Turgor"])
+        before, after = PROGRESS.splitlines(), text.splitlines()
+        self.assertEqual(after[:len(before)], before)
+        self.assertEqual(after[-2:], ["| Water potential | 0 |  |  |  |  |", "| Turgor | 0 |  |  |  |  |"])
+
+
+def make_ooxml(path, files):
+    with zipfile.ZipFile(path, "w") as z:
+        for name, xml in files.items():
+            z.writestr(name, xml)
+
+
+A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+
+
+class MaterialTest(unittest.TestCase):
+    """material_add with the download stubbed (it copies a local file) and no external converters."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / "Study"
+        shutil.copytree(REPO / "_template", self.root / "Course")
+        self.sd = self.root / "Course"
+        self.files = Path(self.tmp.name) / "files"
+        self.files.mkdir()
+        self._download, self._which = st.download, st.shutil.which
+        st.download = lambda url, dest: shutil.copyfile(self.files / Path(url).name, dest) and dest.stat().st_size
+        st.shutil.which = lambda cmd: None  # as on a cloud agent: no pdftotext, no markitdown
+
+    def tearDown(self):
+        st.download, st.shutil.which = self._download, self._which
+        self.tmp.cleanup()
+
+    def add(self, name):
+        return st.add_material(self.root, self.sd, f"https://files.example/{name}", name)
+
+    @unittest.skipUnless(importlib.util.find_spec("pypdf"), "pypdf not installed")
+    def test_pdf_has_page_markers_like_study_ingest(self):
+        shutil.copy(REPO / "Example-Subject/materials/pdfs/Lecture1-Membrane-transport.pdf", self.files / "L1.pdf")
+        r = self.add("L1.pdf")
+        self.assertEqual((r["converter"], r["pages"], r["pages_without_text"]), ("built-in", 3, 0))
+        md = (self.sd / "converted/pdfs/L1.pdf.md").read_text()
+        self.assertTrue(md.startswith("# L1.pdf\n\nSource: Course/materials/pdfs/L1.pdf\n\n--- page 1 ---\n"))
+        self.assertEqual(md.count("--- page "), 3)
+        self.assertIn("selectively permeable", md.replace("\n", " "))
+        self.assertIn("(the fluid", md)  # ligature normalized, so grep finds it
+        self.assertTrue((self.sd / "materials/pdfs/L1.pdf").exists())
+
+    def test_pptx_slides_and_docx_paragraphs(self):
+        slide = f'<p:sld xmlns:p="x" {A}><a:p><a:r><a:t>Slide {{}} title</a:t></a:r></a:p>' \
+                f'<a:p><a:r><a:t>Point </a:t></a:r><a:r><a:t>{{}}</a:t></a:r></a:p></p:sld>'
+        make_ooxml(self.files / "Week2.pptx", {f"ppt/slides/slide{n}.xml": slide.format(n, n) for n in (2, 1, 10)})
+        r = self.add("Week2.pptx")
+        md = (self.sd / "converted/slides/Week2.pptx.md").read_text()
+        self.assertEqual(r["slides"], 3)
+        self.assertLess(md.index("Slide 1 title"), md.index("Slide 2 title"), md.index("Slide 10 title"))
+        self.assertIn("<!-- Slide number: 3 -->\nSlide 10 title\nPoint 10", md)
+        make_ooxml(self.files / "Notes.docx", {"word/document.xml": f'<w:document {W}><w:body>'
+                   '<w:p><w:r><w:t>Krebs </w:t></w:r><w:r><w:t>cycle</w:t></w:r></w:p>'
+                   '<w:p><w:r><w:t>2 ATP per glucose</w:t></w:r></w:p></w:body></w:document>'})
+        self.add("Notes.docx")
+        self.assertIn("Krebs cycle\n2 ATP per glucose", (self.sd / "converted/notes/Notes.docx.md").read_text())
+
+    def test_refusals(self):
+        (self.files / "a.pdf").write_bytes(b"%PDF")
+        for name, msg in [("../../etc/passwd.pdf", None), (".hidden.pdf", "unusable"), ("talk.mp4", "video"),
+                          ("data.xlsx", "unsupported")]:
+            if msg:
+                with self.assertRaisesRegex(st.ToolError, msg):
+                    st.add_material(self.root, self.sd, "https://f/x", name)
+        self.assertEqual(st.safe_filename("../../etc/passwd.pdf"), "passwd.pdf")
+        (self.sd / "materials/pdfs").mkdir(exist_ok=True)
+        (self.sd / "materials/pdfs/a.pdf").write_bytes(b"old")
+        with self.assertRaisesRegex(st.ToolError, "already exists"):
+            self.add("a.pdf")
+        self.assertEqual((self.sd / "materials/pdfs/a.pdf").read_bytes(), b"old")
+        st.download = self._download
+        with self.assertRaisesRegex(st.ToolError, "https"):
+            st.add_material(self.root, self.sd, "http://f/b.pdf", "b.pdf")
+
+
 class StdioTest(unittest.TestCase):
     """Drive the plugin over stdin/stdout like the Anna Agent does."""
 
@@ -114,7 +201,7 @@ class StdioTest(unittest.TestCase):
             self.invoke(7, "no_such_tool"),
         )
         self.assertEqual([r["id"] for r in replies], [1, 2, 3, 4, 5, 6, 7])
-        self.assertEqual(len(replies[0]["result"]["tools"]), 6)
+        self.assertEqual(len(replies[0]["result"]["tools"]), 9)
         self.assertEqual(replies[1]["result"]["data"]["subjects"][0]["name"], "Example-Subject")
         self.assertEqual(replies[2]["result"]["data"]["row"]["Level"], "2")
         self.assertIn("no subject 'Nope'", replies[4]["result"]["error"])
