@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1276,
+  "tool_id": "skill-dymchenko-study-tutor-5snvjf24",
+  "slug": "study-tutor",
+  "executa_type": "skill",
+  "first_published_at": "2026-10-28T18:45:41.865Z"
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1282,
+  "tool_id": "skill-dymchenko-study-setup-pafebfmk",
+  "slug": "study-setup",
+  "executa_type": "skill",
+  "first_published_at": "2026-10-28T18:47:10.951Z"
+}

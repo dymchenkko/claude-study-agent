@@ -1,0 +1,8 @@
+{
+  "$schema": "anna-app-identity/v1",
+  "host": "https://anna.partners",
+  "app_id": 741,
+  "slug": "study-tutor",
+  "handle": "dymchenko",
+  "first_published_at": "2026-10-28T18:47:18.630Z"
+}

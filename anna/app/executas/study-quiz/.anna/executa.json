@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1280,
+  "tool_id": "skill-dymchenko-study-quiz-ysf47naf",
+  "slug": "study-quiz",
+  "executa_type": "skill",
+  "first_published_at": "2026-10-28T18:45:54.138Z"
+}

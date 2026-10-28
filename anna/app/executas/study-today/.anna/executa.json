@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1284,
+  "tool_id": "skill-dymchenko-study-today-bg5k4bsn",
+  "slug": "study-today",
+  "executa_type": "skill",
+  "first_published_at": "2026-10-28T18:47:15.918Z"
+}

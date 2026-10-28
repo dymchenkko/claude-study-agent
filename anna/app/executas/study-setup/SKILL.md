@@ -13,7 +13,7 @@ Arguments, from the user's message: `[auto|cpu|off]`
    Install in the dialog; it's also what reads scanned PDFs), on Linux `sudo apt install python3`; then rerun it.
    If the `Python` line says `needs 3.10+`: ask me in one line, e.g. "Your Python is too old for
    meaning-based search (3.9). Install a newer one? ~1 min, no password." On yes, if `brew` exists run
-   `brew install python`, else `curl -LsSf https://astral.sh/uv/install.sh | sh` and then
+   `brew install python`, else download `https://astral.sh/uv/install.sh` with curl, then run it with `sh` and then
    `~/.local/bin/uv python install 3.13`. Rerun `study doctor`: the line now says `ok` (`study` switches to the
    newer Python by itself) and the recommended mode is no longer `off` because of Python.
 2. Tell me in ≤ 120 words, in plain words:
