@@ -25,7 +25,8 @@ SLUG = "study-tutor"
 EMOJI = {"tutor": "🎓", "today": "📅", "learn": "📖", "review": "🔁", "quiz": "❓",
          "exam": "📝", "ingest": "📥", "status": "📊", "setup": "🛠️"}
 COMMANDS = "|".join(EMOJI)
-TOOL_FILES = ["study_tools.py", "pyproject.toml", "executa.json"]
+# .anna/executa.json holds the published tool_id, so publishing the app reuses that tool instead of minting one.
+TOOL_FILES = ["study_tools.py", "pyproject.toml", "executa.json", ".anna/executa.json"]
 
 TUTOR_DESCRIPTION = ("Core rules of the study tutor: the study folder layout, how to teach from the user's own "
                      "course materials with citations and micro-tasks, spaced-repetition memory and exam prep. "
