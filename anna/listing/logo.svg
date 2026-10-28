@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Study Tutor app icon: an open book under a graduation cap, in the README's accent orange. -->
+  <rect width="512" height="512" rx="112" fill="#c2410c"/>
+  <!-- cap -->
+  <polygon points="256,96 400,156 256,216 112,156" fill="#fff"/>
+  <path d="M176 182v44c0 22 36 40 80 40s80-18 80-40v-44l-80 34z" fill="#fff"/>
+  <line x1="388" y1="160" x2="388" y2="228" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="388" cy="234" r="12" fill="#fff"/>
+  <!-- open book -->
+  <path d="M256 330c-40-26-92-34-148-28v118c56-6 108 2 148 28z" fill="#fff"/>
+  <path d="M256 330c40-26 92-34 148-28v118c-56-6-108 2-148 28z" fill="#fde7dc"/>
+  <path d="M256 330v118" stroke="#c2410c" stroke-width="6"/>
+</svg>

@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "anna/app"
 VERSION = "0.1.0"
 SLUG = "study-tutor"
+REPO = "https://github.com/dymchenkko/claude-study-agent"
+RAW = "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app"  # served from the pushed branch
+SCREENSHOTS = ["screenshot-1-today.png", "screenshot-2-review.png"]
 
 EMOJI = {"tutor": "🎓", "today": "📅", "learn": "📖", "review": "🔁", "quiz": "❓",
          "exam": "📝", "ingest": "📥", "status": "📊", "setup": "🛠️"}
@@ -107,15 +110,27 @@ def build():
         "version": VERSION,
         "tagline": "A tutor that teaches from your own lecture slides, PDFs and recordings.",
         "description": (
-            "Study Tutor turns Anna into a personal university tutor. It teaches topic by topic from your own "
-            "course materials with citations, gives small practical tasks, remembers what you know with "
-            "spaced repetition, and builds mock exams in your real exam format.\n\n"
-            "Mention `#study-tutor` and say `today`, `learn <topic>`, `review`, `quiz`, `exam` or `status`. "
-            "Your materials and progress stay in a folder on your computer (`~/Study`), so it runs on a "
-            "local Anna Agent."),
+            "Study Tutor turns Anna into a personal university tutor that teaches from course materials, not "
+            "from general knowledge. It goes topic by topic with page citations, gives one small practical task "
+            "at a time, grades your answers, and schedules reviews with spaced repetition "
+            "(1 → 3 → 7 → 16 → 35 days).\n\n"
+            "**Try it:** mention #Study Tutor and say `today`, `learn <topic>`, `review`, `quiz`, `exam` or "
+            "`status`. The first time, it sets up a study folder in your agent's workspace with a demo Cell "
+            "Biology course, so you can start right away.\n\n"
+            "**What's inside:** nine skills (daily session, learn, review, quiz, mock exam, status and more) "
+            "and the Study Tools plugin, which searches the course materials and records progress, mistakes "
+            "and session notes one row at a time, so your study history is never overwritten.\n\n"
+            "**Your own courses:** a course is a folder of lecture PDFs, slides, notes or recordings converted "
+            "to searchable text. Today this works with a local Anna Agent and the open-source study folder; "
+            "importing your own files on a cloud agent is not supported yet. On a cloud agent, files live in "
+            "the agent workspace, which Anna reclaims after a few days without use.\n\n"
+            "Open source (MIT): https://github.com/dymchenkko/claude-study-agent"),
         "category": "education",
-        "homepage_url": "https://github.com/dymchenkko/claude-study-agent",
-        "support_url": "https://github.com/dymchenkko/claude-study-agent/issues",
+        "homepage_url": f"{REPO}/tree/anna-app/anna",
+        "support_url": f"{REPO}/issues",
+        # Paths are relative to anna/app/; the build wipes anna/app/, so the images live in anna/listing/.
+        "logo_file": "../listing/logo.png",
+        "screenshots": [f"{RAW}/anna/listing/{name}" for name in SCREENSHOTS],
         "bundled_executas": {h: {"path": f"./executas/{h}"} for h in handles},
     }
     files["app.json"] = json.dumps(app, indent=2, ensure_ascii=False) + "\n"
