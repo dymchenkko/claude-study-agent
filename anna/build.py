@@ -128,9 +128,9 @@ def main():
     args = ap.parse_args()
     files = build()
     on_disk = {str(p.relative_to(OUT)): p.read_text() for p in OUT.rglob("*") if p.is_file()} if OUT.exists() else {}
-    # `anna-app apps publish` writes each executa's minted id to <executa>/.anna/; keep those across rebuilds,
-    # or the next publish would mint duplicates.
-    kept = {p: c for p, c in on_disk.items() if "/.anna/" in p and p not in files}
+    # `anna-app apps publish` writes the app's and each executa's minted ids to .anna/ folders; keep those across
+    # rebuilds, or the next publish would mint duplicates.
+    kept = {p: c for p, c in on_disk.items() if ".anna" in Path(p).parts and p not in files}
     on_disk = {p: c for p, c in on_disk.items() if p not in kept}
     if args.check:
         stale = sorted(set(files) ^ set(on_disk) | {p for p in files if on_disk.get(p) != files[p]})
