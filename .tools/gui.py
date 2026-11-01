@@ -1,17 +1,21 @@
 """`study gui`: a local web page over the study folder.
 
-Standard library only. The page reads the subject files through a small JSON API; nothing is
-stored anywhere else. Listens on 127.0.0.1 with a random token in the URL.
+Standard library only. The page reads the subject files through a small JSON API and chats with
+the tutor through an agent adapter (agents.py), streamed as server-sent events. Nothing is stored
+anywhere but the study folder. Listens on 127.0.0.1 with a random token in the URL.
 """
 
 import json
 import re
 import secrets
+import threading
 import webbrowser
-from datetime import date
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
+
+import agents
 
 PAGE = Path(__file__).resolve().parent / "gui" / "index.html"
 DATE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
@@ -151,9 +155,32 @@ def subject_summary(detail):
     }
 
 
+# ---------- chat transcripts ----------
+
+def save_transcript(root, subject, prompt, reply, now=None):
+    """Append one exchange to <Subject>/sessions/YYYY-MM-DD-chat.md (the chat is a real session)."""
+    now = now or datetime.now()
+    path = root / subject / "sessions" / f"{now:%Y-%m-%d}-chat.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    head = "" if path.exists() else f"# {subject} — chat {now:%Y-%m-%d}\n\nSaved by `study gui`.\n"
+    with path.open("a", encoding="utf-8") as f:
+        f.write(f"{head}\n## {now:%H:%M}\n\n**You:** {prompt.strip()}\n\n**Tutor:**\n\n{reply.strip() or '_(no reply)_'}\n")
+    return path
+
+
+def agent_name(root):
+    try:
+        return json.loads((root / ".tools" / "config.json").read_text()).get("agent", "claude")
+    except (OSError, ValueError):
+        return "claude"
+
+
 # ---------- the server ----------
 
 def make_handler(root, token):
+    adapter = agents.get_adapter(root, agent_name(root))
+    runs, lock = {}, threading.Lock()
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):  # keep the terminal quiet
             pass
@@ -170,23 +197,83 @@ def make_handler(root, token):
         def _json(self, obj, code=200):
             self._send(code, json.dumps(obj, ensure_ascii=False), "application/json; charset=utf-8")
 
+        def _authorised(self, url):
+            if parse_qs(url.query).get("t", [""])[0] == token:
+                return True
+            self._send(403, "Open the link printed by `study gui`.", "text/plain")
+            return False
+
         def do_GET(self):
             url = urlparse(self.path)
-            if parse_qs(url.query).get("t", [""])[0] != token:
-                return self._send(403, "Open the link printed by `study gui`.", "text/plain")
+            if not self._authorised(url):
+                return
             today = date.today().isoformat()
             parts = [unquote(p) for p in url.path.strip("/").split("/") if p]
             if not parts:
                 return self._send(200, PAGE.read_text(encoding="utf-8"), "text/html; charset=utf-8")
             if parts == ["api", "subjects"]:
                 names = subject_names(root)
-                return self._json({"today": today, "root": str(root), "subjects": [
-                    subject_summary(subject_detail(root, n, today)) for n in names]})
+                return self._json({"today": today, "root": str(root), "agent": adapter.name,
+                                   "agentReady": adapter.available(), "subjects": [
+                                       subject_summary(subject_detail(root, n, today)) for n in names]})
             if len(parts) == 3 and parts[:2] == ["api", "subjects"]:
                 if parts[2] not in subject_names(root):
                     return self._json({"error": f"no subject {parts[2]}"}, 404)
                 return self._json(subject_detail(root, parts[2], today))
             return self._json({"error": "not found"}, 404)
+
+        def do_POST(self):
+            url = urlparse(self.path)
+            if not self._authorised(url):
+                return
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
+            except ValueError:
+                return self._json({"error": "bad JSON"}, 400)
+            if url.path == "/api/chat":
+                return self._chat(body)
+            if url.path == "/api/chat/stop":
+                with lock:
+                    run = runs.get(body.get("runId"))
+                if run:
+                    run.stop()
+                return self._json({"stopped": bool(run)})
+            return self._json({"error": "not found"}, 404)
+
+        def _event(self, obj):
+            self.wfile.write(f"data: {json.dumps(obj, ensure_ascii=False)}\n\n".encode("utf-8"))
+            self.wfile.flush()
+
+        def _chat(self, body):
+            prompt, subject = str(body.get("prompt", "")).strip(), str(body.get("subject", ""))
+            if not prompt:
+                return self._json({"error": "empty message"}, 400)
+            if subject not in subject_names(root):
+                return self._json({"error": f"no subject {subject}"}, 404)
+            if not adapter.available():
+                return self._json({"error": f"{adapter.name} is not installed or not on PATH"}, 503)
+            run_id = secrets.token_hex(8)
+            run = adapter.start(prompt, subject, body.get("sessionId") or None)
+            with lock:
+                runs[run_id] = run
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            reply = ""
+            try:
+                self._event({"type": "start", "runId": run_id})
+                for ev in run.events():
+                    if ev["type"] == "done":
+                        reply = ev.get("text", "")
+                    self._event(ev)
+            except (BrokenPipeError, ConnectionResetError):
+                run.stop()  # the page was closed: don't leave the agent running
+            finally:
+                with lock:
+                    runs.pop(run_id, None)
+                if reply.strip():  # failed or empty runs are not a study session
+                    save_transcript(root, subject, prompt, reply)
 
     return Handler
 
@@ -194,6 +281,7 @@ def make_handler(root, token):
 def serve(root, port=0, open_browser=True):
     token = secrets.token_urlsafe(16)
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(Path(root), token))
+    server.daemon_threads = True
     url = f"http://127.0.0.1:{server.server_address[1]}/?t={token}"
     print(f"Study GUI for {root}\n  {url}\nCtrl+C to stop.", flush=True)
     if open_browser:

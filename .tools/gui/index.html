@@ -172,13 +172,31 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 /* ---------- right: tutor (NotebookLM chat beside the material) ---------- */
 .tutor { border-left: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
 .tutor header { padding: 20px 20px 12px; border-bottom: 1px solid var(--line); padding-right: 56px; }
+.tutor header { display: flex; align-items: flex-start; gap: 10px; }
+.tutor header > div { flex: 1; min-width: 0; }
 .tutor header h3 { font-size: 18px; }
+.newchat { border: 1px solid var(--line); background: var(--raised); border-radius: 8px; padding: 3px 9px; font-size: 12px; color: var(--muted); }
+.newchat:hover { color: var(--accent); border-color: var(--accent); }
 .tutor header .muted { font-size: 13px; }
 .log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .bubble { max-width: 92%; padding: 10px 13px; border-radius: 14px; font-size: 14px; }
-.bubble.tutor-msg { background: var(--paper); border: 1px solid var(--line); border-top-left-radius: 4px; }
+.bubble.tutor-msg { background: var(--paper); border: 1px solid var(--line); border-top-left-radius: 4px; overflow-wrap: anywhere; }
+.bubble.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-top-right-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.error { background: var(--bad-soft); color: var(--bad); border: 1px solid transparent; }
+.bubble p { margin: 0 0 8px; } .bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+.bubble pre { background: var(--m0); border-radius: 8px; padding: 8px 10px; overflow-x: auto; font-size: 12.5px; margin: 6px 0; }
+.bubble code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; }
+.bubble :not(pre) > code { background: var(--m0); border-radius: 4px; padding: 0 4px; }
+.bubble table { margin: 6px 0; font-size: 12.5px; border-radius: 8px; }
+.bubble th, .bubble td { padding: 4px 8px; font-size: 12.5px; }
+.bubble h4 { margin: 8px 0 4px; font-size: 14px; }
+.activity { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.activity .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.8); } }
+.stopped { font-size: 12px; color: var(--faint); }
+.btn.stop { background: var(--raised); color: var(--ink); border-color: var(--line); box-shadow: none; }
 .cite { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; margin: 2px 2px 0 0; }
-.soon { font-size: 12px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; }
 .quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 10px; }
 .quick button { border: 1px solid var(--line); background: var(--raised); border-radius: 99px; padding: 4px 12px; font-size: 13px; }
 .quick button:hover { border-color: var(--accent); color: var(--accent); }
@@ -244,19 +262,16 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
   </main>
 
   <aside class="tutor">
-    <header><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></header>
-    <div class="log" id="log">
-      <div class="bubble tutor-msg">Pick a topic on the map or press <b>Start session</b>, and I'll take it from there.
-        I answer from your own lectures and show where, like <span class="cite">Wykład 2 [00:20:02]</span>.</div>
-      <div class="soon">Chatting arrives in the next step. For now the buttons fill in the message, so you can see what will be sent.</div>
-    </div>
+    <header><div><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></div>
+      <button class="newchat" id="newChat" title="Start a fresh conversation">New chat</button></header>
+    <div class="log" id="log"></div>
     <div class="quick" id="quick">
       <button data-cmd="today">Today</button><button data-cmd="review">Review</button>
       <button data-cmd="quiz">Quiz</button><button data-cmd="status">Status</button>
     </div>
     <div class="compose"><div class="box">
-      <textarea id="input" placeholder="Ask your tutor…" rows="2"></textarea>
-      <button class="btn primary" id="send" disabled title="Arrives in the next step">Send</button>
+      <textarea id="input" placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)" rows="2"></textarea>
+      <button class="btn primary" id="send">Send</button>
     </div></div>
   </aside>
 </div>
@@ -365,7 +380,7 @@ function renderFocus(d) {
     ${t.notes ? `<div class="note">${esc(t.notes)}</div>` : ''}
     <div class="actions">
       <button class="btn small primary" data-prompt="/learn ${esc(d.name)} ${esc(t.topic)}">${t.level ? 'Continue this topic' : 'Learn this topic'}</button>
-      ${t.level ? `<button class="btn small" data-prompt="Quick review of “${esc(t.topic)}” in ${esc(d.name)}">Quick review</button>` : ''}
+      ${t.level ? `<button class="btn small" data-prompt="/review ${esc(d.name)} ${esc(t.topic)}">Quick review</button>` : ''}
       <button class="btn small" data-close>Close</button></div></div>`;
 }
 
@@ -398,7 +413,7 @@ function renderDetail() {
     `<span class="chip">${started}/${d.topics.length} topics started</span>`,
     due ? `<span class="chip hot">${due} reviews due</span>` : ''].join('');
   document.getElementById('tutorSub').textContent = `${d.name} · answers come from your lectures`;
-  renderPlan(d); renderMap(d); renderFocus(d); renderMistakes(d);
+  renderPlan(d); renderMap(d); renderFocus(d); renderMistakes(d); renderChat();
 }
 
 async function openSubject(name, keep) {
@@ -419,8 +434,121 @@ async function reload() {
   else document.getElementById('title').textContent = 'No subjects yet';
 }
 
-const input = document.getElementById('input');
-function prefill(text) { input.value = text; input.focus(); }
+// ---------- chat with the tutor (through the agent adapter on the server) ----------
+const input = document.getElementById('input'), sendBtn = document.getElementById('send'), logEl = document.getElementById('log');
+const chats = {};  // subject -> { sessionId, messages: [{role, text, tools, error, stopped}], running, runId }
+const chatFor = name => chats[name] ??= (() => {
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(`study-chat-${name}`)); } catch {}
+  return { sessionId: saved?.sessionId ?? null, messages: saved?.messages ?? [], running: false, runId: null };
+})();
+const saveChat = name => { const c = chats[name]; try {
+  localStorage.setItem(`study-chat-${name}`, JSON.stringify({ sessionId: c.sessionId, messages: c.messages.slice(-60) })); } catch {} };
+
+// Small, safe Markdown: escape first, then add formatting. Citations like (Lecture3.pdf p.12) become chips.
+const CITE = /\(([^()\n]{2,140}?(?:\.pdf|\.pptx?|\.mp4|\.docx?|\.md|\[\d{1,2}:\d{2}(?::\d{2})?\]|\bp\.\s?\d+|\bslide\s\d+)[^()\n]{0,60})\)/gi;
+function inline(t) {
+  return t.replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, '$1<i>$2</i>')
+    .replace(CITE, (m, c) => `<span class="cite">${c}</span>`);
+}
+function md(src) {
+  const out = [], lines = esc(src).split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (/^```/.test(l)) { const code = []; while (++i < lines.length && !/^```/.test(lines[i])) code.push(lines[i]);
+      out.push(`<pre><code>${code.join('\n')}</code></pre>`); continue; }
+    if (/^\s*\|/.test(l)) { const rows = []; for (; i < lines.length && /^\s*\|/.test(lines[i]); i++) rows.push(lines[i]); i--;
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      const body = rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      out.push(`<table><thead><tr>${cells(body[0]).map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${
+        body.slice(1).map(r => `<tr>${cells(r).map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`); continue; }
+    if (/^\s*([-*]|\d+\.)\s+/.test(l)) { const ordered = /^\s*\d+\./.test(l), items = [];
+      for (; i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i]); i++) items.push(inline(lines[i].replace(/^\s*([-*]|\d+\.)\s+/, ''))); i--;
+      const tag = ordered ? 'ol' : 'ul'; out.push(`<${tag}>${items.map(x => `<li>${x}</li>`).join('')}</${tag}>`); continue; }
+    if (/^#{1,6}\s/.test(l)) { out.push(`<h4>${inline(l.replace(/^#+\s/, ''))}</h4>`); continue; }
+    if (!l.trim()) continue;
+    const para = [l]; while (i + 1 < lines.length && lines[i + 1].trim() && !/^(```|\s*\||\s*([-*]|\d+\.)\s|#{1,6}\s)/.test(lines[i + 1])) para.push(lines[++i]);
+    out.push(`<p>${inline(para.join('<br>'))}</p>`);
+  }
+  return out.join('');
+}
+
+function renderChat() {
+  const name = state.current, c = name ? chatFor(name) : null;
+  const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 60;
+  const welcome = `<div class="bubble tutor-msg">Press <b>Start session</b>, pick a topic on the map, or just ask.
+    I answer from your own lectures and show where, like <span class="cite">Wykład 2 [00:20:02]</span>.</div>`;
+  const ready = state.list?.agentReady !== false ? '' :
+    `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>.</div>`;
+  logEl.innerHTML = ready + (!c || !c.messages.length ? welcome : c.messages.map(m => {
+    if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}</div>`;
+    const busy = c.running && m === c.messages[c.messages.length - 1];
+    return (m.text ? `<div class="bubble tutor-msg">${md(m.text)}</div>` : '') +
+      (m.error ? `<div class="bubble error">${esc(m.error)}</div>` : '') +
+      (busy ? `<div class="activity"><span class="pulse"></span>${esc(m.tools?.at(-1) ?? 'Thinking')}…</div>` : '') +
+      (m.stopped ? '<div class="stopped">Stopped.</div>' : '');
+  }).join(''));
+  if (atBottom || c?.running) logEl.scrollTop = logEl.scrollHeight;
+  const running = !!c?.running;
+  sendBtn.textContent = running ? 'Stop' : 'Send';
+  sendBtn.classList.toggle('stop', running);
+  document.querySelectorAll('[data-prompt], #quick button').forEach(b => b.disabled = running);
+}
+
+async function send(text) {
+  const name = state.current; if (!name) return;
+  const c = chatFor(name); text = text.trim();
+  if (!text || c.running) return;
+  input.value = '';
+  const reply = { role: 'tutor', text: '', tools: [] };
+  c.messages.push({ role: 'me', text }, reply);
+  c.running = true; renderChat();
+  try {
+    const res = await fetch(`/api/chat?t=${encodeURIComponent(token)}`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, subject: name, sessionId: c.sessionId }) });
+    if (!res.ok) { reply.error = (await res.json().catch(() => ({}))).error ?? `Error ${res.status}`; return; }
+    const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let k; while ((k = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, k); buf = buf.slice(k + 2);
+        if (!chunk.startsWith('data: ')) continue;
+        const ev = JSON.parse(chunk.slice(6));
+        if (ev.type === 'start') c.runId = ev.runId;
+        else if (ev.type === 'session') c.sessionId = ev.sessionId;
+        else if (ev.type === 'text') reply.text += ev.text;
+        else if (ev.type === 'tool') reply.tools.push(ev.label);
+        else if (ev.type === 'error') reply.error = ev.message;
+        else if (ev.type === 'done') { if (ev.sessionId) c.sessionId = ev.sessionId; if (ev.stopped) reply.stopped = true; }
+        if (name === state.current) renderChat();
+      }
+    }
+  } catch (err) {
+    reply.error = `Lost the connection to study gui (${err.message}). Is it still running?`;
+  } finally {
+    c.running = false; c.runId = null; delete reply.tools;
+    saveChat(name);
+    if (name === state.current) renderChat();
+    reload();  // the tutor updated progress.md / mistakes.md: show it
+  }
+}
+
+async function stop() {
+  const c = state.current && chatFor(state.current);
+  if (c?.runId) await fetch(`/api/chat/stop?t=${encodeURIComponent(token)}`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ runId: c.runId }) });
+}
+
+sendBtn.addEventListener('click', () => (chatFor(state.current).running ? stop() : send(input.value)));
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!chatFor(state.current).running) send(input.value); }
+});
+document.getElementById('newChat').addEventListener('click', () => {
+  const c = state.current && chatFor(state.current); if (!c || c.running) return;
+  c.sessionId = null; c.messages = []; saveChat(state.current); renderChat();
+});
 
 document.getElementById('subjects').addEventListener('click', e => {
   const b = e.target.closest('.subj'); if (b) openSubject(b.dataset.name);
@@ -433,7 +561,7 @@ document.getElementById('mapMode').addEventListener('click', e => {
 });
 document.querySelector('.main').addEventListener('click', e => {
   if (e.target.closest('[data-close]')) { state.sel = null; renderMap(state.detail); renderFocus(state.detail); return; }
-  const p = e.target.closest('[data-prompt]'); if (p) { prefill(p.dataset.prompt); return; }
+  const p = e.target.closest('[data-prompt]'); if (p) { send(p.dataset.prompt); return; }
   const flip = e.target.closest('[data-flip]');
   if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(state.detail); return; }
   const tile = e.target.closest('[data-i]');
@@ -445,7 +573,7 @@ document.querySelector('.main').addEventListener('click', e => {
 });
 document.getElementById('quick').addEventListener('click', e => {
   const b = e.target.closest('[data-cmd]'); if (!b) return;
-  prefill(b.dataset.cmd === 'status' ? '/status' : `/${b.dataset.cmd} ${state.current ?? ''}`.trim());
+  send(b.dataset.cmd === 'status' ? '/status' : `/${b.dataset.cmd} ${state.current ?? ''}`.trim());
 });
 document.getElementById('theme').addEventListener('click', () => {
   const root = document.documentElement;
