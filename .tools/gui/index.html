@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Study</title>
+<style>
+/* Design "Violet": the 2026 product-UI look (Linear / Vercel style). A calm cool-neutral base,
+   one expressive accent (violet), a tonal violet scale for mastery, and two signals: orange = due,
+   red = mistake. All colours in OKLCH, one token set per theme. */
+:root {
+  --paper: oklch(98.4% 0.004 286); --surface: oklch(100% 0 0); --raised: oklch(100% 0 0);
+  --ink: oklch(22% 0.02 285); --muted: oklch(52% 0.018 285); --faint: oklch(68% 0.014 285);
+  --line: oklch(92.5% 0.007 286);
+  --accent: oklch(54% 0.24 287); --accent-ink: oklch(99% 0 0); --accent-soft: oklch(95.5% 0.03 287);
+  --due: oklch(70% 0.18 52); --due-text: oklch(50% 0.15 50); --due-ink: oklch(28% 0.07 52); --due-soft: oklch(96% 0.035 70);
+  --bad: oklch(60% 0.21 22); --bad-soft: oklch(96% 0.025 22); --good: oklch(60% 0.15 155);
+  /* mastery: 0 = neutral, then one violet hue getting deeper */
+  --m0: oklch(96.2% 0.005 286); --m1: oklch(94% 0.035 290); --m2: oklch(88% 0.07 290);
+  --m3: oklch(78.5% 0.12 289); --m4: oklch(63% 0.19 288); --m5: oklch(48% 0.22 287);
+  --m0-ink: var(--ink); --m1-ink: var(--ink); --m2-ink: var(--ink); --m3-ink: oklch(22% 0.06 287);
+  --m4-ink: oklch(99% 0 0); --m5-ink: oklch(99% 0 0);
+  --shadow: 0 1px 2px oklch(22% 0.02 285 / .05), 0 8px 24px -8px oklch(22% 0.02 285 / .08);
+  --glow: 0 0 0 1px oklch(54% 0.24 287 / .12), 0 10px 40px -12px oklch(54% 0.24 287 / .35);
+  --head: "Inter Display", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: oklch(15.5% 0.012 286); --surface: oklch(19% 0.014 286); --raised: oklch(23% 0.016 286);
+    --ink: oklch(96% 0.006 286); --muted: oklch(70% 0.015 286); --faint: oklch(52% 0.015 286);
+    --line: oklch(28% 0.016 286);
+    --accent: oklch(72% 0.17 288); --accent-ink: oklch(16% 0.02 286); --accent-soft: oklch(27% 0.06 288);
+    --due: oklch(76% 0.16 60); --due-text: oklch(80% 0.14 65); --due-ink: oklch(22% 0.05 60); --due-soft: oklch(27% 0.05 60);
+    --bad: oklch(70% 0.17 22); --bad-soft: oklch(26% 0.05 22); --good: oklch(74% 0.14 155);
+    --m0: oklch(23% 0.012 286); --m1: oklch(27% 0.045 289); --m2: oklch(34% 0.09 289);
+    --m3: oklch(44% 0.14 288); --m4: oklch(57% 0.18 288); --m5: oklch(76% 0.13 290);
+    --m0-ink: var(--ink); --m1-ink: var(--ink); --m2-ink: var(--ink); --m3-ink: var(--ink);
+    --m4-ink: oklch(99% 0 0); --m5-ink: oklch(16% 0.03 287);
+    --shadow: 0 1px 2px oklch(0% 0 0 / .35); --glow: 0 0 0 1px oklch(72% 0.17 288 / .2), 0 10px 40px -12px oklch(72% 0.17 288 / .3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: oklch(15.5% 0.012 286); --surface: oklch(19% 0.014 286); --raised: oklch(23% 0.016 286);
+  --ink: oklch(96% 0.006 286); --muted: oklch(70% 0.015 286); --faint: oklch(52% 0.015 286);
+  --line: oklch(28% 0.016 286);
+  --accent: oklch(72% 0.17 288); --accent-ink: oklch(16% 0.02 286); --accent-soft: oklch(27% 0.06 288);
+  --due: oklch(76% 0.16 60); --due-text: oklch(80% 0.14 65); --due-ink: oklch(22% 0.05 60); --due-soft: oklch(27% 0.05 60);
+  --bad: oklch(70% 0.17 22); --bad-soft: oklch(26% 0.05 22); --good: oklch(74% 0.14 155);
+  --m0: oklch(23% 0.012 286); --m1: oklch(27% 0.045 289); --m2: oklch(34% 0.09 289);
+  --m3: oklch(44% 0.14 288); --m4: oklch(57% 0.18 288); --m5: oklch(76% 0.13 290);
+  --m0-ink: var(--ink); --m1-ink: var(--ink); --m2-ink: var(--ink); --m3-ink: var(--ink);
+  --m4-ink: oklch(99% 0 0); --m5-ink: oklch(16% 0.03 287);
+  --shadow: 0 1px 2px oklch(0% 0 0 / .35); --glow: 0 0 0 1px oklch(72% 0.17 288 / .2), 0 10px 40px -12px oklch(72% 0.17 288 / .3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--sans); }
+button { font: inherit; color: inherit; cursor: pointer; }
+h1, h2, h3 { font-family: var(--head); font-weight: 650; margin: 0; letter-spacing: -.025em; }
+body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
+.muted { color: var(--muted); }
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr) 360px; height: 100vh; }
+
+/* ---------- left rail: subjects (Anki deck list + a mini course strip) ---------- */
+.rail { border-right: 1px solid var(--line); padding: 20px 14px; overflow-y: auto; }
+.brand { padding: 0 8px 18px; }
+.brand h1 { font-size: 22px; }
+.brand .date { color: var(--muted); font-size: 13px; }
+.subj { display: block; width: 100%; text-align: left; background: none; border: 1px solid transparent;
+  border-radius: 12px; padding: 10px 10px 11px; margin-bottom: 4px; }
+.subj:hover { background: var(--surface); }
+.subj.active { background: var(--surface); border-color: var(--line); box-shadow: var(--shadow), inset 3px 0 0 var(--accent); }
+.subj .row { display: flex; align-items: center; gap: 8px; }
+.subj .name { font-weight: 600; flex: 1; }
+.badge { font-size: 12px; font-weight: 600; border-radius: 99px; padding: 1px 8px; }
+.badge.due { background: var(--due-soft); color: var(--due-text); }
+.badge.ok { color: var(--good); }
+.strip { display: flex; gap: 2px; margin: 8px 0 5px; }
+.strip i { flex: 1; height: 6px; border-radius: 2px; background: var(--m0); max-width: 14px; }
+.strip i.due { box-shadow: inset 0 -2px 0 var(--due); }
+.subj .meta { font-size: 12px; color: var(--muted); }
+
+/* ---------- main column ---------- */
+.main { overflow-y: auto; padding: 28px 36px 60px; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; margin-bottom: 20px; }
+.head h2 { font-size: 32px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 13px; border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; color: var(--muted); background: var(--surface); }
+.chip.hot { border-color: transparent; background: var(--due-soft); color: var(--due-text); font-weight: 600; }
+section { margin-top: 30px; }
+.sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sec-head h3 { font-size: 20px; flex: 1; }
+
+/* Today plan (Math Academy daily list + Gemini priority list + catch-up) */
+.plan { background: radial-gradient(120% 140% at 100% 0%, var(--accent-soft), var(--surface) 55%); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; box-shadow: var(--glow); }
+.plan .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 650; }
+.plan h3 { font-size: 24px; margin: 4px 0 4px; }
+.plan .sub { color: var(--muted); margin-bottom: 16px; }
+.plan.back { background: radial-gradient(120% 140% at 100% 0%, var(--due-soft), var(--surface) 55%); }
+.plan.back .kicker { color: var(--due-text); }
+.steps { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+.steps li { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: start; }
+.steps .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  font-size: 13px; background: var(--paper); border: 1px solid var(--line); }
+.steps .what { font-weight: 600; }
+.steps .detail { color: var(--muted); font-size: 13px; }
+.steps .min { color: var(--faint); font-size: 13px; white-space: nowrap; padding-top: 3px; }
+.btn { border: 1px solid var(--line); background: var(--raised); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 10px 18px; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.primary { box-shadow: 0 1px 0 oklch(100% 0 0 / .18) inset, 0 6px 16px -6px var(--accent); }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+
+/* Course map (Math Academy knowledge map + spatial canvas tiles) */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 4px 12px; font-size: 13px; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--ink); font-weight: 600; }
+.map { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.tile { position: relative; text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: 10px 11px;
+  min-height: 96px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--m0);
+  transition: transform .12s, box-shadow .12s; }
+.tile:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.tile .num { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tile .tname { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tile .foot { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.tile.l1 { background: var(--m1); } .tile.l2 { background: var(--m2); } .tile.l3 { background: var(--m3); }
+.tile.l4 { background: var(--m4); } .tile.l5 { background: var(--m5); }
+.tile.l0 { color: var(--m0-ink); } .tile.l1 { color: var(--m1-ink); } .tile.l2 { color: var(--m2-ink); }
+.tile.l3 { color: var(--m3-ink); } .tile.l4 { color: var(--m4-ink); } .tile.l5 { color: var(--m5-ink); }
+.tile:not(.l0) { border-color: transparent; }
+.tile .num { color: inherit; opacity: .6; }
+.tile .late { background: var(--due); color: var(--due-ink); border-radius: 99px; padding: 0 7px; font-weight: 700; }
+.tile .mist { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); margin-left: auto; box-shadow: 0 0 0 2px var(--raised); }
+.tile.sel { box-shadow: 0 0 0 3px var(--accent); }
+.dots { display: inline-flex; gap: 2px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .25; }
+.dots i.on { opacity: .9; }
+.focus { margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); }
+.focus h4 { margin: 0 0 6px; font-family: var(--head); font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
+.focus .facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.focus .note { margin: 6px 0 12px; }
+.focus .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 12px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 14px; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+tr.click { cursor: pointer; } tr.click:hover td { background: var(--paper); }
+.lv { display: inline-flex; gap: 2px; } .lv i { width: 14px; height: 8px; border-radius: 2px; background: var(--m0); }
+
+/* Mistakes as flip cards (flashcard pattern) */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.card { text-align: left; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--bad);
+  border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.card .t { font-size: 12px; font-weight: 600; color: var(--bad); }
+.card .q { font-weight: 600; font-size: 14px; }
+.card .hint { font-size: 12px; color: var(--faint); margin-top: auto; }
+.card .ans { font-size: 13px; }
+.card .why { font-size: 13px; background: var(--bad-soft); border-radius: 8px; padding: 6px 8px; }
+.card .src { font-size: 12px; color: var(--muted); }
+.card.fixed { border-left-color: var(--good); opacity: .75; }
+details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
+.empty { color: var(--muted); padding: 14px 0; }
+
+/* ---------- right: tutor (NotebookLM chat beside the material) ---------- */
+.tutor { border-left: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+.tutor header { padding: 20px 20px 12px; border-bottom: 1px solid var(--line); padding-right: 56px; }
+.tutor header h3 { font-size: 18px; }
+.tutor header .muted { font-size: 13px; }
+.log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: 92%; padding: 10px 13px; border-radius: 14px; font-size: 14px; }
+.bubble.tutor-msg { background: var(--paper); border: 1px solid var(--line); border-top-left-radius: 4px; }
+.cite { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; margin: 2px 2px 0 0; }
+.soon { font-size: 12px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 10px; }
+.quick button { border: 1px solid var(--line); background: var(--raised); border-radius: 99px; padding: 4px 12px; font-size: 13px; }
+.quick button:hover { border-color: var(--accent); color: var(--accent); }
+.compose { padding: 0 16px 16px; }
+.box { display: flex; gap: 8px; align-items: flex-end; border: 1px solid var(--line); border-radius: 14px; background: var(--raised); padding: 8px; }
+.box:focus-within { border-color: var(--accent); }
+.box textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: inherit; font-size: 14px; min-height: 44px; max-height: 160px; padding: 4px 6px; }
+.box .btn.primary { padding: 7px 14px; }
+.box .btn:disabled { opacity: .45; cursor: not-allowed; }
+.theme { position: fixed; right: 16px; top: 18px; z-index: 2; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; width: 32px; height: 32px; font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 220px minmax(0, 1fr); height: auto; min-height: 100vh; }
+  .tutor { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); min-height: 420px; }
+  .main { overflow: visible; }
+  .tutor header { padding-right: 20px; }
+}
+@media (max-width: 720px) {
+  .app { grid-template-columns: 1fr; }
+  .rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; gap: 8px; overflow-x: auto; padding-right: 56px; }
+  .brand { display: none; }
+  .subj { min-width: 170px; margin: 0; }
+  .main { padding: 20px 16px 40px; }
+  .head h2 { font-size: 28px; }
+  .plan { padding: 18px 16px; }
+  .steps li { grid-template-columns: 28px 1fr; } .steps .min { display: none; }
+  .map { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" title="Light / dark">◐</button>
+<div class="app">
+  <nav class="rail">
+    <div class="brand"><h1>My Study</h1><div class="date" id="today"></div></div>
+    <div id="subjects"></div>
+  </nav>
+
+  <main class="main">
+    <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
+    <div id="plan"></div>
+    <section>
+      <div class="sec-head"><h3>Course map</h3>
+        <div class="seg" id="mapMode"><button data-mode="map" class="on">Map</button><button data-mode="list">List</button></div></div>
+      <div class="legend">
+        <span><i style="background:var(--m0)"></i>not started</span>
+        <span><i style="background:var(--m1)"></i>seen</span>
+        <span><i style="background:var(--m2)"></i>shaky</span>
+        <span><i style="background:var(--m3)"></i>ok</span>
+        <span><i style="background:var(--m4)"></i>solid</span>
+        <span><i style="background:var(--m5)"></i>mastered</span>
+        <span><i style="background:var(--due);border-radius:99px;width:18px"></i>review due (days late)</span>
+        <span><i style="background:var(--bad);border-radius:50%;width:9px;height:9px"></i>open mistake</span>
+      </div>
+      <div id="map"></div>
+      <div id="focus"></div>
+    </section>
+    <section>
+      <div class="sec-head"><h3>Mistakes to fix</h3><span class="muted" id="mistakeCount"></span></div>
+      <div id="mistakes"></div>
+    </section>
+  </main>
+
+  <aside class="tutor">
+    <header><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></header>
+    <div class="log" id="log">
+      <div class="bubble tutor-msg">Pick a topic on the map or press <b>Start session</b>, and I'll take it from there.
+        I answer from your own lectures and show where, like <span class="cite">Wykład 2 [00:20:02]</span>.</div>
+      <div class="soon">Chatting arrives in the next step. For now the buttons fill in the message, so you can see what will be sent.</div>
+    </div>
+    <div class="quick" id="quick">
+      <button data-cmd="today">Today</button><button data-cmd="review">Review</button>
+      <button data-cmd="quiz">Quiz</button><button data-cmd="status">Status</button>
+    </div>
+    <div class="compose"><div class="box">
+      <textarea id="input" placeholder="Ask your tutor…" rows="2"></textarea>
+      <button class="btn primary" id="send" disabled title="Arrives in the next step">Send</button>
+    </div></div>
+  </aside>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get('t');
+const api = path => fetch(`${path}?t=${encodeURIComponent(token)}`).then(r => r.json());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LEVEL = ['not started', 'seen', 'shaky', 'ok', 'solid', 'mastered'];
+let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set() };
+
+function examText(e) {
+  if (e.days === null) return e.label;
+  if (e.days < 0) return `exam was ${e.label}`;
+  if (e.days === 0) return 'exam today';
+  return `exam in ${e.days} days`;
+}
+const ago = d => d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
+const norm = s => String(s).toLowerCase().replace(/[`'"()]/g, '').trim();
+// Mistake topics are short ("Multiplicities"); progress topics are longer. Match by prefix either way.
+const sameTopic = (a, b) => { a = norm(a); b = norm(b); return !!a && !!b && (a.startsWith(b) || b.startsWith(a)); };
+const mistakesFor = (d, t) => d.mistakes.filter(m => !m.fixed && sameTopic(m.topic, t.topic));
+
+function renderList() {
+  const { today, subjects } = state.list;
+  document.getElementById('today').textContent =
+    new Date(today + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  const sorted = [...subjects].sort((a, b) => b.due - a.due || a.name.localeCompare(b.name));
+  document.getElementById('subjects').innerHTML = sorted.map(s => `
+    <button class="subj ${s.name === state.current ? 'active' : ''}" data-name="${esc(s.name)}">
+      <div class="row"><span class="name">${esc(s.name)}</span>
+        ${s.due ? `<span class="badge due">${s.due} due</span>` : s.topics ? '<span class="badge ok">✓</span>' : ''}</div>
+      <div class="strip">${(s.strip || []).map(t => `<i class="${t.due ? 'due' : ''}" style="background:var(--m${t.level})"></i>`).join('')}</div>
+      <div class="meta">${s.started}/${s.topics} started${s.awayDays !== null ? ` · ${ago(s.awayDays)}` : ''}</div>
+    </button>`).join('') || '<div class="empty">No subjects yet. Run <code>study new "Subject"</code>.</div>';
+}
+
+// "What now": the student never has to choose. Overdue reviews first, then one old mistake, then the next topic.
+function renderPlan(d) {
+  const el = document.getElementById('plan');
+  if (!d.topics.length) {
+    el.innerHTML = `<div class="plan"><div class="kicker">Getting started</div><h3>Add your first lecture</h3>
+      <div class="sub">Put slides or recordings in <code>${esc(d.name)}/materials/</code>, then run <b>/ingest</b>.</div></div>`;
+    return;
+  }
+  const overdue = d.topics.filter(t => t.overdue !== null).sort((a, b) => b.overdue - a.overdue);
+  const open = d.mistakes.filter(m => !m.fixed);
+  const next = d.topics.find(t => t.level === 0) || [...d.topics].filter(t => t.level < 3).sort((a, b) => a.level - b.level)[0];
+  const back = d.awayDays !== null && d.awayDays >= 4;
+  const steps = [];
+  if (overdue.length) {
+    const n = Math.min(overdue.length, 4);
+    steps.push({ what: `Review ${n} overdue topic${n > 1 ? 's' : ''}`, min: n * 2,
+      detail: overdue.slice(0, n).map(t => t.topic).join(' · ') + (overdue.length > n ? `  (+${overdue.length - n} next time)` : '') });
+  }
+  if (open.length) steps.push({ what: 'Fix one old mistake', detail: `${open[0].topic}: ${open[0].question}`, min: 3 });
+  if (next) steps.push({ what: next.level === 0 ? 'Start a new topic' : 'Strengthen a shaky topic', detail: next.topic, min: 6 });
+  const total = steps.reduce((a, s) => a + s.min, 0);
+  el.innerHTML = `<div class="plan ${back ? 'back' : ''}">
+    <div class="kicker">${back ? `Welcome back · away ${d.awayDays} days` : 'Your next session'}</div>
+    <h3>${steps.length ? `${back ? 'Catch up in' : 'About'} ${total} minutes` : 'All caught up'}</h3>
+    <div class="sub">${back
+      ? `While you were away, ${overdue.length} topic${overdue.length === 1 ? '' : 's'} came due. Start with what you're forgetting, then continue the course.`
+      : overdue.length ? `${overdue.length} reviews are waiting. Short tasks, one at a time.` : 'Nothing overdue. Time to move forward.'}</div>
+    <ol class="steps">${steps.map((s, i) => `<li><span class="n">${i + 1}</span>
+      <div><div class="what">${esc(s.what)}</div><div class="detail">${esc(s.detail)}</div></div>
+      <span class="min">~${s.min} min</span></li>`).join('')}</ol>
+    <button class="btn primary" data-prompt="/today ${esc(d.name)}">Start session</button>
+  </div>`;
+}
+
+const dots = n => `<span class="dots">${[1,2,3,4,5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+const lateText = t => t.overdue ? `${t.overdue} d late` : 'due today';
+
+function renderMap(d) {
+  const el = document.getElementById('map');
+  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
+  if (state.mode === 'list') {
+    el.innerHTML = `<table><thead><tr><th>#</th><th>Topic</th><th>Level</th><th class="hide-sm">Last studied</th><th>Next review</th></tr></thead><tbody>
+      ${d.topics.map((t, i) => `<tr class="click" data-i="${i}"><td class="muted">${i + 1}</td><td>${esc(t.topic)}</td>
+        <td><span class="lv">${[1,2,3,4,5].map(k => `<i style="${k <= t.level ? `background:var(--m${Math.max(t.level, 2)})` : ''}"></i>`).join('')}</span></td>
+        <td class="hide-sm muted">${esc(t.last ?? '—')}</td>
+        <td>${t.overdue !== null ? `<b style="color:var(--due-text)">${lateText(t)}</b>` : `<span class="muted">${esc(t.next ?? '—')}</span>`}</td></tr>`).join('')}
+      </tbody></table>`;
+    return;
+  }
+  el.innerHTML = `<div class="map">${d.topics.map((t, i) => `
+    <button class="tile l${t.level} ${t.overdue !== null ? 'due' : ''} ${state.sel === i ? 'sel' : ''}" data-i="${i}" title="${esc(t.topic)} · ${LEVEL[t.level] ?? ''}">
+      <span class="num">${i + 1}</span>
+      <span class="tname">${esc(t.topic)}</span>
+      <span class="foot">${t.overdue !== null ? `<span class="late">${t.overdue ? `${t.overdue}d` : 'today'}</span>` : dots(t.level)}
+        ${mistakesFor(d, t).length ? '<span class="mist" title="open mistake"></span>' : ''}</span>
+    </button>`).join('')}</div>`;
+}
+
+function renderFocus(d) {
+  const el = document.getElementById('focus');
+  const t = d.topics[state.sel];
+  if (!t) { el.innerHTML = ''; return; }
+  const ms = mistakesFor(d, t);
+  el.innerHTML = `<div class="focus"><h4>${esc(t.topic)}</h4>
+    <div class="facts"><span>${esc(LEVEL[t.level] ?? `level ${t.level}`)}</span>
+      <span>last studied ${esc(t.last ?? 'never')}</span>
+      <span>${t.overdue !== null ? `<b style="color:var(--due-text)">review ${lateText(t)}</b>` : `next review ${esc(t.next ?? '—')}`}</span>
+      ${ms.length ? `<span style="color:var(--bad)">${ms.length} open mistake${ms.length > 1 ? 's' : ''}</span>` : ''}</div>
+    ${t.notes ? `<div class="note">${esc(t.notes)}</div>` : ''}
+    <div class="actions">
+      <button class="btn small primary" data-prompt="/learn ${esc(d.name)} ${esc(t.topic)}">${t.level ? 'Continue this topic' : 'Learn this topic'}</button>
+      ${t.level ? `<button class="btn small" data-prompt="Quick review of “${esc(t.topic)}” in ${esc(d.name)}">Quick review</button>` : ''}
+      <button class="btn small" data-close>Close</button></div></div>`;
+}
+
+function renderMistakes(d) {
+  const open = d.mistakes.filter(m => !m.fixed), fixed = d.mistakes.filter(m => m.fixed);
+  document.getElementById('mistakeCount').textContent = open.length ? `${open.length} open` : '';
+  const card = (m, i, isFixed) => {
+    const shown = isFixed || state.flipped.has(i);
+    return `<button class="card ${isFixed ? 'fixed' : ''}" ${isFixed ? '' : `data-flip="${i}"`}>
+      <span class="t">${esc(m.topic)} · ${esc(m.date)}</span>
+      <span class="q">${esc(m.question)}</span>
+      ${shown ? `${m.answer ? `<span class="ans muted">You said: ${esc(m.answer)}</span>` : ''}
+        ${m.why ? `<span class="why">${esc(m.why)}</span>` : ''}${m.source ? `<span class="src">${esc(m.source)}</span>` : ''}`
+        : '<span class="hint">Answer it in your head, then tap to check</span>'}
+    </button>`;
+  };
+  document.getElementById('mistakes').innerHTML = !d.mistakes.length ? '<div class="empty">No mistakes logged yet.</div>' :
+    (open.length ? `<div class="cards">${open.map((m, i) => card(m, i, false)).join('')}</div>` : '<div class="empty">All mistakes fixed ✅</div>') +
+    (fixed.length ? `<details><summary>${fixed.length} fixed</summary><div class="cards">${fixed.map((m, i) => card(m, i, true)).join('')}</div></details>` : '');
+}
+
+function renderDetail() {
+  const d = state.detail;
+  document.getElementById('title').textContent = d.name;
+  const due = d.topics.filter(t => t.overdue !== null).length;
+  const started = d.topics.filter(t => t.level > 0).length;
+  document.getElementById('facts').innerHTML = [
+    `<span class="chip">${esc(examText(d.exam))}</span>`,
+    d.awayDays !== null ? `<span class="chip">last session ${esc(ago(d.awayDays))}</span>` : '',
+    `<span class="chip">${started}/${d.topics.length} topics started</span>`,
+    due ? `<span class="chip hot">${due} reviews due</span>` : ''].join('');
+  document.getElementById('tutorSub').textContent = `${d.name} · answers come from your lectures`;
+  renderPlan(d); renderMap(d); renderFocus(d); renderMistakes(d);
+}
+
+async function openSubject(name, keep) {
+  if (name !== state.current || !keep) { state.sel = null; state.flipped = new Set(); }
+  state.current = name;
+  renderList();
+  state.detail = await api(`/api/subjects/${encodeURIComponent(name)}`);
+  renderDetail();
+}
+
+async function reload() {
+  state.list = await api('/api/subjects');
+  if (!state.current && state.list.subjects.length) {
+    state.current = [...state.list.subjects].sort((a, b) => b.due - a.due)[0].name;
+  }
+  renderList();
+  if (state.current) await openSubject(state.current, true);
+  else document.getElementById('title').textContent = 'No subjects yet';
+}
+
+const input = document.getElementById('input');
+function prefill(text) { input.value = text; input.focus(); }
+
+document.getElementById('subjects').addEventListener('click', e => {
+  const b = e.target.closest('.subj'); if (b) openSubject(b.dataset.name);
+});
+document.getElementById('mapMode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.mode = b.dataset.mode;
+  document.querySelectorAll('#mapMode button').forEach(x => x.classList.toggle('on', x === b));
+  renderMap(state.detail);
+});
+document.querySelector('.main').addEventListener('click', e => {
+  if (e.target.closest('[data-close]')) { state.sel = null; renderMap(state.detail); renderFocus(state.detail); return; }
+  const p = e.target.closest('[data-prompt]'); if (p) { prefill(p.dataset.prompt); return; }
+  const flip = e.target.closest('[data-flip]');
+  if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(state.detail); return; }
+  const tile = e.target.closest('[data-i]');
+  if (tile) {
+    const i = +tile.dataset.i; state.sel = state.sel === i ? null : i;
+    renderMap(state.detail); renderFocus(state.detail);
+    if (state.sel !== null) document.getElementById('focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+});
+document.getElementById('quick').addEventListener('click', e => {
+  const b = e.target.closest('[data-cmd]'); if (!b) return;
+  prefill(b.dataset.cmd === 'status' ? '/status' : `/${b.dataset.cmd} ${state.current ?? ''}`.trim());
+});
+document.getElementById('theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('study-theme', root.dataset.theme); } catch {}
+});
+try { const t = localStorage.getItem('study-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+// The tutor edits the files from the terminal too: re-read them when the page gets focus.
+window.addEventListener('focus', reload);
+reload();
+</script>
+</body>
+</html>
