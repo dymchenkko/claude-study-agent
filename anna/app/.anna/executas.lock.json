@@ -5,52 +5,52 @@
     "study-tools": {
       "tool_id": "tool-dymchenko-study-tools-maz2f4cv",
       "path": "./executas/study-tools",
-      "source": "cut"
+      "source": "working"
     },
     "study-tutor": {
       "tool_id": "skill-dymchenko-study-tutor-5snvjf24",
       "path": "./executas/study-tutor",
-      "source": "cut"
+      "source": "working"
     },
     "study-exam": {
       "tool_id": "skill-dymchenko-study-exam-wajzmfze",
       "path": "./executas/study-exam",
-      "source": "cut"
+      "source": "working"
     },
     "study-ingest": {
       "tool_id": "skill-dymchenko-study-ingest-wn6cu4et",
       "path": "./executas/study-ingest",
-      "source": "cut"
+      "source": "working"
     },
     "study-learn": {
       "tool_id": "skill-dymchenko-study-learn-tc8t7m9b",
       "path": "./executas/study-learn",
-      "source": "cut"
+      "source": "working"
     },
     "study-quiz": {
       "tool_id": "skill-dymchenko-study-quiz-ysf47naf",
       "path": "./executas/study-quiz",
-      "source": "cut"
+      "source": "working"
     },
     "study-review": {
       "tool_id": "skill-dymchenko-study-review-v7w7dhu3",
       "path": "./executas/study-review",
-      "source": "cut"
+      "source": "working"
     },
     "study-setup": {
       "tool_id": "skill-dymchenko-study-setup-pafebfmk",
       "path": "./executas/study-setup",
-      "source": "cut"
+      "source": "working"
     },
     "study-status": {
       "tool_id": "skill-dymchenko-study-status-hff9th3n",
       "path": "./executas/study-status",
-      "source": "cut"
+      "source": "working"
     },
     "study-today": {
       "tool_id": "skill-dymchenko-study-today-bg5k4bsn",
       "path": "./executas/study-today",
-      "source": "cut"
+      "source": "working"
     }
   }
 }

@@ -42,11 +42,11 @@ function loading(message) {
 }
 
 function explainError(error) {
-  const code = error?.code || error?.data?.code || "";
-  if (code === "quota_exceeded" || /quota/i.test(error?.message || "")) {
+  const code = String(error?.code || error?.data?.code || "");
+  if (/quota/i.test(code) || /quota/i.test(error?.message || "")) {
     return "Your Anna AI quota has run out. Add credits or use your own key in Anna, then try again.";
   }
-  if (code === "permission_denied") return "Anna blocked this request. Check the app's permissions, then try again.";
+  if (/permission/i.test(code)) return "Anna blocked this request. Check the app's permissions, then try again.";
   if (error instanceof SyntaxError || /JSON/.test(error?.message || "")) {
     return "The AI reply came back in the wrong format. Trying again usually fixes it.";
   }
