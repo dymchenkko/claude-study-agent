@@ -16,6 +16,14 @@ The build only makes small wording changes to the skills. `~/Study` becomes `$ST
 `/learn` become plain requests like `learn`, and `argument-hint` moves into the skill body. Each skill gets
 Anna's `metadata` line.
 
+## The app window
+
+`anna/ui/` is the app itself: a static window that calls `anna.llm.complete` to build the topic map, write lessons and quizzes and grade answers, and keeps courses in Anna storage (`anna.storage`). `build.py` copies it to `app/bundle/` and generates `demo.js` from `Example-Subject/`. pdf.js is vendored in `anna/ui/vendor/` (Apache-2.0), renamed to `.js` for the bundle upload.
+
+```bash
+node --test anna/ui/tests/core.test.js anna/ui/tests/extract.test.js
+```
+
 ## study-tools
 
 A Tool Executa (JSON-RPC 2.0 over stdio, standard-library Python) that does the file work a model gets wrong.
