@@ -9,8 +9,8 @@
   "support_url": "https://github.com/dymchenkko/claude-study-agent/issues",
   "logo_file": "../listing/logo.png",
   "screenshots": [
-    "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app/anna/listing/screenshot-1-today.png",
-    "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app/anna/listing/screenshot-2-review.png"
+    "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app/anna/listing/screenshot-1-lesson.png",
+    "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app/anna/listing/screenshot-2-topics.png"
   ],
   "bundled_executas": {
     "study-tools": {

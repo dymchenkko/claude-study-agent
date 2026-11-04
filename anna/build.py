@@ -26,7 +26,7 @@ APP_ID = 741  # Anna's numeric id; open_app_view rejects the slug
 SLUG = "study-tutor"
 REPO = "https://github.com/dymchenkko/claude-study-agent"
 RAW = "https://raw.githubusercontent.com/dymchenkko/claude-study-agent/anna-app"  # served from the pushed branch
-SCREENSHOTS = ["screenshot-1-today.png", "screenshot-2-review.png"]
+SCREENSHOTS = ["screenshot-1-lesson.png", "screenshot-2-topics.png"]
 
 EMOJI = {"tutor": "🎓", "today": "📅", "learn": "📖", "review": "🔁", "quiz": "❓",
          "exam": "📝", "ingest": "📥", "status": "📊", "setup": "🛠️"}
