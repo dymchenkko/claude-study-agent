@@ -11,5 +11,7 @@ Read `CLAUDE.md`, `syllabus.md`, `progress.md`, `mistakes.md` for the subject (o
 
 | Subject | Exam in | Topics started/total | Avg level | Due today | Overdue | Unfixed mistakes |
 
-Then list: top 3 weakest topics (with level), today's recommendation in one line (e.g. `/today Biology`), and a
-warning if exam is < 14 days away and readiness looks low. Don't change any files.
+Mark paused subjects (`- **Reviews:** paused since …` in `CLAUDE.md`) as `paused` in the Due/Overdue columns and
+leave them out of the totals and weak topics. Then list: top 3 weakest topics (with level), today's plan from
+`~/Study/.tools/study plan` (the same 3 picks as the Plan tab in `study gui`; it may write today's plan file),
+and a warning if exam is < 14 days away and readiness looks low. Don't change any other files.

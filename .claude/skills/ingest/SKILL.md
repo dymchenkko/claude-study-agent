@@ -19,5 +19,8 @@ argument-hint: "<subject> [video-url]"
    (`file p.x–y`, `slide n`, `[hh:mm:ss]`) and an exam-weight guess (high/med/low) based on emphasis,
    repetition across lectures and the lecturer notes in `CLAUDE.md`. Merge duplicates; don't delete rows.
 5. Add new topics to `progress.md` with Level 0 and no dates.
+5b. If `links.json` exists, add links for the NEW topics only: `{"from": "<topic>", "to": "<new topic>"}` means
+   "from is needed before to", using exact `progress.md` names. Take them from the course order or what the
+   materials say builds on what; leave a topic unlinked rather than guess. Never remove existing links.
 6. Summarise: files converted, topics added, anything that failed or needs my attention, and suggest `/learn`
    on the first new topic.

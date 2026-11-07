@@ -40,6 +40,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import semantic  # noqa: E402  (standard library only)
 import diagram   # noqa: E402  (standard library only)
 import gui       # noqa: E402  (standard library only)
+import planner   # noqa: E402  (standard library only)
+import studydata  # noqa: E402  (standard library only)
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "_template"
@@ -465,6 +467,42 @@ def run_draw(a):
         diagram.cmd_draw(subject_dir(a.subject), a.name, a.browser)
 
 
+def study_root(a):
+    return Path(a.root).expanduser() if getattr(a, "root", None) else ROOT
+
+
+def run_plan(a):
+    """Today's picks, the same list the gui's Plan shows."""
+    from datetime import date
+    root, today = study_root(a), date.today().isoformat()
+    plan = planner.today_plan(root, today)
+    todo = planner.for_session(plan, a.subject, a.minutes)
+    paused = [n for n in studydata.subject_names(root)
+              if studydata.parse_reviews(studydata._read(root / n / "CLAUDE.md"))["paused"]]
+    if a.json:
+        print(json.dumps(dict(plan, todo=todo, paused=paused), ensure_ascii=False, indent=2))
+        return
+    if not plan["picks"]:
+        print("Nothing to plan today." + (f" Paused: {', '.join(paused)}." if paused else ""))
+    for i, p in enumerate(plan["picks"], 1):
+        print(f"{'✓' if p['done'] else i}. {p['subject']} · {p['topic']} ({p['kind']}) · {p['reason']}")
+    if plan["picks"]:
+        print(f"~{5 * len(todo)} min left" if todo else "All picks done today.")
+
+
+def run_log(a):
+    from datetime import date
+    sd = subject_dir(a.subject) if not getattr(a, "root", None) else study_root(a) / a.subject
+    topics = studydata.parse_progress(studydata._read(sd / "progress.md"), date.today().isoformat())
+    try:
+        ev, warning = studydata.log_event(sd, topics, a.topic, a.kind, a.verdict, a.level, a.interval)
+    except ValueError as e:
+        a.parser.error(str(e))
+    if warning:
+        print(f"warning: {warning}", file=sys.stderr)
+    print(f"logged {ev['kind']} {ev['verdict']} · {ev['topic']} · level {ev['level_after']}, interval {ev['interval_after']}")
+
+
 def build_parser():
     summary, _, notes = __doc__.partition("\n\n")
     p = argparse.ArgumentParser(prog="study", description=summary, epilog=notes,
@@ -502,6 +540,20 @@ def build_parser():
     s.add_argument("--port", type=int, default=0, help="port to listen on (default: any free port)")
     s.add_argument("--no-browser", action="store_true", help="only print the link")
     s.add_argument("--root", help="study folder to show (default: this one)")
+    s = command("plan", run_plan, "today's picks (the same list as the gui's Plan)")
+    s.add_argument("subject", nargs="?", help="only this subject's picks")
+    s.add_argument("--minutes", type=int, help="minutes / 5 picks (1 to 3)")
+    s.add_argument("--json", action="store_true", help="print JSON (for /today)")
+    s.add_argument("--root", help=argparse.SUPPRESS)
+    s = command("log", run_log, "record one graded activity in <Subject>/events.jsonl")
+    s.add_argument("subject")
+    s.add_argument("--topic", required=True, help="the exact topic name from progress.md")
+    s.add_argument("--kind", required=True, choices=["lesson", "recall", "quiz", "exam", "drawing"])
+    s.add_argument("--verdict", required=True, choices=["correct", "partly", "wrong"],
+                   help="wrong if any answer was wrong, partly if any was partly right, else correct")
+    s.add_argument("--level", type=int, required=True, help="Level after saving progress.md")
+    s.add_argument("--interval", type=int, required=True, help="Interval (d) after saving progress.md")
+    s.add_argument("--root", help=argparse.SUPPRESS)
     command("doctor", lambda a: cmd_doctor(),
             "check hardware + tools, recommend a search mode (changes nothing)")
     command("setup", lambda a: cmd_setup(a.mode),

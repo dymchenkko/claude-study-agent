@@ -63,7 +63,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 h1, h2, h3 { font-family: var(--head); font-weight: 650; margin: 0; letter-spacing: -.025em; }
 body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
 .muted { color: var(--muted); }
-.app { display: grid; grid-template-columns: 248px minmax(0, 1fr) 360px; height: 100vh; }
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100vh; }
+.work { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.work > [hidden] { display: none !important; }
+.work > .main, .work > .study { flex: 1; min-height: 0; }
+
+/* ---------- modes: one job on screen at a time ---------- */
+.modes { flex: none; display: flex; justify-content: center; padding: 12px 64px 12px 16px; border-bottom: 1px solid var(--line); }
+.modes .seg { border-radius: 12px; background: var(--paper); padding: 3px; gap: 2px; }
+.modes .seg button { min-height: 40px; padding: 0 22px; border-radius: 9px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.modes .seg button.on { box-shadow: var(--shadow); color: var(--accent); }
+.modes .live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.session-notes { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: var(--shadow); }
+.session-notes ul, .session-notes ol { margin: 4px 0 8px; padding-left: 20px; } .session-notes li { margin-bottom: 4px; }
+.session-notes h4 { margin: 12px 0 4px; font-family: var(--head); font-size: 15px; font-weight: 650; }
+.session-notes p { margin: 0 0 8px; }
 
 /* ---------- left rail: subjects (Anki deck list + a mini course strip) ---------- */
 .rail { border-right: 1px solid var(--line); padding: 20px 14px; overflow-y: auto; }
@@ -95,20 +109,6 @@ section { margin-top: 30px; }
 .sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .sec-head h3 { font-size: 20px; flex: 1; }
 
-/* Today plan (Math Academy daily list + Gemini priority list + catch-up) */
-.plan { background: radial-gradient(120% 140% at 100% 0%, var(--accent-soft), var(--surface) 55%); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; box-shadow: var(--glow); }
-.plan .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 650; }
-.plan h3 { font-size: 24px; margin: 4px 0 4px; }
-.plan .sub { color: var(--muted); margin-bottom: 16px; }
-.plan.back { background: radial-gradient(120% 140% at 100% 0%, var(--due-soft), var(--surface) 55%); }
-.plan.back .kicker { color: var(--due-text); }
-.steps { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
-.steps li { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: start; }
-.steps .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
-  font-size: 13px; background: var(--paper); border: 1px solid var(--line); }
-.steps .what { font-weight: 600; }
-.steps .detail { color: var(--muted); font-size: 13px; }
-.steps .min { color: var(--faint); font-size: 13px; white-space: nowrap; padding-top: 3px; }
 .btn { border: 1px solid var(--line); background: var(--raised); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
 .btn:hover { border-color: var(--faint); }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 10px 18px; }
@@ -123,26 +123,6 @@ section { margin-top: 30px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
 .seg button { background: none; border: 0; padding: 4px 12px; font-size: 13px; color: var(--muted); }
 .seg button.on { background: var(--surface); color: var(--ink); font-weight: 600; }
-.map { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
-.tile { position: relative; text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: 10px 11px;
-  min-height: 96px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--m0);
-  transition: transform .12s, box-shadow .12s; }
-.tile:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
-.tile .num { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.tile .tname { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.tile .foot { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-.tile.l1 { background: var(--m1); } .tile.l2 { background: var(--m2); } .tile.l3 { background: var(--m3); }
-.tile.l4 { background: var(--m4); } .tile.l5 { background: var(--m5); }
-.tile.l0 { color: var(--m0-ink); } .tile.l1 { color: var(--m1-ink); } .tile.l2 { color: var(--m2-ink); }
-.tile.l3 { color: var(--m3-ink); } .tile.l4 { color: var(--m4-ink); } .tile.l5 { color: var(--m5-ink); }
-.tile:not(.l0) { border-color: transparent; }
-.tile .num { color: inherit; opacity: .6; }
-.tile .late { background: var(--due); color: var(--due-ink); border-radius: 99px; padding: 0 7px; font-weight: 700; }
-.tile .mist { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); margin-left: auto; box-shadow: 0 0 0 2px var(--raised); }
-.tile.sel { box-shadow: 0 0 0 3px var(--accent); }
-.dots { display: inline-flex; gap: 2px; }
-.dots i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .25; }
-.dots i.on { opacity: .9; }
 .focus { margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); }
 .focus h4 { margin: 0 0 6px; font-family: var(--head); font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
 .focus .facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
@@ -169,17 +149,17 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--paper); }
 details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
 .empty { color: var(--muted); padding: 14px 0; }
 
-/* ---------- right: tutor (NotebookLM chat beside the material) ---------- */
-.tutor { border-left: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
-.tutor header { padding: 20px 20px 12px; border-bottom: 1px solid var(--line); padding-right: 56px; }
+/* ---------- Study: the tutor gets the whole work area, in a readable column ---------- */
+.tutor { --gutter: max(20px, calc((100% - 820px) / 2)); flex: 1 1 auto; min-width: 0; background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+.tutor header { padding: 14px var(--gutter) 12px; border-bottom: 1px solid var(--line); }
 .tutor header { display: flex; align-items: flex-start; gap: 10px; }
 .tutor header > div { flex: 1; min-width: 0; }
 .tutor header h3 { font-size: 18px; }
 .newchat { border: 1px solid var(--line); background: var(--raised); border-radius: 8px; padding: 3px 9px; font-size: 12px; color: var(--muted); }
 .newchat:hover { color: var(--accent); border-color: var(--accent); }
 .tutor header .muted { font-size: 13px; }
-.log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.bubble { max-width: 92%; padding: 10px 13px; border-radius: 14px; font-size: 14px; }
+.log { flex: 1; overflow-y: auto; padding: 20px var(--gutter); display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: 92%; padding: 11px 15px; border-radius: 14px; font-size: 15px; }
 .bubble.tutor-msg { background: var(--paper); border: 1px solid var(--line); border-top-left-radius: 4px; overflow-wrap: anywhere; }
 .bubble.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-top-right-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .bubble.error { background: var(--bad-soft); color: var(--bad); border: 1px solid transparent; }
@@ -197,33 +177,141 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .stopped { font-size: 12px; color: var(--faint); }
 .btn.stop { background: var(--raised); color: var(--ink); border-color: var(--line); box-shadow: none; }
 .cite { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; margin: 2px 2px 0 0; }
-.quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 10px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--gutter) 10px; }
 .quick button { border: 1px solid var(--line); background: var(--raised); border-radius: 99px; padding: 4px 12px; font-size: 13px; }
 .quick button:hover { border-color: var(--accent); color: var(--accent); }
-.compose { padding: 0 16px 16px; }
+.compose { padding: 0 var(--gutter) 16px; }
 .box { display: flex; gap: 8px; align-items: flex-end; border: 1px solid var(--line); border-radius: 14px; background: var(--raised); padding: 8px; }
 .box:focus-within { border-color: var(--accent); }
-.box textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: inherit; font-size: 14px; min-height: 44px; max-height: 160px; padding: 4px 6px; }
+.box textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: inherit; font-size: 15px; min-height: 44px; max-height: 160px; padding: 4px 6px; }
 .box .btn.primary { padding: 7px 14px; }
 .box .btn:disabled { opacity: .45; cursor: not-allowed; }
 .theme { position: fixed; right: 16px; top: 18px; z-index: 2; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; width: 32px; height: 32px; font-size: 14px; }
 
+/* ---------- Plan: today's picks (board E) ---------- */
+.today { max-width: 760px; }
+.today .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 650; }
+.today h2 { font-size: 32px; line-height: 1.12; margin: 4px 0 6px; text-wrap: balance; }
+.today .sub { color: var(--muted); margin: 0 0 16px; max-width: 640px; }
+.picks { display: grid; gap: 10px; margin-bottom: 16px; }
+.pick { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; text-align: left; box-shadow: var(--shadow); }
+.pick:hover:not(:disabled) { border-color: var(--accent); }
+.pick:disabled { cursor: default; }
+.pick .num { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: var(--accent-soft); color: var(--accent); }
+.pick.done { opacity: .62; } .pick.done .num { background: var(--good); color: var(--accent-ink); }
+.pick .what { display: block; font-weight: 650; font-size: 16px; }
+.pick .why { font-size: 13.5px; color: var(--muted); }
+.pick .mins { font-size: 13px; color: var(--faint); white-space: nowrap; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 650; border-radius: 6px; padding: 0 6px; margin-right: 6px; background: var(--m0); color: var(--ink); border: 1px solid var(--line); }
+.tag.kind { background: none; color: var(--accent); border-color: var(--accent-soft); }
+.note-line { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* prompts: exam dates and pausing */
+.prompt { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); max-width: 760px; }
+.prompt h4 { margin: 0 0 4px; font-family: var(--head); font-size: 17px; font-weight: 650; letter-spacing: -.015em; }
+.prompt p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.prompt.warm { background: var(--due-soft); border-color: transparent; }
+.exam-row { display: grid; grid-template-columns: 90px auto 1fr; gap: 8px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.exam-row:first-of-type { border-top: 0; }
+.exam-row b { font-weight: 650; }
+.exam-row .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.exam-row input { font: inherit; font-size: 14px; color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; min-height: 34px; }
+.link-btn { background: none; border: 0; color: var(--muted); font-size: 13px; text-decoration: underline; padding: 4px 6px; }
+.link-btn:hover { color: var(--accent); }
+
+/* rhythm timeline (board D) */
+.rhythm-head { font-size: 15px; color: var(--muted); margin: -4px 0 14px; }
+.raxis { position: relative; height: 20px; margin: 0 108px 2px 90px; font-size: 12px; color: var(--muted); }
+.raxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; } .raxis span:first-child { transform: none; } .raxis span:last-child { transform: translateX(-100%); }
+.rrow { display: grid; grid-template-columns: 72px minmax(0, 1fr) 92px; align-items: center; gap: 14px; width: 100%; min-height: 54px; padding: 0 12px;
+  border: 0; border-radius: 12px; background: transparent; text-align: left; }
+.rrow:hover, .rrow.on { background: var(--surface); box-shadow: var(--shadow); }
+.rrow .code { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { position: relative; display: block; height: 28px; }
+.track .base { position: absolute; left: 0; right: 0; top: 13px; height: 2px; background: var(--line); }
+.track .fade { position: absolute; top: 9px; height: 10px; border-radius: 0 6px 6px 0; background: linear-gradient(90deg, var(--accent), transparent); opacity: .55; }
+.track .sess { position: absolute; top: 6px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--paper); }
+.rrow .count { text-align: right; font-size: 13px; line-height: 1.2; color: var(--muted); }
+.rrow .count b { font-size: 16px; color: var(--ink); } .rrow .count b.hot { color: var(--due-text); }
+.rrow.paused .track { opacity: .45; }
+
+/* ---------- Study: strip | tutor | divider | map ---------- */
+.study { display: flex; min-height: 0; min-width: 0; }
+.topic-strip { flex: none; width: 236px; border-right: 1px solid var(--line); padding: 18px 14px; overflow-y: auto; background: var(--paper); }
+.topic-strip h5 { margin: 14px 0 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 650; }
+.topic-strip h5:first-child { margin-top: 0; }
+.topic-strip .cur { display: block; padding: 9px 11px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; line-height: 1.25; }
+.topic-strip button.step { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 9px; border: 0; border-radius: 9px; background: none; font-size: 13.5px; line-height: 1.25; }
+.topic-strip button.step:hover { background: var(--surface); }
+.topic-strip .sw { flex: none; width: 10px; height: 10px; border-radius: 3px; border: 1px solid var(--line); }
+.topic-strip .none { font-size: 13px; color: var(--faint); padding: 4px 9px; }
+.topic-pick { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.topic-pick select { font: inherit; font-size: 13px; color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; max-width: 220px; }
+.newchat.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.quick .draw { border-color: var(--accent-soft); color: var(--accent); }
+.quick button:disabled { opacity: .45; cursor: not-allowed; }
+.quick .hint { font-size: 12px; color: var(--faint); align-self: center; }
+.divider { flex: none; width: 9px; cursor: col-resize; background: var(--line); background-clip: content-box; padding: 0 4px; touch-action: none; }
+.divider:hover, .divider:focus-visible, .divider.drag { background-color: var(--accent); outline: none; }
+.mapside { flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--paper); }
+.mapside .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 650; }
+.mapside .bar span { flex: 1; }
+.mapside .cmap-scroll { flex: 1; max-height: none; border: 0; border-radius: 0; }
+
+/* ---------- Reflect: what moved, connected map, replay (board F) ---------- */
+.moved { margin-bottom: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; box-shadow: var(--shadow); }
+.moved h4 { margin: 0 0 8px; font-family: var(--head); font-size: 15px; font-weight: 650; }
+.moved ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.moved .v { display: inline-block; width: 18px; }
+.moved .lv-ch { color: var(--muted); }
+.warn { font-size: 13px; color: var(--due-text); margin: 6px 0; }
+.map-tools { display: flex; align-items: center; gap: 6px; }
+.zoom { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); font-weight: 700; }
+.replay { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
+.play { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.replay .rinfo { flex: 1; min-width: 0; }
+.replay .rhead { font-family: var(--head); font-weight: 650; font-size: 17px; letter-spacing: -.015em; }
+.replay .rsub { font-size: 13px; color: var(--muted); }
+.replay input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+.rticks { position: relative; height: 10px; }
+.rticks i { position: absolute; top: 1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--accent); opacity: .7; }
+.cmap-scroll { position: relative; overflow: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); max-height: 70vh; }
+.cmap { position: relative; transform-origin: 0 0; }
+.cmap svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.node { position: absolute; width: 176px; height: 50px; padding: 0 10px; border-radius: 10px; border: 1px solid transparent; display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: left; transition: background .18s, color .18s; }
+.node > span { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.node:hover { border-color: var(--accent); }
+.node.ns { background: transparent; border: 1px dashed var(--faint); color: var(--muted); font-weight: 500; }
+.node.sel { box-shadow: 0 0 0 3px var(--accent); }
+.node.cur { outline: 2px solid var(--accent); outline-offset: 2px; }
+.node.due::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--due); }
+.node .mist { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--raised); }
+.node .slip { flex: none; width: 9px; height: 9px; border-radius: 2px; background: var(--bad); box-shadow: 0 0 0 2px var(--raised); transform: rotate(45deg); }
+.legend .fr { width: 40px; background: linear-gradient(90deg, var(--m0), var(--m4)); }
+
 @media (max-width: 1100px) {
-  .app { grid-template-columns: 220px minmax(0, 1fr); height: auto; min-height: 100vh; }
-  .tutor { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); min-height: 420px; }
-  .main { overflow: visible; }
-  .tutor header { padding-right: 20px; }
+  .app { grid-template-columns: 220px minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+  .modes { padding: 8px 56px 8px 16px; justify-content: flex-start; }
+  .modes .seg button { padding: 0 14px; }
   .rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; gap: 8px; overflow-x: auto; padding-right: 56px; }
   .brand { display: none; }
-  .subj { min-width: 170px; margin: 0; }
+  #subjects { display: flex; gap: 8px; }
+  .subj { width: 170px; flex: none; margin: 0; }
   .main { padding: 20px 16px 40px; }
   .head h2 { font-size: 28px; }
-  .plan { padding: 18px 16px; }
-  .steps li { grid-template-columns: 28px 1fr; } .steps .min { display: none; }
-  .map { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .pick { grid-template-columns: 32px minmax(0, 1fr); } .pick .mins { display: none; }
+  .rrow { grid-template-columns: 44px minmax(0, 1fr) 64px; gap: 8px; padding: 0 4px; }
+  .raxis { margin: 0 72px 4px 52px; }
+  .exam-row { grid-template-columns: 1fr; }
+  .today h2 { font-size: 26px; }
+  .study { flex-direction: column; } .topic-strip { display: none !important; }
+  .divider, .mapside { display: none !important; } .tutor { flex: 1 1 auto !important; }
   .hide-sm { display: none; }
 }
 </style>
@@ -236,152 +324,203 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
     <div id="subjects"></div>
   </nav>
 
-  <main class="main">
-    <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
-    <div id="plan"></div>
+  <div class="work">
+  <nav class="modes" aria-label="Mode"><div class="seg" id="modes">
+    <button data-view="plan">Plan</button>
+    <button data-view="study">Study</button>
+    <button data-view="reflect">Reflect</button>
+  </div></nav>
+
+  <main class="main" id="view-plan">
+    <div class="today" id="todayPlan"></div>
+    <div id="prompts"></div>
     <section>
-      <div class="sec-head"><h3>Course map</h3>
-        <div class="seg" id="mapMode"><button data-mode="map" class="on">Map</button><button data-mode="list">List</button></div></div>
-      <div class="legend">
-        <span><i style="background:var(--m0)"></i>not started</span>
-        <span><i style="background:var(--m1)"></i>seen</span>
-        <span><i style="background:var(--m2)"></i>shaky</span>
-        <span><i style="background:var(--m3)"></i>ok</span>
-        <span><i style="background:var(--m4)"></i>solid</span>
-        <span><i style="background:var(--m5)"></i>mastered</span>
-        <span><i style="background:var(--due);border-radius:99px;width:18px"></i>review due (days late)</span>
-        <span><i style="background:var(--bad);border-radius:50%;width:9px;height:9px"></i>open mistake</span>
-      </div>
-      <div id="map"></div>
-      <div id="focus"></div>
+      <div class="sec-head"><h3>Your rhythm</h3></div>
+      <div id="rhythm"></div>
     </section>
     <section>
+      <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
       <div class="sec-head"><h3>Mistakes to fix</h3><span class="muted" id="mistakeCount"></span></div>
       <div id="mistakes"></div>
     </section>
   </main>
 
-  <aside class="tutor">
-    <header><div><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></div>
-      <button class="newchat" id="newChat" title="Start a fresh conversation">New chat</button></header>
-    <div class="log" id="log"></div>
-    <div class="quick" id="quick">
-      <button data-cmd="today">Today</button><button data-cmd="review">Review</button>
-      <button data-cmd="quiz">Quiz</button><button data-cmd="status">Status</button>
+  <section class="study" id="view-study" aria-label="Study" hidden>
+    <aside class="topic-strip" id="topicStrip" aria-label="Where this topic sits" hidden></aside>
+    <div class="tutor" id="tutor">
+      <header><div><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></div>
+        <label class="topic-pick">Topic <select id="topicSel"></select></label>
+        <button class="newchat" id="mapToggle" title="Show the course map beside the chat">Map</button>
+        <button class="newchat" id="newChat" title="Start a fresh conversation">New chat</button></header>
+      <div class="log" id="log"></div>
+      <div class="quick" id="quick">
+        <button data-cmd="today">Today</button><button data-cmd="review">Review</button>
+        <button data-cmd="quiz">Quiz</button><button data-cmd="status">Status</button>
+        <span id="drawBtns"></span>
+      </div>
+      <div class="compose"><div class="box">
+        <textarea id="input" placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)" rows="2"></textarea>
+        <button class="btn primary" id="send">Send</button>
+      </div></div>
     </div>
-    <div class="compose"><div class="box">
-      <textarea id="input" placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)" rows="2"></textarea>
-      <button class="btn primary" id="send">Send</button>
-    </div></div>
-  </aside>
+    <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize the tutor" tabindex="0" hidden></div>
+    <div class="mapside" id="mapSide" hidden></div>
+  </section>
+
+  <main class="main" id="view-reflect" hidden>
+    <div class="head"><h2 id="reflectTitle">Reflect</h2></div>
+    <div id="moved"></div>
+    <div id="notes"></div>
+    <section>
+      <div class="sec-head"><h3>Course map</h3>
+        <span class="map-tools" id="mapTools"></span>
+        <div class="seg" id="mapMode"><button data-mode="map" class="on">Map</button><button data-mode="list">List</button></div></div>
+      <div id="replay"></div>
+      <div class="legend">
+        <span><i class="fr"></i>fresher in memory</span>
+        <span><i style="border:1px dashed var(--faint)"></i>not started</span>
+        <span><i style="background:var(--due);height:4px"></i>review due</span>
+        <span><i style="background:var(--bad);border-radius:50%;width:9px;height:9px"></i>open mistake</span>
+        <span><i style="background:var(--bad);width:9px;height:9px;transform:rotate(45deg)"></i>slips when drawn</span>
+        <span>→ needed before</span>
+      </div>
+      <div id="warnings"></div>
+      <div id="map"></div>
+      <div id="focus"></div>
+    </section>
+  </main>
+  </div>
 </div>
 
 <script>
 const token = new URLSearchParams(location.search).get('t');
 const api = path => fetch(`${path}?t=${encodeURIComponent(token)}`).then(r => r.json());
+const post = (path, body) => fetch(`${path}?t=${encodeURIComponent(token)}`, { method: 'POST',
+  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LEVEL = ['not started', 'seen', 'shaky', 'ok', 'solid', 'mastered'];
-let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set() };
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set(), view: 'plan',
+  zoom: +(store.get('study-zoom') || 1), day: null, playing: null, mapOpen: store.get('study-map-open') === '1' };
 
+function setView(view) {
+  state.view = view;
+  for (const v of ['plan', 'study', 'reflect']) document.getElementById(`view-${v}`).hidden = v !== view;
+  document.querySelectorAll('#modes button').forEach(b => {
+    const on = b.dataset.view === view;
+    b.classList.toggle('on', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  store.set('study-view', view);
+  if (view === 'study') { layoutStudy(); logEl.scrollTop = logEl.scrollHeight; input.focus(); }
+}
+
+const fmtDay = (iso, opts = { day: 'numeric', month: 'short' }) => new Date(iso + 'T12:00').toLocaleDateString(undefined, opts);
+const addDays = (iso, n) => { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00') - new Date(a + 'T12:00')) / 864e5);
 function examText(e) {
-  if (e.days === null) return e.label;
-  if (e.days < 0) return `exam was ${e.label}`;
-  if (e.days === 0) return 'exam today';
-  return `exam in ${e.days} days`;
+  if (e.state !== 'date') return e.label;
+  return e.days === 0 ? 'exam today' : `exam in ${e.days} days`;
 }
 const ago = d => d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
 const norm = s => String(s).toLowerCase().replace(/[`'"()]/g, '').trim();
 // Mistake topics are short ("Multiplicities"); progress topics are longer. Match by prefix either way.
 const sameTopic = (a, b) => { a = norm(a); b = norm(b); return !!a && !!b && (a.startsWith(b) || b.startsWith(a)); };
 const mistakesFor = (d, t) => d.mistakes.filter(m => !m.fixed && sameTopic(m.topic, t.topic));
+const started = t => t.level > 0 || !!t.last;
+const KIND = { review: 'review', lesson: 'new topic', drawing: 'drawing' };
+const prompts = {
+  review: (s, t) => `Review only ${t} in ${s}, 3 questions, following the review rules`,
+  lesson: (s, t) => `Learn ${t} in ${s}`,
+  drawing: (s, t) => `Give me a drawing task on ${t} in ${s}`,
+  saved: (s, t) => `Grade my drawing on ${t}`,
+  links: s => `Create ${s}/links.json for the course map: a JSON list of {"from": "<topic>", "to": "<topic>"} pairs, ` +
+    `meaning "from is needed before to". Use the exact topic names from ${s}/progress.md. Base every link on the course ` +
+    `order in syllabus.md or on what the materials say builds on what; leave a topic unlinked rather than guess. ` +
+    `Don't change any other file. Reply with how many links you added.`,
+};
 
+// ---------- the rail ----------
 function renderList() {
   const { today, subjects } = state.list;
-  document.getElementById('today').textContent =
-    new Date(today + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('today').textContent = fmtDay(today, { weekday: 'long', day: 'numeric', month: 'long' });
   const sorted = [...subjects].sort((a, b) => b.due - a.due || a.name.localeCompare(b.name));
   document.getElementById('subjects').innerHTML = sorted.map(s => `
     <button class="subj ${s.name === state.current ? 'active' : ''}" data-name="${esc(s.name)}">
       <div class="row"><span class="name">${esc(s.name)}</span>
-        ${s.due ? `<span class="badge due">${s.due} due</span>` : s.topics ? '<span class="badge ok">✓</span>' : ''}</div>
+        ${s.paused ? '<span class="badge">paused</span>' : s.due ? `<span class="badge due">${s.due} due</span>` : s.topics ? '<span class="badge ok">✓</span>' : ''}</div>
       <div class="strip">${(s.strip || []).map(t => `<i class="${t.due ? 'due' : ''}" style="background:var(--m${t.level})"></i>`).join('')}</div>
       <div class="meta">${s.started}/${s.topics} started${s.awayDays !== null ? ` · ${ago(s.awayDays)}` : ''}</div>
     </button>`).join('') || '<div class="empty">No subjects yet. Run <code>study new "Subject"</code>.</div>';
 }
 
-// "What now": the student never has to choose. Overdue reviews first, then one old mistake, then the next topic.
-function renderPlan(d) {
-  const el = document.getElementById('plan');
-  if (!d.topics.length) {
-    el.innerHTML = `<div class="plan"><div class="kicker">Getting started</div><h3>Add your first lecture</h3>
-      <div class="sub">Put slides or recordings in <code>${esc(d.name)}/materials/</code>, then run <b>/ingest</b>.</div></div>`;
+// ---------- Plan ----------
+function renderToday() {
+  const { plan, rhythm } = state.list, el = document.getElementById('todayPlan');
+  const picks = plan.picks, left = picks.filter(p => !p.done), paused = state.list.subjects.filter(s => s.paused);
+  const pausedNote = paused.length ? `<div class="note-line">Reviews paused for ${paused.map(s => esc(s.name)).join(', ')}, so ${paused.length > 1 ? 'they stay' : 'it stays'} out of the plan.</div>` : '';
+  if (!picks.length) {
+    el.innerHTML = `<div class="kicker">Today</div><h2>Nothing to plan today</h2>
+      <p class="sub">No reviews are due and every topic is started. Add materials with <b>/ingest</b>, or ask the tutor anything.</p>${pausedNote}`;
     return;
   }
-  const overdue = d.topics.filter(t => t.overdue !== null).sort((a, b) => b.overdue - a.overdue);
-  const open = d.mistakes.filter(m => !m.fixed);
-  const next = d.topics.find(t => t.level === 0) || [...d.topics].filter(t => t.level < 3).sort((a, b) => a.level - b.level)[0];
-  const back = d.awayDays !== null && d.awayDays >= 4;
-  const steps = [];
-  if (overdue.length) {
-    const n = Math.min(overdue.length, 4);
-    steps.push({ what: `Review ${n} overdue topic${n > 1 ? 's' : ''}`, min: n * 2,
-      detail: overdue.slice(0, n).map(t => t.topic).join(' · ') + (overdue.length > n ? `  (+${overdue.length - n} next time)` : '') });
-  }
-  if (open.length) steps.push({ what: 'Fix one old mistake', detail: `${open[0].topic}: ${open[0].question}`, min: 3 });
-  if (next) steps.push({ what: next.level === 0 ? 'Start a new topic' : 'Strengthen a shaky topic', detail: next.topic, min: 6 });
-  const total = steps.reduce((a, s) => a + s.min, 0);
-  el.innerHTML = `<div class="plan ${back ? 'back' : ''}">
-    <div class="kicker">${back ? `Welcome back · away ${d.awayDays} days` : 'Your next session'}</div>
-    <h3>${steps.length ? `${back ? 'Catch up in' : 'About'} ${total} minutes` : 'All caught up'}</h3>
-    <div class="sub">${back
-      ? `While you were away, ${overdue.length} topic${overdue.length === 1 ? '' : 's'} came due. Start with what you're forgetting, then continue the course.`
-      : overdue.length ? `${overdue.length} reviews are waiting. Short tasks, one at a time.` : 'Nothing overdue. Time to move forward.'}</div>
-    <ol class="steps">${steps.map((s, i) => `<li><span class="n">${i + 1}</span>
-      <div><div class="what">${esc(s.what)}</div><div class="detail">${esc(s.detail)}</div></div>
-      <span class="min">~${s.min} min</span></li>`).join('')}</ol>
-    <button class="btn primary" data-prompt="/today ${esc(d.name)}">Start session</button>
-  </div>`;
+  const head = !left.length ? 'Done for today'
+    : rhythm.overdue ? `${rhythm.overdue} topic${rhythm.overdue === 1 ? ' is' : 's are'} overdue. ${left.length === 1 ? 'This one is' : `These ${left.length} are`} enough today.`
+    : `Nothing overdue. ${left.length} short pick${left.length === 1 ? '' : 's'} for today.`;
+  const sub = !left.length ? `All ${picks.length} picks finished. Anything more is a bonus. Check Reflect for what moved.`
+    : 'Picked from your open mistakes, exam dates and what has waited longest. The rest can wait without you falling behind.';
+  el.innerHTML = `<div class="kicker">Today · about ${left.length * 5} minutes</div><h2>${esc(head)}</h2><p class="sub">${esc(sub)}</p>
+    <div class="picks">${picks.map((p, i) => `
+      <button class="pick ${p.done ? 'done' : ''}" data-pick="${i}" ${p.done ? 'disabled' : ''}>
+        <span class="num">${p.done ? '✓' : i + 1}</span>
+        <span><span class="what">${esc(p.topic)}</span>
+          <span class="why"><span class="tag">${esc(p.subject)}</span><span class="tag kind">${esc(KIND[p.kind] ?? p.kind)}</span>${esc(p.reason)}</span></span>
+        <span class="mins">${p.done ? 'done' : '5 min'}</span>
+      </button>`).join('')}</div>
+    ${left.length ? `<button class="btn primary" data-pick="${picks.indexOf(left[0])}">Start the ${left.length * 5} minutes</button>` : ''}
+    ${pausedNote}`;
 }
 
-const dots = n => `<span class="dots">${[1,2,3,4,5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
-const lateText = t => t.overdue ? `${t.overdue} d late` : 'due today';
-
-function renderMap(d) {
-  const el = document.getElementById('map');
-  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
-  if (state.mode === 'list') {
-    el.innerHTML = `<table><thead><tr><th>#</th><th>Topic</th><th>Level</th><th class="hide-sm">Last studied</th><th>Next review</th></tr></thead><tbody>
-      ${d.topics.map((t, i) => `<tr class="click" data-i="${i}"><td class="muted">${i + 1}</td><td>${esc(t.topic)}</td>
-        <td><span class="lv">${[1,2,3,4,5].map(k => `<i style="${k <= t.level ? `background:var(--m${Math.max(t.level, 2)})` : ''}"></i>`).join('')}</span></td>
-        <td class="hide-sm muted">${esc(t.last ?? '—')}</td>
-        <td>${t.overdue !== null ? `<b style="color:var(--due-text)">${lateText(t)}</b>` : `<span class="muted">${esc(t.next ?? '—')}</span>`}</td></tr>`).join('')}
-      </tbody></table>`;
-    return;
-  }
-  el.innerHTML = `<div class="map">${d.topics.map((t, i) => `
-    <button class="tile l${t.level} ${t.overdue !== null ? 'due' : ''} ${state.sel === i ? 'sel' : ''}" data-i="${i}" title="${esc(t.topic)} · ${LEVEL[t.level] ?? ''}">
-      <span class="num">${i + 1}</span>
-      <span class="tname">${esc(t.topic)}</span>
-      <span class="foot">${t.overdue !== null ? `<span class="late">${t.overdue ? `${t.overdue}d` : 'today'}</span>` : dots(t.level)}
-        ${mistakesFor(d, t).length ? '<span class="mist" title="open mistake"></span>' : ''}</span>
-    </button>`).join('')}</div>`;
+function renderPrompts() {
+  const { prompts: pr, subjects } = state.list, out = [];
+  if (pr.exam.length) out.push(`<div class="prompt"><h4>When are your exams?</h4>
+    <p>The planner ranks topics by how close each exam is. Without a date, every subject counts the same.</p>
+    ${pr.exam.map(x => `<div class="exam-row"><b>${esc(x.subject)}</b>
+      <input type="date" aria-label="${esc(x.subject)} exam date" data-exam-date="${esc(x.subject)}">
+      <span class="acts"><button class="btn small" data-exam-save="${esc(x.subject)}">Save</button>
+        <button class="btn small" data-exam="${esc(x.subject)}" data-value="unknown">Unknown</button>
+        <button class="btn small" data-exam="${esc(x.subject)}" data-value="none">No exam</button>
+        <button class="link-btn" data-dismiss="${esc(x.key)}">Not now</button></span></div>`).join('')}
+    ${pr.exam.some(x => x.past) ? '<p style="margin:8px 0 0">The saved date has passed for some subjects. Add the next one (a resit) or choose No exam.</p>' : ''}</div>`);
+  for (const x of pr.pause) out.push(`<div class="prompt warm"><h4>${esc(x.subject)} has no exam and ${x.due} overdue reviews</h4>
+    <p>They add to the pile without helping your grade. Pausing keeps them out of today's plan, /today and /review until you resume.</p>
+    <span class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small primary" data-reviews="${esc(x.subject)}" data-action="pause">Pause ${esc(x.subject)} reviews</button>
+      <button class="link-btn" data-dismiss="${esc(x.key)}">Not now</button></span></div>`);
+  for (const s of subjects.filter(s => s.paused)) out.push(`<div class="prompt"><h4>${esc(s.name)} reviews are paused${s.pausedSince ? ` since ${esc(fmtDay(s.pausedSince))}` : ''}</h4>
+    <p>Resuming counts overdue days from the resume date, so ${esc(s.name)} won't flood the plan.</p>
+    <button class="btn small" data-reviews="${esc(s.name)}" data-action="resume">Resume ${esc(s.name)} reviews</button></div>`);
+  document.getElementById('prompts').innerHTML = out.join('');
 }
 
-function renderFocus(d) {
-  const el = document.getElementById('focus');
-  const t = d.topics[state.sel];
-  if (!t) { el.innerHTML = ''; return; }
-  const ms = mistakesFor(d, t);
-  el.innerHTML = `<div class="focus"><h4>${esc(t.topic)}</h4>
-    <div class="facts"><span>${esc(LEVEL[t.level] ?? `level ${t.level}`)}</span>
-      <span>last studied ${esc(t.last ?? 'never')}</span>
-      <span>${t.overdue !== null ? `<b style="color:var(--due-text)">review ${lateText(t)}</b>` : `next review ${esc(t.next ?? '—')}`}</span>
-      ${ms.length ? `<span style="color:var(--bad)">${ms.length} open mistake${ms.length > 1 ? 's' : ''}</span>` : ''}</div>
-    ${t.notes ? `<div class="note">${esc(t.notes)}</div>` : ''}
-    <div class="actions">
-      <button class="btn small primary" data-prompt="/learn ${esc(d.name)} ${esc(t.topic)}">${t.level ? 'Continue this topic' : 'Learn this topic'}</button>
-      ${t.level ? `<button class="btn small" data-prompt="/review ${esc(d.name)} ${esc(t.topic)}">Quick review</button>` : ''}
-      <button class="btn small" data-close>Close</button></div></div>`;
+function renderRhythm() {
+  const r = state.list.rhythm, el = document.getElementById('rhythm');
+  if (!r.rows.length) { el.innerHTML = '<div class="empty">Your sessions show up here once you start studying.</div>'; return; }
+  const pct = day => +(day / (r.days - 1) * 100).toFixed(2);
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(f * (r.days - 1)));
+  el.innerHTML = `<div class="rhythm-head">${r.overdue} of your ${r.started} started topics are overdue · sessions on ${r.sessionDays} of the last ${r.days} days.
+      Each dot is a session; the fading band is the time since you last opened that subject.</div>
+    <div class="raxis">${ticks.map(t => `<span style="left:${pct(t)}%">${t === r.days - 1 ? 'Today' : esc(fmtDay(addDays(r.start, t)))}</span>`).join('')}</div>
+    ${r.rows.map(row => {
+      const lastIdx = row.last ? Math.max(daysBetween(r.start, row.last), 0) : 0;
+      return `<button class="rrow ${row.name === state.current ? 'on' : ''} ${row.paused ? 'paused' : ''}" data-name="${esc(row.name)}"
+        aria-label="${esc(row.name)}: ${row.days.length} session days in this window, ${row.due} of ${row.started} started topics overdue${row.paused ? ', reviews paused' : ''}">
+        <span class="code">${esc(row.name)}</span>
+        <span class="track"><span class="base"></span>
+          ${row.last ? `<span class="fade" style="left:${pct(lastIdx)}%;width:${(100 - pct(lastIdx)).toFixed(2)}%"></span>` : ''}
+          ${row.days.map(d => `<span class="sess" style="left:${pct(d)}%"></span>`).join('')}</span>
+        <span class="count">${row.paused ? 'paused' : `<b class="${row.due ? 'hot' : ''}">${row.due}</b> of ${row.started}<br>overdue`}</span>
+      </button>`; }).join('')}`;
 }
 
 function renderMistakes(d) {
@@ -402,24 +541,210 @@ function renderMistakes(d) {
     (fixed.length ? `<details><summary>${fixed.length} fixed</summary><div class="cards">${fixed.map((m, i) => card(m, i, true)).join('')}</div></details>` : '');
 }
 
+// ---------- the current topic (Study) ----------
+const topicKey = s => `study-topic-${s}`;
+function currentTopic(d = state.detail) {
+  if (!d) return null;
+  const name = store.get(topicKey(d.name));
+  return d.topics.find(t => t.topic === name) ?? null;
+}
+function setTopic(subject, topic) { store.set(topicKey(subject), topic ?? ''); }
+const needsOf = (d, i) => d.links.filter(([, b]) => b === i).map(([a]) => a);
+const unlocksOf = (d, i) => d.links.filter(([a]) => a === i).map(([, b]) => b);
+const swatch = t => `<i class="sw" style="${t.fresh === null ? '' : `background:color-mix(in oklch, var(--m4) ${Math.round(t.fresh * 100)}%, var(--m0))`}"></i>`;
+
+function renderStudyBits() {
+  const d = state.detail, t = currentTopic();
+  const sel = document.getElementById('topicSel');
+  sel.innerHTML = `<option value="">Choose a topic…</option>` +
+    d.topics.map(x => `<option ${t && x.topic === t.topic ? 'selected' : ''}>${esc(x.topic)}</option>`).join('');
+  const strip = document.getElementById('topicStrip');
+  strip.hidden = !d.links.length;
+  if (d.links.length) {
+    const i = t ? d.topics.indexOf(t) : -1;
+    const list = ids => ids.length ? ids.map(k => `<button class="step" data-topic="${esc(d.topics[k].topic)}">${swatch(d.topics[k])}<span>${esc(d.topics[k].topic)}</span></button>`).join('')
+      : '<div class="none">nothing</div>';
+    strip.innerHTML = i < 0 ? '<h5>This topic</h5><div class="none">Choose a topic to see what it needs and unlocks.</div>'
+      : `<h5>Needs</h5>${list(needsOf(d, i))}<h5>This topic</h5><span class="cur">${esc(t.topic)}</span>
+         <div class="none">${esc(LEVEL[t.level] ?? '')}${t.fresh !== null ? ` · ${Math.round(t.fresh * 100)}% fresh` : ''}</div>
+         <h5>Unlocks</h5>${list(unlocksOf(d, i))}`;
+  }
+  const running = !!chatFor(d.name).running, why = t ? '' : 'Choose a topic';
+  document.getElementById('drawBtns').innerHTML = d.diagrams ? `
+    <button class="draw" data-draw="drawing" ${t && !running ? '' : 'disabled'} title="${why || 'A drawing task in draw.io'}">Draw it</button>
+    <button class="draw" data-draw="saved" ${t && !running ? '' : 'disabled'} title="${why || 'Ask the tutor to grade the saved diagram'}">I've saved it</button>
+    ${t ? '' : '<span class="hint">Choose a topic</span>'}` : '';
+  document.getElementById('mapToggle').classList.toggle('on', state.mapOpen);
+  if (state.mapOpen) renderMapInto(document.getElementById('mapSide'), d, true);
+  layoutStudy();
+}
+
+function layoutStudy() {
+  const open = state.mapOpen, tutor = document.getElementById('tutor');
+  document.getElementById('divider').hidden = !open;
+  document.getElementById('mapSide').hidden = !open;
+  if (!open) { tutor.style.flex = ''; return; }
+  const total = document.getElementById('view-study').clientWidth || window.innerWidth;
+  const w = Math.min(Math.max(+(store.get('study-tutor-w') || 0) || total * 0.55, 300), total * 0.7);
+  tutor.style.flex = `0 0 ${Math.round(w)}px`;
+}
+
+// ---------- Reflect ----------
+function renderNotes(d) {
+  const n = d.notes;
+  document.getElementById('reflectTitle').textContent = n
+    ? (n.date === state.list.today ? `${d.name} · today` : `${d.name} · last session ${fmtDay(n.date, { day: 'numeric', month: 'long' })}`)
+    : `${d.name} · reflect`;
+  document.getElementById('notes').innerHTML = n
+    ? `<div class="session-notes">${md(n.text)}</div>`
+    : `<div class="empty">No session notes for ${esc(d.name)} yet. They appear here after your first session.</div>`;
+  const mv = d.moved, V = { correct: '✅', partly: '⚠️', wrong: '❌' };
+  document.getElementById('moved').innerHTML = (mv && mv.items.length ? `<div class="moved">
+      <h4>What moved · ${mv.date === state.list.today ? 'today' : esc(fmtDay(mv.date, { day: 'numeric', month: 'long' }))}</h4>
+      <ul>${mv.items.map(x => `<li><span class="v">${V[x.verdict] ?? ''}</span><b>${esc(x.topic)}</b>
+        <span class="lv-ch">${x.before === null ? `new, level ${x.after}` : x.before === x.after ? `stays at level ${x.after}` : `level ${x.before} → ${x.after}`}
+        · ${esc(x.kinds.join(', '))}</span></li>`).join('')}</ul></div>` : '') +
+    (d.unlogged ? `<div class="warn">${d.unlogged} topic${d.unlogged === 1 ? ' was' : 's were'} studied without an entry in the event log, so they aren't in What moved or the replay. The tutor logs with <code>study log</code> when it saves progress.</div>` : '');
+}
+
+// Freshness per topic on `day` (null = today, from progress.md). Earlier days come from events.jsonl.
+function freshAt(d, day) {
+  if (!day || !d.replay) return d.topics.map(t => t.fresh);
+  const lastBy = {};
+  for (const e of d.replay) if (e.day <= day) lastBy[e.i] = e;
+  return d.topics.map((t, i) => {
+    const e = lastBy[i];
+    return e && e.interval ? Math.pow(2, -daysBetween(e.day, day) / (4 * e.interval)) : null;
+  });
+}
+
+const NW = 176, NH = 50, GX = 212, GY = 62, PAD = 16;
+function mapLayout(d) {
+  const n = d.topics.length, pos = [];
+  if (d.links.length) {
+    const rows = {};
+    d.topics.forEach((t, i) => { const c = d.depths[i]; rows[c] = (rows[c] ?? -1) + 1; pos[i] = { c, r: rows[c] }; });
+  } else {
+    const per = Math.max(6, Math.ceil(n / 5));
+    d.topics.forEach((t, i) => pos[i] = { c: Math.floor(i / per), r: i % per });
+  }
+  const pts = pos.map(p => ({ x: PAD + p.c * GX, y: PAD + p.r * GY }));
+  const w = Math.max(...pts.map(p => p.x)) + NW + PAD, h = Math.max(...pts.map(p => p.y)) + NH + PAD;
+  return { pts, w, h };
+}
+
+function renderMapInto(el, d, side) {
+  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
+  const { pts, w, h } = mapLayout(d), fr = freshAt(d, state.day), cur = currentTopic(d), z = state.zoom, today = !state.day;
+  const edges = d.links.map(([a, b]) => {
+    const p = pts[a], q = pts[b], x1 = p.x + NW, y1 = p.y + NH / 2, x2 = q.x - 4, y2 = q.y + NH / 2, c = Math.max((x2 - x1) / 2, 30);
+    const lit = (fr[a] ?? 0) >= .5 && (fr[b] ?? 0) >= .5;
+    return `<path d="M ${x1} ${y1} C ${x1 + c} ${y1}, ${x2 - c} ${y2}, ${x2} ${y2}" style="fill:none;stroke:${lit ? 'var(--accent)' : 'var(--faint)'};stroke-width:1.5;opacity:${lit ? .9 : .45}" marker-end="url(#ah${lit ? 'L' : ''}${side ? 's' : ''})"/>`;
+  }).join('');
+  const nodes = d.topics.map((t, i) => {
+    const f = fr[i], ns = f === null || f === undefined, pc = ns ? 0 : Math.round(f * 100);
+    const ms = today && mistakesFor(d, t).length;
+    const style = `left:${pts[i].x}px;top:${pts[i].y}px;` + (ns ? '' :
+      `background:color-mix(in oklch, var(--m4) ${pc}%, var(--m0));color:${pc > 55 ? 'var(--m4-ink)' : 'var(--ink)'};`);
+    return `<button class="node ${ns ? 'ns' : ''} ${today && t.overdue !== null && !ns ? 'due' : ''} ${state.sel === i && !side ? 'sel' : ''} ${cur === t ? 'cur' : ''}"
+      style="${style}" data-node="${i}" title="${esc(t.topic)}"
+      aria-label="${esc(t.topic)}, ${ns ? 'not studied yet' : `${pc} percent fresh`}${t.slip ? ', slips when drawn' : ''}${ms ? ', open mistake' : ''}">
+      <span>${esc(t.topic)}</span>${ms ? '<i class="mist" title="open mistake"></i>' : ''}${t.slip && today ? '<i class="slip" title="Right in chat, wrong on your diagram"></i>' : ''}</button>`;
+  }).join('');
+  const defs = `<defs>${['', 'L'].map(k => `<marker id="ah${k}${side ? 's' : ''}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" style="fill:${k ? 'var(--accent)' : 'var(--faint)'}"/></marker>`).join('')}</defs>`;
+  const map = `<div class="cmap-scroll"><div style="width:${w * z}px;height:${h * z}px"><div class="cmap" style="width:${w}px;height:${h}px;transform:scale(${z})">
+    <svg width="${w}" height="${h}" aria-hidden="true">${defs}${edges}</svg>${nodes}</div></div></div>`;
+  el.innerHTML = side ? `<div class="bar"><span>${esc(d.name)} map</span><button class="zoom" data-zoom="-1" aria-label="Zoom out">−</button>
+    <button class="zoom" data-zoom="1" aria-label="Zoom in">+</button><button class="zoom" data-map-close aria-label="Close the map">×</button></div>${map}` : map;
+}
+
+function renderReplay(d) {
+  const el = document.getElementById('replay');
+  if (!d.replay || !d.replay.length || state.mode !== 'map') { el.innerHTML = ''; return; }
+  const first = d.replay.reduce((m, e) => e.day < m ? e.day : m, state.list.today), span = Math.max(daysBetween(first, state.list.today), 1);
+  const idx = state.day ? daysBetween(first, state.day) : span;
+  const fr = freshAt(d, state.day), seen = fr.filter(f => f !== null).length, warm = fr.filter(f => f !== null && f >= .5).length;
+  const days = [...new Set(d.replay.map(e => e.day))];
+  el.innerHTML = `<div class="replay">
+    <button class="play" data-play aria-label="${state.playing ? 'Pause the replay' : 'Replay your semester'}">${state.playing
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>'}</button>
+    <div class="rinfo"><div class="rhead">${warm} of the ${seen} topics you've touched ${state.day ? 'were' : 'are'} still fresh</div>
+      <div class="rsub">${state.day ? esc(fmtDay(state.day, { day: 'numeric', month: 'long' })) : 'Today'} · brighter means fresher in memory (an estimate)${d.replayApprox ? ' · history from before the event log is imported, so it is approximate' : ''}</div>
+      <input type="range" min="0" max="${span}" value="${idx}" aria-label="Day" data-scrub="${esc(first)}">
+      <div class="rticks">${days.map(x => `<i style="left:${(daysBetween(first, x) / span * 100).toFixed(2)}%"></i>`).join('')}</div></div></div>`;
+}
+
+function renderMap(d) {
+  const el = document.getElementById('map');
+  document.getElementById('mapTools').innerHTML = state.mode === 'map' ? `
+    ${!d.hasLinksFile && d.topics.length ? `<button class="btn small" data-gen-links ${state.list.agentReady ? '' : 'disabled title="Needs the tutor (Claude Code)"'}>Connect topics</button>` : ''}
+    <button class="zoom" data-zoom="-1" aria-label="Zoom out">−</button><button class="zoom" data-zoom="1" aria-label="Zoom in">+</button>` : '';
+  document.getElementById('warnings').innerHTML = [
+    ...(!d.links.length && d.topics.length && state.mode === 'map' ? ['<div class="note-line">No links yet, so topics sit in course order. <b>Connect topics</b> asks the tutor to find what builds on what.</div>'] : []),
+    ...d.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`)].join('');
+  renderReplay(d);
+  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
+  if (state.mode === 'list') {
+    el.innerHTML = `<table><thead><tr><th>#</th><th>Topic</th><th>Level</th><th class="hide-sm">Last studied</th><th>Next review</th></tr></thead><tbody>
+      ${d.topics.map((t, i) => `<tr class="click" data-node="${i}"><td class="muted">${i + 1}</td><td>${esc(t.topic)}</td>
+        <td><span class="lv">${[1,2,3,4,5].map(k => `<i style="${k <= t.level ? `background:var(--m${Math.max(t.level, 2)})` : ''}"></i>`).join('')}</span></td>
+        <td class="hide-sm muted">${esc(t.last ?? '—')}</td>
+        <td>${t.overdue !== null ? `<b style="color:var(--due-text)">${lateText(t)}</b>` : `<span class="muted">${esc(t.next ?? '—')}</span>`}</td></tr>`).join('')}
+      </tbody></table>`;
+    return;
+  }
+  renderMapInto(el, d, false);
+}
+const lateText = t => t.overdue ? `${t.overdue} d late` : 'due today';
+
+function renderFocus(d) {
+  const el = document.getElementById('focus');
+  const t = d.topics[state.sel];
+  if (!t) { el.innerHTML = ''; return; }
+  const ms = mistakesFor(d, t), i = state.sel;
+  const names = ids => ids.map(k => esc(d.topics[k].topic)).join(', ');
+  el.innerHTML = `<div class="focus"><h4>${esc(t.topic)}</h4>
+    <div class="facts"><span>${esc(LEVEL[t.level] ?? `level ${t.level}`)}</span>
+      <span>last studied ${esc(t.last ?? 'never')}</span>
+      <span>${t.overdue !== null ? `<b style="color:var(--due-text)">review ${lateText(t)}</b>` : `next review ${esc(t.next ?? '—')}`}</span>
+      ${t.fresh !== null ? `<span>${Math.round(t.fresh * 100)}% fresh</span>` : ''}
+      ${ms.length ? `<span style="color:var(--bad)">${ms.length} open mistake${ms.length > 1 ? 's' : ''}</span>` : ''}
+      ${t.slip ? '<span style="color:var(--bad)">right in chat, wrong on your diagram</span>' : ''}</div>
+    ${t.notes ? `<div class="note">${esc(t.notes)}</div>` : ''}
+    ${needsOf(d, i).length ? `<div class="note muted">Needs: ${names(needsOf(d, i))}</div>` : ''}
+    ${unlocksOf(d, i).length ? `<div class="note muted">Unlocks: ${names(unlocksOf(d, i))}</div>` : ''}
+    <div class="actions">
+      <button class="btn small primary" data-study="${started(t) ? 'review' : 'lesson'}" data-topic-i="${i}">${started(t) ? 'Quick review' : 'Learn this topic'}</button>
+      ${started(t) ? `<button class="btn small" data-study="lesson" data-topic-i="${i}">Continue learning</button>` : ''}
+      ${d.diagrams ? `<button class="btn small" data-study="drawing" data-topic-i="${i}">Draw it</button>` : ''}
+      <button class="btn small" data-close>Close</button></div></div>`;
+}
+
 function renderDetail() {
   const d = state.detail;
   document.getElementById('title').textContent = d.name;
   const due = d.topics.filter(t => t.overdue !== null).length;
-  const started = d.topics.filter(t => t.level > 0).length;
   document.getElementById('facts').innerHTML = [
     `<span class="chip">${esc(examText(d.exam))}</span>`,
+    d.reviews.paused ? '<span class="chip">reviews paused</span>' : '',
     d.awayDays !== null ? `<span class="chip">last session ${esc(ago(d.awayDays))}</span>` : '',
-    `<span class="chip">${started}/${d.topics.length} topics started</span>`,
+    `<span class="chip">${d.topics.filter(started).length}/${d.topics.length} topics started</span>`,
     due ? `<span class="chip hot">${due} reviews due</span>` : ''].join('');
   document.getElementById('tutorSub').textContent = `${d.name} · answers come from your lectures`;
-  renderPlan(d); renderMap(d); renderFocus(d); renderMistakes(d); renderChat();
+  renderMistakes(d); renderNotes(d); renderMap(d); renderFocus(d); renderStudyBits(); renderChat();
+}
+
+function renderAll() {
+  renderList(); renderToday(); renderPrompts(); renderRhythm();
+  if (state.detail) renderDetail();
 }
 
 async function openSubject(name, keep) {
-  if (name !== state.current || !keep) { state.sel = null; state.flipped = new Set(); }
+  if (name !== state.current || !keep) { state.sel = null; state.flipped = new Set(); state.day = null; stopPlay(); }
   state.current = name;
-  renderList();
+  renderList(); renderRhythm();
   state.detail = await api(`/api/subjects/${encodeURIComponent(name)}`);
   renderDetail();
 }
@@ -429,9 +754,42 @@ async function reload() {
   if (!state.current && state.list.subjects.length) {
     state.current = [...state.list.subjects].sort((a, b) => b.due - a.due)[0].name;
   }
-  renderList();
+  renderList(); renderToday(); renderPrompts(); renderRhythm();
   if (state.current) await openSubject(state.current, true);
   else document.getElementById('title').textContent = 'No subjects yet';
+}
+
+async function write(path, body) {
+  const r = await post(path, body).catch(e => ({ error: e.message }));
+  if (r.error) alertLine(r.error);
+  await reload();
+}
+function alertLine(msg) {
+  const el = document.getElementById('prompts');
+  el.insertAdjacentHTML('afterbegin', `<div class="warn">⚠ ${esc(msg)}</div>`);
+}
+
+async function startStudy(subject, topic, text) {
+  if (subject !== state.current) await openSubject(subject);
+  if (topic) setTopic(subject, topic);
+  setView('study');
+  renderStudyBits();
+  send(text);
+}
+
+// ---------- replay ----------
+function stopPlay() { if (state.playing) { clearInterval(state.playing); state.playing = null; } }
+function togglePlay() {
+  const d = state.detail; if (!d?.replay) return;
+  if (state.playing) { stopPlay(); renderReplay(d); return; }
+  const first = d.replay.reduce((m, e) => e.day < m ? e.day : m, state.list.today);
+  if (!state.day) state.day = first;
+  state.playing = setInterval(() => {
+    const next = addDays(state.day, 1);
+    if (next >= state.list.today) { state.day = null; stopPlay(); } else state.day = next;
+    renderMap(d);
+  }, 220);
+  renderMap(d);
 }
 
 // ---------- chat with the tutor (through the agent adapter on the server) ----------
@@ -477,10 +835,10 @@ function md(src) {
 function renderChat() {
   const name = state.current, c = name ? chatFor(name) : null;
   const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 60;
-  const welcome = `<div class="bubble tutor-msg">Press <b>Start session</b>, pick a topic on the map, or just ask.
+  const welcome = `<div class="bubble tutor-msg">Pick something from <b>Plan</b>, choose a topic above, or just ask.
     I answer from your own lectures and show where, like <span class="cite">Wykład 2 [00:20:02]</span>.</div>`;
   const ready = state.list?.agentReady !== false ? '' :
-    `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>.</div>`;
+    `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>. Plan and Reflect still work from your files.</div>`;
   logEl.innerHTML = ready + (!c || !c.messages.length ? welcome : c.messages.map(m => {
     if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}</div>`;
     const busy = c.running && m === c.messages[c.messages.length - 1];
@@ -493,7 +851,13 @@ function renderChat() {
   const running = !!c?.running;
   sendBtn.textContent = running ? 'Stop' : 'Send';
   sendBtn.classList.toggle('stop', running);
-  document.querySelectorAll('[data-prompt], #quick button').forEach(b => b.disabled = running);
+  document.querySelectorAll('[data-pick], [data-study], [data-gen-links], #quick button').forEach(b => {
+    if (!b.classList.contains('done')) b.disabled = running;
+  });
+  const study = document.querySelector('#modes [data-view="study"]');
+  study.querySelector('.live')?.remove();
+  if (running) study.insertAdjacentHTML('beforeend', '<span class="live" title="The tutor is working"></span>');
+  document.querySelectorAll('[data-draw]').forEach(b => { b.disabled ||= !currentTopic(); });
 }
 
 async function send(text) {
@@ -531,7 +895,7 @@ async function send(text) {
     c.running = false; c.runId = null; delete reply.tools;
     saveChat(name);
     if (name === state.current) renderChat();
-    reload();  // the tutor updated progress.md / mistakes.md: show it
+    reload();  // the tutor updated progress.md / mistakes.md / events.jsonl: show it
   }
 }
 
@@ -541,6 +905,7 @@ async function stop() {
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ runId: c.runId }) });
 }
 
+// ---------- events ----------
 sendBtn.addEventListener('click', () => (chatFor(state.current).running ? stop() : send(input.value)));
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!chatFor(state.current).running) send(input.value); }
@@ -549,25 +914,65 @@ document.getElementById('newChat').addEventListener('click', () => {
   const c = state.current && chatFor(state.current); if (!c || c.running) return;
   c.sessionId = null; c.messages = []; saveChat(state.current); renderChat();
 });
+document.getElementById('topicSel').addEventListener('change', e => { setTopic(state.current, e.target.value); renderStudyBits(); });
+document.getElementById('mapToggle').addEventListener('click', () => {
+  state.mapOpen = !state.mapOpen; store.set('study-map-open', state.mapOpen ? '1' : '0'); renderStudyBits();
+});
 
 document.getElementById('subjects').addEventListener('click', e => {
   const b = e.target.closest('.subj'); if (b) openSubject(b.dataset.name);
 });
 document.getElementById('mapMode').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  state.mode = b.dataset.mode;
+  state.mode = b.dataset.mode; stopPlay();
   document.querySelectorAll('#mapMode button').forEach(x => x.classList.toggle('on', x === b));
   renderMap(state.detail);
 });
-document.querySelector('.main').addEventListener('click', e => {
-  if (e.target.closest('[data-close]')) { state.sel = null; renderMap(state.detail); renderFocus(state.detail); return; }
-  const p = e.target.closest('[data-prompt]'); if (p) { send(p.dataset.prompt); return; }
-  const flip = e.target.closest('[data-flip]');
-  if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(state.detail); return; }
-  const tile = e.target.closest('[data-i]');
-  if (tile) {
-    const i = +tile.dataset.i; state.sel = state.sel === i ? null : i;
-    renderMap(state.detail); renderFocus(state.detail);
+document.getElementById('modes').addEventListener('click', e => {
+  const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view);
+});
+document.querySelector('.work').addEventListener('input', e => {
+  const s = e.target.closest('[data-scrub]'); if (!s) return;
+  stopPlay();
+  const span = +s.max, v = +s.value;
+  state.day = v >= span ? null : addDays(s.dataset.scrub, v);
+  renderMapInto(document.getElementById('map'), state.detail, false);
+  const keep = document.activeElement === s;
+  renderReplay(state.detail);
+  if (keep) document.querySelector('#replay [data-scrub]')?.focus();
+});
+document.querySelector('.work').addEventListener('click', e => {
+  const t = e.target, d = state.detail;
+  const pick = t.closest('[data-pick]');
+  if (pick) { const p = state.list.plan.picks[+pick.dataset.pick]; if (p && !p.done) startStudy(p.subject, p.topic, p.prompt); return; }
+  const row = t.closest('.rrow'); if (row) { openSubject(row.dataset.name); return; }
+  const save = t.closest('[data-exam-save]');
+  if (save) { const s = save.dataset.examSave, v = document.querySelector(`[data-exam-date="${CSS.escape(s)}"]`).value;
+    if (!v) { alertLine(`Pick a date for ${s} first, or choose Unknown.`); return; }
+    write('/api/exam', { subject: s, value: v }); return; }
+  const ex = t.closest('[data-exam]'); if (ex) { write('/api/exam', { subject: ex.dataset.exam, value: ex.dataset.value }); return; }
+  const rv = t.closest('[data-reviews]'); if (rv) { write('/api/reviews', { subject: rv.dataset.reviews, action: rv.dataset.action }); return; }
+  const dm = t.closest('[data-dismiss]'); if (dm) { write('/api/dismiss', { key: dm.dataset.dismiss }); return; }
+  if (t.closest('[data-close]')) { state.sel = null; renderMap(d); renderFocus(d); return; }
+  if (t.closest('[data-map-close]')) { state.mapOpen = false; store.set('study-map-open', '0'); renderStudyBits(); return; }
+  if (t.closest('[data-play]')) { togglePlay(); return; }
+  const zm = t.closest('[data-zoom]');
+  if (zm) { state.zoom = Math.min(1.6, Math.max(0.5, +(state.zoom + 0.1 * +zm.dataset.zoom).toFixed(1))); store.set('study-zoom', state.zoom);
+    renderMap(d); if (state.mapOpen) renderMapInto(document.getElementById('mapSide'), d, true); return; }
+  if (t.closest('[data-gen-links]')) { startStudy(d.name, null, prompts.links(d.name)); return; }
+  const st = t.closest('[data-study]');
+  if (st) { const topic = d.topics[+st.dataset.topicI].topic; startStudy(d.name, topic, prompts[st.dataset.study](d.name, topic)); return; }
+  const dr = t.closest('[data-draw]');
+  if (dr) { const cur = currentTopic(); if (cur) send(prompts[dr.dataset.draw](d.name, cur.topic)); return; }
+  const step = t.closest('[data-topic]'); if (step) { setTopic(d.name, step.dataset.topic); renderStudyBits(); return; }
+  const flip = t.closest('[data-flip]');
+  if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(d); return; }
+  const node = t.closest('[data-node]');
+  if (node) {
+    const i = +node.dataset.node;
+    if (node.closest('#mapSide')) { setTopic(d.name, d.topics[i].topic); renderStudyBits(); return; }
+    state.sel = state.sel === i ? null : i;
+    renderMap(d); renderFocus(d);
     if (state.sel !== null) document.getElementById('focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 });
@@ -575,15 +980,39 @@ document.getElementById('quick').addEventListener('click', e => {
   const b = e.target.closest('[data-cmd]'); if (!b) return;
   send(b.dataset.cmd === 'status' ? '/status' : `/${b.dataset.cmd} ${state.current ?? ''}`.trim());
 });
+
+// The divider: drag or arrow keys, tutor width 300px to 70% of the Study area, remembered.
+(() => {
+  const div = document.getElementById('divider'), tutor = document.getElementById('tutor'), area = document.getElementById('view-study');
+  const setW = w => {
+    const total = area.clientWidth, cl = Math.round(Math.min(Math.max(w, 300), total * 0.7));
+    tutor.style.flex = `0 0 ${cl}px`; store.set('study-tutor-w', cl);
+    div.setAttribute('aria-valuenow', cl);
+  };
+  div.addEventListener('pointerdown', e => {
+    div.setPointerCapture(e.pointerId); div.classList.add('drag');
+    const left = tutor.getBoundingClientRect().left;
+    const move = ev => setW(ev.clientX - left);
+    const up = () => { div.classList.remove('drag'); div.removeEventListener('pointermove', move); div.removeEventListener('pointerup', up); };
+    div.addEventListener('pointermove', move); div.addEventListener('pointerup', up);
+  });
+  div.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); setW(tutor.getBoundingClientRect().width + (e.key === 'ArrowRight' ? 24 : -24)); }
+  });
+  window.addEventListener('resize', () => { if (state.view === 'study') layoutStudy(); });
+})();
+
 document.getElementById('theme').addEventListener('click', () => {
   const root = document.documentElement;
   const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   root.dataset.theme = dark ? 'light' : 'dark';
-  try { localStorage.setItem('study-theme', root.dataset.theme); } catch {}
+  store.set('study-theme', root.dataset.theme);
 });
-try { const t = localStorage.getItem('study-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+{ const t = store.get('study-theme'); if (t) document.documentElement.dataset.theme = t; }
 // The tutor edits the files from the terminal too: re-read them when the page gets focus.
-window.addEventListener('focus', reload);
+window.addEventListener('focus', () => { if (!state.playing) reload(); });
+const savedView = store.get('study-view');
+setView(['plan', 'study', 'reflect'].includes(savedView) ? savedView : 'plan');
 reload();
 </script>
 </body>
