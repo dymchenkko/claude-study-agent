@@ -1,13 +1,24 @@
 """Today's plan: at most three 5-minute picks across subjects. One source of truth for `study gui`
 (Plan) and `/today` (through `study plan --json`), so the two never disagree.
 
-score = weight x urgency x (mistakes + weakness + overdue + slip)
+score = weight x urgency x hub x (mistakes + weakness + overdue + slip)
   weight   per topic, syllabus Exam weight: high 3, med 2, low 1, blank 2
+  hub      1 + 0.1 per topic that builds on it (links.json), max 1.5: a gap there hurts more
   urgency  per subject: no exam 0.25, unknown 1, > 45 days 1, 15-45 days 1.5, <= 14 days 2
   mistakes 2 x open mistakes, max 6 · weakness 5 - level · overdue min(days, 14) / 14 x 4 · slip 3
 
 Two slots go to the best reviews, the third to the next new topic (a lesson), at most 2 picks per
-subject. Picks are saved per date in .tools/today-plan.json so the list stays stable for the day.
+subject.
+
+Links (links.json, "from is needed before to") change two things:
+  root cause  a struggling review (level <= 2 or open mistakes) whose prerequisite, direct or further
+              back, is weaker (lower level, or the same level with open mistakes of its own) becomes a
+              review of that prerequisite ("Fix X first: Y builds on it"), or a lesson when the
+              prerequisite was never studied. Same score as the original. Links are only similarity,
+              so an equally shaky prerequisite is not enough to push the topic's own review aside.
+  lessons     the next new topic is the first whose prerequisites are all solid (level >= 3); when
+              none is, the first new topic in course order, as without links.
+Picks are saved per date in .tools/today-plan.json so the list stays stable for the day.
 """
 
 import json
@@ -37,7 +48,10 @@ def subject_state(root, name, today):
     syllabus = sd.parse_syllabus(sd._read(folder / "syllabus.md"))
     events, _ = sd.read_events(folder)
     slipping = sd.slips(events)
-    for t in topics:
+    edges, _ = sd.read_links(folder, topics)
+    for i, t in enumerate(topics):
+        t["needs"] = [a for a, b in edges if b == i]
+        t["unlocks"] = sum(1 for a, _ in edges if a == i)
         t["weight"] = sd.topic_weight(t["topic"], syllabus)
         t["open"] = sum(1 for m in mistakes if not m["fixed"] and sd.same_topic(m["topic"], t["topic"]))
         t["slip"] = sd.topic_key(t["topic"]) in slipping
@@ -52,7 +66,8 @@ def score(t, urg):
              "overdue": min(t["overdue"] or 0, 14) / 14 * 4 if t["overdue"] is not None else 0,
              "weakness": max(5 - t["level"], 0)}
     top = max(terms, key=lambda k: terms[k])  # ties keep this order: mistakes, slip, overdue, weakness
-    return t["weight"] * urg * sum(terms.values()), top
+    hub = 1 + 0.1 * min(t.get("unlocks", 0), 5)
+    return t["weight"] * urg * hub * sum(terms.values()), top
 
 
 def reason(t, top):
@@ -65,16 +80,45 @@ def reason(t, top):
     return f"Still shaky (level {t['level']})"
 
 
-def prompt(kind, subject, topic):
+def prompt(kind, subject, topic, builds=None):
     # Plain language, so it doesn't depend on slash commands working through `claude -p`.
-    return {"review": f"Review only {topic} in {subject}, 3 questions, following the review rules",
+    text = {"review": f"Review only {topic} in {subject}, 3 questions, following the review rules",
             "lesson": f"Learn {topic} in {subject}",
             "drawing": f"Give me a drawing task on {topic} in {subject}"}[kind]
+    return text + (f". {builds} builds on it, so I'm shaky there because of this" if builds else "")
 
 
-def _pick(state, t, kind, why, value):
+def _pick(state, t, kind, why, value, builds=None):
     return {"subject": state["name"], "topic": t["topic"], "kind": kind, "reason": why,
-            "score": round(value, 1), "prompt": prompt(kind, state["name"], t["topic"])}
+            "score": round(value, 1), "prompt": prompt(kind, state["name"], t["topic"], builds)}
+
+
+def struggling(t):
+    return t["level"] <= 2 or t["open"] > 0
+
+
+def root_cause(topics, t):
+    """The prerequisite to fix before `t`, or None. Walks needs back through links.json: a studied one
+    that is shaky (level <= 2 or open mistakes) and weaker than `t` (lower level, or the same level with
+    open mistakes) wins, the weakest first, then the most open mistakes, then course order. Only when
+    there is none, the earliest never-studied one."""
+    seen, stack = set(), list(t.get("needs", ()))
+    while stack:
+        i = stack.pop()
+        if i not in seen:
+            seen.add(i)
+            stack.extend(topics[i].get("needs", ()))
+    pre = [topics[i] for i in sorted(seen)]
+    shaky = [p for p in pre if p["started"] and struggling(p)
+             and (p["level"] < t["level"] or (p["level"] == t["level"] and p["open"] > 0))]
+    if shaky:
+        return min(shaky, key=lambda p: (p["level"], -p["open"]))
+    return next((p for p in pre if not p["started"]), None)
+
+
+def ready(topics, t):
+    """Every prerequisite of a new topic is solid (level >= 3)."""
+    return all(topics[i]["started"] and topics[i]["level"] >= 3 for i in t.get("needs", ()))
 
 
 def lesson_order(states):
@@ -95,8 +139,8 @@ def build_picks(states, slots=SLOTS, taken=()):
     def free(s, t):
         return count[s["name"]] < PER_SUBJECT and (s["name"], sd.topic_key(t["topic"])) not in used
 
-    def add(s, t, kind, why, value):
-        picks.append(_pick(s, t, kind, why, value))
+    def add(s, t, kind, why, value, builds=None):
+        picks.append(_pick(s, t, kind, why, value, builds))
         count[s["name"]] += 1
         used.add((s["name"], sd.topic_key(t["topic"])))
 
@@ -107,15 +151,30 @@ def build_picks(states, slots=SLOTS, taken=()):
             if t["started"] and (t["overdue"] is not None or t["open"]):
                 value, top = score(t, urg)
                 kind = "drawing" if t["slip"] and s["diagrams"] else "review"
-                reviews.append((value, s, t, kind, reason(t, top)))
-    reviews.sort(key=lambda r: (-r[0], r[1]["name"], r[2]["topic"]))
+                root = root_cause(s["topics"], t) if struggling(t) else None
+                if root:
+                    verb, kind = ("Fix", "review") if root["started"] else ("Learn", "lesson")
+                    reviews.append((value, s, root, kind, f"{verb} {root['topic']} first: {t['topic']} builds on it",
+                                    t["topic"]))
+                else:
+                    reviews.append((value, s, t, kind, reason(t, top), None))
+    best = {}  # one entry per topic: the highest score, and the root-cause reason when there is one
+    for r in reviews:
+        key = (r[1]["name"], sd.topic_key(r[2]["topic"]))
+        old = best.get(key)
+        if old is None:
+            best[key] = r
+        else:
+            why = r if r[5] and not old[5] else old if old[5] else r
+            best[key] = (max(r[0], old[0]),) + why[1:]
+    reviews = sorted(best.values(), key=lambda r: (-r[0], r[1]["name"], r[2]["topic"]))
 
     def take_reviews(limit):
-        for value, s, t, kind, why in reviews:
+        for value, s, t, kind, why, builds in reviews:
             if len(picks) >= limit:
                 return
             if free(s, t):
-                add(s, t, kind, why, value)
+                add(s, t, kind, why, value, builds)
 
     take_reviews(min(2, slots))
     order = lesson_order(active)
@@ -124,7 +183,8 @@ def build_picks(states, slots=SLOTS, taken=()):
         for s in order:
             if len(picks) >= slots:
                 break
-            nxt = next((t for t in s["topics"] if not t["started"] and free(s, t)), None)
+            new = [t for t in s["topics"] if not t["started"] and free(s, t)]
+            nxt = next((t for t in new if ready(s["topics"], t)), new[0] if new else None)
             if nxt and count[s["name"]] < PER_SUBJECT:
                 add(s, nxt, "lesson", "Next new topic", 0)
                 added = True

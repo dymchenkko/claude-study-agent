@@ -274,6 +274,54 @@ class Planner(Tmp):
         (self.root / ".tools" / "today-plan.json").write_text("{bad", encoding="utf-8")
         self.assertEqual(planner.today_plan(self.root, TODAY)["picks"], [])  # malformed: rebuilt
 
+    def links(self, folder, *pairs):
+        (folder / "links.json").write_text(json.dumps([{"from": a, "to": b} for a, b in pairs]), encoding="utf-8")
+
+    def test_struggling_review_goes_to_the_shaky_prerequisite(self):
+        f = make_subject(self.root, "SYC", [("Gray code", 1, "2026-10-20", "2026-10-30", 1),
+                                            ("Truth tables", 4, "2026-10-01", "2026-12-01", 16),
+                                            ("Karnaugh maps", 2, "2026-11-01", "2026-11-02", 1)])
+        self.links(f, ("Gray code", "Karnaugh maps"), ("Truth tables", "Karnaugh maps"))
+        p = self.plan()[0]
+        self.assertEqual((p["topic"], p["kind"]), ("Gray code", "review"))
+        self.assertEqual(p["reason"], "Fix Gray code first: Karnaugh maps builds on it")
+        self.assertIn("Karnaugh maps builds on it", p["prompt"])
+
+    def test_root_cause_walks_back_and_needs_the_prerequisite_no_stronger(self):
+        topics = [{"topic": n, "level": lv, "open": o, "started": lv > 0, "needs": nd}
+                  for n, lv, o, nd in [("A", 1, 0, []), ("B", 4, 0, [0]), ("C", 2, 0, [1]), ("D", 3, 1, [])]]
+        self.assertEqual(planner.root_cause(topics, topics[2])["topic"], "A")  # through solid B
+        topics[0]["level"] = 3
+        self.assertIsNone(planner.root_cause(topics, topics[2]))  # A is stronger than C now
+        topics[2]["needs"] = [3]
+        self.assertIsNone(planner.root_cause(topics, topics[2]))  # D: open mistake but level 3 > 2
+        topics[2]["level"] = 3
+        self.assertEqual(planner.root_cause(topics, topics[2])["topic"], "D")  # same level + open mistake
+        topics[3]["open"] = 0
+        self.assertIsNone(planner.root_cause(topics, topics[2]))  # same level alone is not enough
+
+    def test_never_studied_prerequisite_becomes_a_lesson(self):
+        f = make_subject(self.root, "S", [("Basics", 0, "", "", ""), ("Advanced", 1, "2026-10-01", "2026-10-02", 1)])
+        self.links(f, ("Basics", "Advanced"))
+        p = self.plan()[0]
+        self.assertEqual((p["topic"], p["kind"], p["reason"]), ("Basics", "lesson", "Learn Basics first: Advanced builds on it"))
+
+    def test_next_lesson_waits_for_solid_prerequisites(self):
+        f = make_subject(self.root, "S", [("A", 2, TODAY, "2026-11-08", 1), ("B", 0, "", "", ""), ("C", 0, "", "", "")])
+        self.assertEqual(self.plan()[0]["topic"], "B")  # no links: course order
+        self.links(f, ("A", "B"))
+        self.assertEqual(self.plan()[0]["topic"], "C")  # B needs A, still shaky
+        self.links(f, ("A", "B"), ("A", "C"))
+        self.assertEqual(self.plan()[0]["topic"], "B")  # nothing ready: course order again
+
+    def test_a_topic_others_build_on_scores_higher(self):
+        f = make_subject(self.root, "S", [("Hub", 3, "2026-10-01", "2026-10-05", 3), ("Leaf", 3, "2026-10-01", "2026-10-05", 3),
+                                          ("X", 4, "2026-10-01", "2026-12-01", 16), ("Y", 4, "2026-10-01", "2026-12-01", 16)])
+        self.links(f, ("Hub", "X"), ("Hub", "Y"))
+        picks = self.plan()
+        self.assertEqual([p["topic"] for p in picks], ["Hub", "Leaf"])
+        self.assertGreater(picks[0]["score"], picks[1]["score"])
+
     def test_minutes(self):
         plan = {"picks": [{"subject": "A", "done": False}, {"subject": "B", "done": False}, {"subject": "A", "done": True}]}
         self.assertEqual(len(planner.for_session(plan, minutes=5)), 1)
