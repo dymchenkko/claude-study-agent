@@ -435,10 +435,6 @@ const prompts = {
   lesson: (s, t) => `Learn ${t} in ${s}`,
   drawing: (s, t) => `Give me a drawing task on ${t} in ${s}`,
   saved: (s, t) => `Grade my drawing on ${t}`,
-  links: s => `Create ${s}/links.json for the course map: a JSON list of {"from": "<topic>", "to": "<topic>"} pairs, ` +
-    `meaning "from is needed before to". Use the exact topic names from ${s}/progress.md. Base every link on the course ` +
-    `order in syllabus.md or on what the materials say builds on what; leave a topic unlinked rather than guess. ` +
-    `Don't change any other file. Reply with how many links you added.`,
 };
 
 // ---------- the rail ----------
@@ -679,10 +675,10 @@ function renderReplay(d) {
 function renderMap(d) {
   const el = document.getElementById('map');
   document.getElementById('mapTools').innerHTML = state.mode === 'map' ? `
-    ${!d.hasLinksFile && d.topics.length ? `<button class="btn small" data-gen-links ${state.list.agentReady ? '' : 'disabled title="Needs the tutor (Claude Code)"'}>Connect topics</button>` : ''}
+    ${!d.hasLinksFile && d.topics.length ? `<button class="btn small" data-gen-links ${d.linksReady ? '' : 'disabled title="Needs semantic search: run study setup"'}>Connect topics</button>` : ''}
     <button class="zoom" data-zoom="-1" aria-label="Zoom out">−</button><button class="zoom" data-zoom="1" aria-label="Zoom in">+</button>` : '';
   document.getElementById('warnings').innerHTML = [
-    ...(!d.links.length && d.topics.length && state.mode === 'map' ? ['<div class="note-line">No links yet, so topics sit in course order. <b>Connect topics</b> asks the tutor to find what builds on what.</div>'] : []),
+    ...(!d.links.length && d.topics.length && state.mode === 'map' ? ['<div class="note-line">No links yet, so topics sit in course order. <b>Connect topics</b> links topics whose material is alike, with the local search model (no Claude). Delete wrong links in links.json.</div>'] : []),
     ...d.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`)].join('');
   renderReplay(d);
   if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
@@ -941,7 +937,7 @@ document.querySelector('.work').addEventListener('input', e => {
   renderReplay(state.detail);
   if (keep) document.querySelector('#replay [data-scrub]')?.focus();
 });
-document.querySelector('.work').addEventListener('click', e => {
+document.querySelector('.work').addEventListener('click', async e => {
   const t = e.target, d = state.detail;
   const pick = t.closest('[data-pick]');
   if (pick) { const p = state.list.plan.picks[+pick.dataset.pick]; if (p && !p.done) startStudy(p.subject, p.topic, p.prompt); return; }
@@ -959,7 +955,14 @@ document.querySelector('.work').addEventListener('click', e => {
   const zm = t.closest('[data-zoom]');
   if (zm) { state.zoom = Math.min(1.6, Math.max(0.5, +(state.zoom + 0.1 * +zm.dataset.zoom).toFixed(1))); store.set('study-zoom', state.zoom);
     renderMap(d); if (state.mapOpen) renderMapInto(document.getElementById('mapSide'), d, true); return; }
-  if (t.closest('[data-gen-links]')) { startStudy(d.name, null, prompts.links(d.name)); return; }
+  const gl = t.closest('[data-gen-links]');
+  if (gl) {
+    gl.disabled = true; gl.textContent = 'Connecting…';
+    const r = await post('/api/links', { subject: d.name }).catch(e => ({ error: e.message }));
+    if (r.error) alertLine(r.error);
+    await reload();
+    return;
+  }
   const st = t.closest('[data-study]');
   if (st) { const topic = d.topics[+st.dataset.topicI].topic; startStudy(d.name, topic, prompts[st.dataset.study](d.name, topic)); return; }
   const dr = t.closest('[data-draw]');

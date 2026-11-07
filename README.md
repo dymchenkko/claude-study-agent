@@ -176,6 +176,7 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 - **`/setup`:** downloads llama.cpp and the model once (~330 MB) and indexes existing subjects.
 - **`/ingest`:** embeds only new or changed files.
 - **Search:** the tutor calls `study search` in `/learn`, `/quiz`, `/exam`, `/review` and when you ask about a topic. It embeds your one question and returns the best passages with citations.
+- **Course map links:** `study links <Subject>` (or **Connect topics** in `study gui`) averages each topic's page embeddings, already in the index, and links every topic from its most similar earlier topics into `links.json`. No LLM: similar material is a hint, not proof, so delete links you disagree with.
 - **Never:** for exact terms or formulas (those use exact-word search), for transcription (whisper.cpp), or for the teaching itself (Claude).
 
 **Upgrading from the PyTorch version:** run `study setup` once. Old indexes are rebuilt automatically on the first search, and `.tools/.venv` (~1 GB) plus the old model in `~/.cache/huggingface` (~1.5 GB) can be deleted.
@@ -191,6 +192,7 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 ./.tools/study setup                       # install semantic search (or --mode auto|cpu|off)
 ./.tools/study new "Biology"
 ./.tools/study ingest "Biology"            # or: --url <video-link> for a recorded lecture
+./.tools/study links "Biology"             # suggest course-map links from the local model (--write saves them)
 ./.tools/study draw "Biology" cell-cycle     # open a diagram in draw.io (--show prints its contents)
 ./.tools/study gui                         # the dashboard: Plan (today's 3 picks, rhythm), Study (tutor), Reflect (map, replay)
 ./.tools/study update                      # newest tools and skills (never touches your subjects)

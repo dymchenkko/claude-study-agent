@@ -5,6 +5,8 @@ the tutor through an agent adapter (agents.py), streamed as server-sent events. 
 anywhere but the study folder. Listens on 127.0.0.1 with a random token in the URL.
 """
 
+import contextlib
+import io
 import json
 import re
 import secrets
@@ -16,7 +18,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 import agents
+import links as topic_links
 import planner
+import semantic
 import studydata as sd
 from studydata import (days_between, parse_exam, parse_mistakes, parse_progress, session_notes,  # noqa: F401
                        subject_names, table_rows)
@@ -71,6 +75,7 @@ def subject_detail(root, name, today):
         "notes": session_notes(folder),
         "links": links,
         "hasLinksFile": (folder / "links.json").exists(),
+        "linksReady": semantic.installed(),
         "depths": sd.depths(len(topics), links),
         "moved": sd.what_moved(events),
         "unlogged": sd.unlogged(topics, events) if events else 0,
@@ -246,6 +251,8 @@ def make_handler(root, token):
                 return self._chat(body)
             if url.path in ("/api/exam", "/api/reviews", "/api/dismiss"):
                 return self._write(url.path, body)
+            if url.path == "/api/links":
+                return self._links(body)
             if url.path == "/api/chat/stop":
                 with lock:
                     run = runs.get(body.get("runId"))
@@ -282,6 +289,22 @@ def make_handler(root, token):
                 return self._json({"error": str(e)}, 400)
             planner.today_plan(root, today, rebuild=True)  # keeps finished picks
             return self._json({"ok": True})
+
+        def _links(self, body):
+            """Connect topics: `study links <Subject> --write`, the local embedding model, no LLM."""
+            subject = str(body.get("subject", ""))
+            if subject not in subject_names(root):
+                return self._json({"error": f"no subject {subject}"}, 404)
+            if not semantic.installed():
+                return self._json({"error": "Connect topics needs semantic search: run study setup"}, 503)
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out):
+                    topic_links.cmd_links(root / subject, root / ".tools/index" / subject, write=True)
+            except SystemExit as e:
+                return self._json({"error": str(e.code or out.getvalue().strip())}, 400)
+            lines = out.getvalue().strip().splitlines()
+            return self._json({"ok": True, "message": lines[-1] if lines else ""})
 
         def _event(self, obj):
             self.wfile.write(f"data: {json.dumps(obj, ensure_ascii=False)}\n\n".encode("utf-8"))
