@@ -21,6 +21,7 @@ argument-hint: "<subject> <topic>"
    - grade (✅/⚠️/❌), one-sentence feedback, adapt difficulty.
 5. **Close:** ask me to explain the whole topic in 3–4 sentences (teach-back). Grade it.
 6. Update memory as described in `~/Study/CLAUDE.md` (progress, mistakes, session log). New topic starts at
-   Level from the teach-back (❌→1, ⚠️→2, ✅→3), Interval 1, Next review tomorrow.
+   Level from the teach-back (❌→1, ⚠️→2, ✅→3), Interval 1, Next review tomorrow. Then log it with
+   `study log … --kind lesson` (plus `--kind drawing` if a diagram was graded), as in the Event log rule.
 
 Stop any time I say stop — but always save memory first.

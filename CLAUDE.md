@@ -51,6 +51,14 @@ entry, the Diagrams rules below apply.
   using the ladder 1 → 3 → 7 → 16 → 35 days (correct recall → next step; miss → 1 day). Add new topics as rows.
 - `mistakes.md`: append each ❌ with the misconception and source. Mark `Fixed? ✅` when I later get it right.
 - `sessions/YYYY-MM-DD.md`: 3–6 bullets — what we covered, what's shaky, what to do next time.
+- **Event log:** each time you save `progress.md`, run once per topic touched and per kind of activity since
+  the last save: `~/Study/.tools/study log <Subject> --topic "<exact progress.md name>" --kind
+  lesson|recall|quiz|exam|drawing --verdict correct|partly|wrong --level <Level now> --interval <Interval now>`.
+  Verdict: `wrong` if any answer on it was ❌, `partly` if any was ⚠️, else `correct`. A graded diagram is its own
+  `drawing` event. Level and interval are the values you just saved, so log after saving, never mid-question.
+  This feeds the timeline, "what moved" and the replay in `study gui`.
+- **Paused reviews:** a subject whose `CLAUDE.md` has `- **Reviews:** paused since …` gets no review questions
+  (in /today, /review or interleaving) until I resume it. `resumed <date>` means reviews are back on.
 Dates: use today's real date (run `date +%F` if unsure).
 
 ## Exams

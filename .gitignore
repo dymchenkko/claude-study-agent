@@ -14,6 +14,8 @@
 .tools/.venv/
 .tools/index/
 .tools/config.json
+.tools/today-plan.json
+.tools/gui-state.json
 .tools/bin/
 __pycache__/
 *.pyc

@@ -190,6 +190,9 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 ./.tools/study new "Biology"
 ./.tools/study ingest "Biology"            # or: --url <video-link> for a recorded lecture
 ./.tools/study draw "Biology" cell-cycle     # open a diagram in draw.io (--show prints its contents)
+./.tools/study gui                         # the dashboard: Plan (today's 3 picks, rhythm), Study (tutor), Reflect (map, replay)
+./.tools/study plan                        # today's picks, the same list as the dashboard and /today
+./.tools/study log "Biology" --topic "Osmosis" --kind recall --verdict correct --level 3 --interval 7
 ```
 
 Optional: `alias study=~/Study/.tools/study`.

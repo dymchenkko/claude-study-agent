@@ -3,7 +3,7 @@
 Fill in what you know; leave the rest blank. The tutor reads this before every session.
 
 - **Course name / code:**
-- **Exam date:**
+- **Exam date:** (YYYY-MM-DD, or unknown, or none)
 - **Exam format:** (e.g. 40 MCQ + 3 open problems, 90 min, closed book)
 - **What the lecturer emphasises:**
 - **My current level / goal:** (e.g. "starting from zero, aim for a 4.0")

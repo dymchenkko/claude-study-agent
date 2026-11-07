@@ -16,126 +16,68 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 import agents
+import planner
+import studydata as sd
+from studydata import (days_between, parse_exam, parse_mistakes, parse_progress, session_notes,  # noqa: F401
+                       subject_names, table_rows)
 
 PAGE = Path(__file__).resolve().parent / "gui" / "index.html"
-DATE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
-SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
+RHYTHM_DAYS = 42
+REPLAY_MIN_STARTED = 5
 
 
 # ---------- reading the study files (pure functions, no agent) ----------
 
-def table_rows(md, need):
-    """Rows of the first markdown table whose header has every `need` column (prefix match),
-    as dicts keyed by the lower-cased header."""
-    lines = [l.strip() for l in md.splitlines()]
-    for i, line in enumerate(lines[:-1]):
-        if not line.startswith("|"):
-            continue
-        head = [c.lower() for c in _cells(line)]
-        if not all(any(h.startswith(n) for h in head) for n in need):
-            continue
-        rows = []
-        for row_line in lines[i + 2:]:
-            if not row_line.startswith("|"):
-                break
-            row = _cells(row_line)
-            rows.append({h: (row[k] if k < len(row) else "") for k, h in enumerate(head)})
-        return rows
-    return []
-
-
-def _cells(line):
-    return [c.strip() for c in line.strip().strip("|").split("|")]
-
-
-def _col(rec, prefix):
-    return next((v for k, v in rec.items() if k.startswith(prefix)), "")
-
-
-def _date(text):
-    m = DATE.search(text or "")
-    return m.group(1) if m else None
-
-
-def days_between(a, b):
-    return (date.fromisoformat(b) - date.fromisoformat(a)).days
-
-
-def parse_progress(md, today):
-    topics = []
-    for r in table_rows(md, ["topic", "level", "next review"]):
-        name = _col(r, "topic")
-        if not name:
-            continue
-        try:
-            level = int(_col(r, "level"))
-        except ValueError:
-            level = 0
-        nxt, last = _date(_col(r, "next review")), _date(_col(r, "last studied"))
-        topics.append({
-            "topic": name, "level": level, "last": last, "next": nxt,
-            "overdue": days_between(nxt, today) if nxt and nxt <= today else None,
-            "notes": _col(r, "notes"),
-        })
-    return topics
-
-
-def parse_mistakes(md):
-    out = []
-    for r in table_rows(md, ["topic", "fixed"]):
-        if not _col(r, "topic"):
-            continue
-        out.append({
-            "date": _col(r, "date"), "topic": _col(r, "topic"),
-            "question": _col(r, "question"), "answer": _col(r, "my answer"),
-            "why": _col(r, "why"), "source": _col(r, "source"),
-            "fixed": "✅" in _col(r, "fixed"),
-        })
-    return out
-
-
-def parse_exam(claude_md, today):
-    line = next((l for l in claude_md.splitlines() if re.search(r"exam date", l, re.I)), "")
-    value = re.sub(r".*exam date:?\**:?", "", line, flags=re.I).strip()
-    # "NO EXAM (recording 2026-09-26)" mentions a date that is not the exam's.
-    if re.search(r"no exam|brak egzaminu", value, re.I):
-        return {"days": None, "label": "no exam"}
-    d = _date(value)
-    if d:
-        return {"days": days_between(today, d), "label": d}
-    return {"days": None, "label": "exam date not set"}
-
-
-def last_session(folder):
-    dates = sorted(d for p in (folder / "sessions").glob("*.md") if (d := _date(p.name)))
-    return dates[-1] if dates else None
-
-
-def _read(path):
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def subject_names(root):
-    return sorted(p.name for p in root.iterdir()
-                  if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith(".")
-                  and (p / "CLAUDE.md").is_file())
-
-
 def subject_detail(root, name, today):
-    folder = root / name
-    topics = parse_progress(_read(folder / "progress.md"), today)
-    mistakes = parse_mistakes(_read(folder / "mistakes.md"))
-    last = last_session(folder)
+    folder = Path(root) / name
+    claude = sd._read(folder / "CLAUDE.md")
+    reviews = sd.parse_reviews(claude)
+    topics = parse_progress(sd._read(folder / "progress.md"), today, reviews["resumed"])
+    mistakes = parse_mistakes(sd._read(folder / "mistakes.md"))
+    syllabus = sd.parse_syllabus(sd._read(folder / "syllabus.md"))
+    events, bad = sd.read_events(folder)
+    links, warnings = sd.read_links(folder, topics)
+    slipping = sd.slips(events)
+    if bad:
+        warnings.append(f"{bad} line(s) in events.jsonl could not be read and were skipped")
+    index = {sd.topic_key(t["topic"]): i for i, t in enumerate(topics)}
+    unmatched = 0
+    replay = []
+    for e in events:
+        i = index.get(sd.topic_key(e["topic"]))
+        if i is None:
+            unmatched += 1
+            continue
+        replay.append({"day": e["ts"][:10], "i": i, "level": e.get("level_after"),
+                       "interval": e.get("interval_after"), "kind": e["kind"]})
+    if unmatched:
+        warnings.append(f"{unmatched} event(s) name a topic that is not in progress.md and are left off the map")
+    for t in topics:
+        t["slip"] = sd.topic_key(t["topic"]) in slipping
+        t["weight"] = sd.topic_weight(t["topic"], syllabus)
+        t["fresh"] = sd.freshness(days_between(t["last"], today) if t["last"] else None, t["interval"])
+    last = sd.last_session(folder)
+    started = sum(1 for t in topics if t["level"] > 0 or t["last"])
     return {
         "name": name,
-        "exam": parse_exam(_read(folder / "CLAUDE.md"), today),
+        "exam": parse_exam(claude, today),
+        "reviews": reviews,
+        "diagrams": sd.has_diagrams(claude),
         "lastSession": last,
         "awayDays": days_between(last, today) if last else None,
+        "sessionDays": sd.session_dates(folder),
         "topics": topics,
         "mistakes": mistakes,
+        "notes": session_notes(folder),
+        "links": links,
+        "hasLinksFile": (folder / "links.json").exists(),
+        "depths": sd.depths(len(topics), links),
+        "moved": sd.what_moved(events),
+        "unlogged": sd.unlogged(topics, events) if events else 0,
+        "hasEvents": bool(events),
+        "replay": replay if started >= REPLAY_MIN_STARTED else None,
+        "replayApprox": any(e["kind"] == "import" for e in events),
+        "warnings": warnings,
     }
 
 
@@ -147,12 +89,89 @@ def subject_summary(detail):
         "lastSession": detail["lastSession"],
         "awayDays": detail["awayDays"],
         "topics": len(topics),
-        "started": sum(1 for t in topics if t["level"] > 0),
+        "started": sum(1 for t in topics if t["level"] > 0 or t["last"]),
         "due": sum(1 for t in topics if t["overdue"] is not None),
         "openMistakes": sum(1 for m in mistakes if not m["fixed"]),
+        "paused": detail["reviews"]["paused"],
+        "pausedSince": detail["reviews"]["since"],
+        "sessionDays": detail["sessionDays"],
         # one entry per topic in course order: the sidebar draws it as a tiny course strip
         "strip": [{"level": t["level"], "due": t["overdue"] is not None} for t in topics],
     }
+
+
+# ---------- Plan: rhythm, prompts and today's picks ----------
+
+def read_state(root):
+    """.tools/gui-state.json: answers like "Not now". Malformed or missing: start empty."""
+    try:
+        data = json.loads((Path(root) / ".tools" / "gui-state.json").read_text(encoding="utf-8"))
+        if isinstance(data, dict) and isinstance(data.get("dismissed"), list):
+            return data
+    except (OSError, ValueError):
+        pass
+    return {"dismissed": []}
+
+
+def dismiss(root, key):
+    state = read_state(root)
+    if key not in state["dismissed"]:
+        state["dismissed"].append(key)
+    path = Path(root) / ".tools" / "gui-state.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def exam_prompt_key(name, exam):
+    """The exam-date question comes back once per new state: unset, or each passed date."""
+    if exam["state"] == "unset":
+        return f"exam:{name}:unset"
+    if exam["state"] == "past":
+        return f"exam:{name}:past:{exam.get('last')}"
+    return None
+
+
+def prompts(root, summaries):
+    dismissed = set(read_state(root)["dismissed"])
+    exam, pause = [], []
+    for s in summaries:
+        key = exam_prompt_key(s["name"], s["exam"])
+        if key and key not in dismissed and s["topics"]:
+            exam.append({"subject": s["name"], "key": key, "past": s["exam"]["state"] == "past"})
+        key = f"pause:{s['name']}"
+        if s["exam"]["state"] == "none" and s["due"] >= 5 and not s["paused"] and key not in dismissed:
+            pause.append({"subject": s["name"], "key": key, "due": s["due"]})
+    return {"exam": exam, "pause": pause}
+
+
+def rhythm(summaries, today, days=RHYTHM_DAYS):
+    """Session days per subject over the last `days` days, for the Plan timeline."""
+    start = date.fromordinal(date.fromisoformat(today).toordinal() - days + 1).isoformat()
+    active = [s for s in summaries if not s["paused"]]
+    all_days = {d for s in summaries for d in s["sessionDays"] if start <= d <= today}
+    return {
+        "start": start, "days": days,
+        "overdue": sum(s["due"] for s in active), "started": sum(s["started"] for s in active),
+        "sessionDays": len(all_days),
+        "rows": [{"name": s["name"], "days": [days_between(start, d) for d in s["sessionDays"] if start <= d <= today],
+                  "last": s["lastSession"], "due": s["due"], "started": s["started"], "paused": s["paused"]}
+                 for s in summaries if s["topics"]],
+    }
+
+
+def overview(root, today, rebuild=False):
+    names = subject_names(root)
+    details = [subject_detail(root, n, today) for n in names]
+    summaries = [subject_summary(d) for d in details]
+    return {"subjects": summaries, "rhythm": rhythm(summaries, today), "prompts": prompts(root, summaries),
+            "plan": planner.today_plan(root, today, rebuild)}
+
+
+def import_history(root, today):
+    """First start: seed each subject's events.jsonl from progress.md (only once, see studydata)."""
+    for n in subject_names(root):
+        folder = Path(root) / n
+        sd.import_events(folder, parse_progress(sd._read(folder / "progress.md"), today))
 
 
 # ---------- chat transcripts ----------
@@ -205,10 +224,8 @@ def make_handler(root, token):
             if not parts:
                 return self._send(200, PAGE.read_text(encoding="utf-8"), "text/html; charset=utf-8")
             if parts == ["api", "subjects"]:
-                names = subject_names(root)
-                return self._json({"today": today, "root": str(root), "agent": adapter.name,
-                                   "agentReady": adapter.available(), "subjects": [
-                                       subject_summary(subject_detail(root, n, today)) for n in names]})
+                return self._json(dict(overview(root, today), today=today, root=str(root), agent=adapter.name,
+                                       agentReady=adapter.available()))
             if len(parts) == 3 and parts[:2] == ["api", "subjects"]:
                 if parts[2] not in subject_names(root):
                     return self._json({"error": f"no subject {parts[2]}"}, 404)
@@ -223,8 +240,12 @@ def make_handler(root, token):
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
             except ValueError:
                 return self._json({"error": "bad JSON"}, 400)
+            if not self._same_origin():
+                return self._json({"error": "requests must come from the study gui page"}, 403)
             if url.path == "/api/chat":
                 return self._chat(body)
+            if url.path in ("/api/exam", "/api/reviews", "/api/dismiss"):
+                return self._write(url.path, body)
             if url.path == "/api/chat/stop":
                 with lock:
                     run = runs.get(body.get("runId"))
@@ -232,6 +253,35 @@ def make_handler(root, token):
                     run.stop()
                 return self._json({"stopped": bool(run)})
             return self._json({"error": "not found"}, 404)
+
+        def _same_origin(self):
+            """Writes need the per-run token (checked above) and an Origin of this very server."""
+            port = self.server.server_address[1]
+            return self.headers.get("Origin") in (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+
+        def _write(self, path, body):
+            today = date.today().isoformat()
+            if path == "/api/dismiss":
+                key = str(body.get("key", ""))
+                if not re.fullmatch(r"(exam|pause):[^\n\r]{1,200}", key):
+                    return self._json({"error": "bad key"}, 400)
+                dismiss(root, key)
+                return self._json({"ok": True})
+            subject = str(body.get("subject", ""))
+            if subject not in subject_names(root):
+                return self._json({"error": f"no subject {subject}"}, 404)
+            try:
+                if path == "/api/exam":
+                    sd.write_exam(root / subject, body.get("value"))
+                else:
+                    action = body.get("action")
+                    if action not in ("pause", "resume"):
+                        raise ValueError("action must be pause or resume")
+                    sd.write_reviews(root / subject, action == "pause", today)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 400)
+            planner.today_plan(root, today, rebuild=True)  # keeps finished picks
+            return self._json({"ok": True})
 
         def _event(self, obj):
             self.wfile.write(f"data: {json.dumps(obj, ensure_ascii=False)}\n\n".encode("utf-8"))
@@ -273,6 +323,7 @@ def make_handler(root, token):
 
 def serve(root, port=0, open_browser=True):
     token = secrets.token_urlsafe(16)
+    import_history(Path(root), date.today().isoformat())
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(Path(root), token))
     server.daemon_threads = True
     url = f"http://127.0.0.1:{server.server_address[1]}/?t={token}"

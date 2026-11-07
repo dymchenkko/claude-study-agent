@@ -21,4 +21,5 @@ argument-hint: "<subject> [minutes] [html]"
 5. **Report:** readiness verdict (Not ready / Borderline / Ready), score by topic, top 3 weak spots with the
    misconception behind each, and a concrete revision plan until the exam date (which /learn and /review to
    run on which days). Save the report into the same file.
-6. Update `progress.md`, `mistakes.md` and the session log.
+6. Update `progress.md`, `mistakes.md` and the session log, then run `study log … --kind exam` once per topic
+   graded (Event log rule in `~/Study/CLAUDE.md`).

@@ -19,4 +19,5 @@ argument-hint: "<subject> [topic|weak|all] [n] [html]"
    "Copy results" button producing text like `QUIZ RESULTS <topic>: 1✅ 2❌(chose b) …`. Open it with
    `open <file>`. When I paste the results back, grade-log them as below.
 5. Update memory: each question counts as a recall for its topic (reschedule per the ladder in
-   `~/Study/CLAUDE.md`), log misses in `mistakes.md`, append a line to the session log.
+   `~/Study/CLAUDE.md`), log misses in `mistakes.md`, append a line to the session log, then run
+   `study log … --kind quiz` once per topic (Event log rule).
