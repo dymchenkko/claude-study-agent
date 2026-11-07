@@ -40,6 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import semantic  # noqa: E402  (standard library only)
 import diagram   # noqa: E402  (standard library only)
 import gui       # noqa: E402  (standard library only)
+import links     # noqa: E402  (standard library only)
 import planner   # noqa: E402  (standard library only)
 import studydata  # noqa: E402  (standard library only)
 
@@ -456,6 +457,12 @@ def run_ingest(a):
         cmd_index(a.subject)
 
 
+def run_links(a):
+    sd = subject_dir(a.subject)
+    require_semantic()
+    links.cmd_links(sd, INDEX_DIR / sd.name, a.write, a.replace, a.min, a.max)
+
+
 def run_draw(a):
     if a.which:
         print(diagram.editor()[0] or "none")
@@ -608,6 +615,15 @@ def build_parser():
     s.add_argument("subject")
     s.add_argument("query", nargs="+")
     s.add_argument("-k", type=int, default=5, help="how many passages (default 5)")
+    s = command("links", run_links,
+                "suggest topic links (links.json) from the local embedding model, no LLM")
+    s.add_argument("subject")
+    s.add_argument("--write", action="store_true", help="add links for topics not in links.json yet (keeps existing links)")
+    s.add_argument("--replace", action="store_true", help="overwrite links.json with them")
+    s.add_argument("--min", type=float, default=links.MIN_SIM,
+                   help=f"lowest similarity to link (default {links.MIN_SIM})")
+    s.add_argument("--max", type=int, default=links.MAX_LINKS,
+                   help=f"most links into one topic (default {links.MAX_LINKS})")
     s = command("draw", run_draw, "open/create <Subject>/diagrams/<name>.drawio in draw.io")
     s.add_argument("subject", nargs="?")
     s.add_argument("name", nargs="?")
