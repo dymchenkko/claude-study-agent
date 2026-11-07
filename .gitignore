@@ -16,6 +16,7 @@
 .tools/config.json
 .tools/today-plan.json
 .tools/gui-state.json
+.tools/backup/
 .tools/bin/
 __pycache__/
 *.pyc

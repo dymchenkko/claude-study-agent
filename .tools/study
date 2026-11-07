@@ -467,6 +467,87 @@ def run_draw(a):
         diagram.cmd_draw(subject_dir(a.subject), a.name, a.browser)
 
 
+REPO_URL = "https://github.com/dymchenkko/claude-study-agent.git"
+
+
+def git(*args, check=True):
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=check)
+
+
+def backup(paths, why):
+    """Copy files about to be overwritten into .tools/backup/<time>/ (gitignored). Returns the folder."""
+    from datetime import datetime
+    dest = ROOT / ".tools/backup" / datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    for p in paths:
+        target = dest / p
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / p, target)
+    (dest / "README.txt").write_text(f"{why}\nOriginal paths are relative to {ROOT}.\n")
+    return dest
+
+
+def cmd_link(url):
+    """Turn a study folder copied by hand into a git checkout of the project, so `study update` works.
+    Subject folders are gitignored, so git never reads or changes them. Tool files that differ from the
+    project are backed up first."""
+    if (ROOT / ".git").exists():
+        sys.exit(f"{ROOT} is already linked (a git checkout). Run: study update")
+    print(f"Linking {ROOT} to {url}")
+    git("init", "-q", "-b", "main")
+    git("remote", "add", "origin", url)
+    r = git("fetch", "-q", "origin", "main", check=False)
+    if r.returncode:
+        shutil.rmtree(ROOT / ".git")
+        sys.exit(f"Could not fetch {url}:\n{r.stderr.strip()}\nNothing was changed.")
+    tracked = git("ls-tree", "-r", "--name-only", "origin/main").stdout.split()
+    skip = ["docs/"] + ([] if (ROOT / "Example-Subject").exists() else ["Example-Subject/"])
+    tracked = [p for p in tracked if not any(p.startswith(s) for s in skip)]
+    changed = []
+    for p in tracked:
+        if (ROOT / p).is_file():
+            blob = git("hash-object", str(ROOT / p)).stdout.strip()
+            if blob != git("rev-parse", f"origin/main:{p}").stdout.strip():
+                changed.append(p)
+    saved = backup(changed, "Tool files replaced by `study update --link`.") if changed else None
+    # docs/ (the website) and a deleted Example-Subject stay out of the study folder.
+    git("sparse-checkout", "set", "--no-cone", "/*", *[f"!/{s}" for s in skip])
+    git("checkout", "-q", "-f", "-B", "main", "origin/main")
+    git("branch", "-q", "--set-upstream-to=origin/main", "main")
+    print(f"Linked. {len(changed)} tool file(s) updated" + (f", old versions saved in {saved}" if saved else "") + ".")
+    print("Your subjects, materials and progress were not touched (they are gitignored).")
+
+
+def cmd_update(force=False, link=False, url=REPO_URL):
+    """Pull the newest tools, skills and tutor rules. Subject folders are gitignored, so an update can't
+    touch materials, progress or sessions."""
+    if not shutil.which("git"):
+        sys.exit("study update needs git (xcode-select --install, or apt install git).")
+    if link:
+        return cmd_link(url)
+    if not (ROOT / ".git").exists():
+        sys.exit(f"{ROOT} isn't linked to the project yet (it was copied, not cloned). Link it once with:\n"
+                 "  study update --link\nIt backs up any tool files it replaces and never touches your subjects.")
+    edited = [l[3:] for l in git("status", "--porcelain", "--untracked-files=no").stdout.splitlines()]
+    if edited and not force:
+        sys.exit("These tool files were edited in this folder and would be overwritten:\n  "
+                 + "\n  ".join(edited) + "\nKeep the edits in the project repo instead, or run "
+                 "`study update --force` to back them up to .tools/backup/ and update anyway.")
+    if edited:
+        print(f"Backed up {len(edited)} edited file(s) to {backup(edited, 'Local edits replaced by `study update --force`.')}")
+        git("checkout", "-q", "--", *edited)
+    old = git("rev-parse", "HEAD").stdout.strip()
+    r = git("pull", "-q", "--ff-only", check=False)
+    if r.returncode:
+        sys.exit(f"Update stopped, nothing changed:\n{r.stderr.strip()}")
+    new = git("rev-parse", "HEAD").stdout.strip()
+    if old == new:
+        print("Already up to date.")
+        return
+    print(git("log", "--oneline", "--no-merges", f"{old}..{new}").stdout.rstrip())
+    print(git("diff", "--stat", old, new).stdout.rstrip().splitlines()[-1].strip())
+    print("Updated. Restart `study gui` if it is running. Your subjects were not touched.")
+
+
 def study_root(a):
     return Path(a.root).expanduser() if getattr(a, "root", None) else ROOT
 
@@ -554,6 +635,11 @@ def build_parser():
     s.add_argument("--level", type=int, required=True, help="Level after saving progress.md")
     s.add_argument("--interval", type=int, required=True, help="Interval (d) after saving progress.md")
     s.add_argument("--root", help=argparse.SUPPRESS)
+    s = command("update", lambda a: cmd_update(a.force, a.link, a.url),
+                "get the newest tools, skills and tutor rules (never touches your subjects)")
+    s.add_argument("--force", action="store_true", help="back up locally edited tool files, then update")
+    s.add_argument("--link", action="store_true", help="once: link a copied study folder to the project")
+    s.add_argument("--url", default=REPO_URL, help=argparse.SUPPRESS)
     command("doctor", lambda a: cmd_doctor(),
             "check hardware + tools, recommend a search mode (changes nothing)")
     command("setup", lambda a: cmd_setup(a.mode),

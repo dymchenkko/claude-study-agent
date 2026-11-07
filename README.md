@@ -70,6 +70,8 @@ cd ~/Study && claude                                                     # then 
 
 > **Try it first with no files of your own:** `/learn Example-Subject osmosis` uses the included demo course.
 
+**Updating:** `~/Study/.tools/study update` pulls the newest tools, skills and tutor rules. Your subject folders are gitignored, so an update never touches materials, progress or sessions; if you edited a tool file it stops and lists it (`--force` backs it up to `.tools/backup/` first). Copied the folder instead of cloning it? Run `study update --link` once.
+
 ## 🧭 Commands
 
 | Command | What it does |
@@ -191,6 +193,7 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 ./.tools/study ingest "Biology"            # or: --url <video-link> for a recorded lecture
 ./.tools/study draw "Biology" cell-cycle     # open a diagram in draw.io (--show prints its contents)
 ./.tools/study gui                         # the dashboard: Plan (today's 3 picks, rhythm), Study (tutor), Reflect (map, replay)
+./.tools/study update                      # newest tools and skills (never touches your subjects)
 ./.tools/study plan                        # today's picks, the same list as the dashboard and /today
 ./.tools/study log "Biology" --topic "Osmosis" --kind recall --verdict correct --level 3 --interval 7
 ```
