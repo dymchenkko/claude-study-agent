@@ -60,9 +60,7 @@ NOTE_AFTER_OCR = ("> NOTE: little text extracted even with OCR — likely images
 MIN_RAM_GB, MIN_DISK_GB = 4, 1
 SKIP_DIRS = {"_template", ".tools", ".claude", ".git"}
 
-DOC_EXT = {".pptx", ".docx", ".xlsx"}
-MEDIA_EXT = {".mp4", ".mov", ".mkv", ".webm", ".m4a", ".mp3", ".wav"}
-TEXT_EXT = {".md", ".txt"}
+from studydata import DOC_EXT, MATERIAL_EXT, MEDIA_EXT, TEXT_EXT  # noqa: E402
 
 
 def subjects():
@@ -237,7 +235,7 @@ def cmd_ingest(name, url=None):
     done, skipped, failed = [], 0, []
     for src in sorted(p for p in mat.rglob("*") if p.is_file() and not p.name.startswith(".")):
         ext = src.suffix.lower()
-        if ext not in DOC_EXT | MEDIA_EXT | TEXT_EXT | {".pdf"}:
+        if ext not in MATERIAL_EXT:
             continue
         out = conv / src.relative_to(mat).with_suffix(src.suffix + ".md")
         up_to_date = out.exists() and out.stat().st_mtime >= src.stat().st_mtime
