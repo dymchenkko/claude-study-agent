@@ -192,6 +192,53 @@ def save_transcript(root, subject, prompt, reply, now=None):
     return path
 
 
+# ---------- adding lecture materials ----------
+
+MAX_UPLOAD = 4 * 1024 ** 3  # 4 GB: a long lecture video
+
+
+def upload_name(name):
+    """The bare file name to keep, or ValueError. No folders, no hidden files, only types ingest converts."""
+    base = Path(str(name).replace("\\", "/")).name.strip()
+    if not base or base.startswith(".") or any(c in base for c in "\0\r\n"):
+        raise ValueError("bad file name")
+    if Path(base).suffix.lower() not in sd.MATERIAL_EXT:
+        kinds = ", ".join(sorted(sd.MATERIAL_EXT))
+        raise ValueError(f"{base}: this file type can't be studied yet (use {kinds})")
+    return base
+
+
+def save_upload(root, subject, name, stream, length):
+    """Copy `length` bytes from `stream` into <Subject>/materials/. Never overwrites: a clash gets ' (2)'.
+    Written to a hidden temp file first (ingest skips dot files), so a broken upload leaves nothing behind."""
+    base = upload_name(name)
+    if length <= 0:
+        raise ValueError(f"{base} is empty")
+    if length > MAX_UPLOAD:
+        raise ValueError(f"{base} is larger than {MAX_UPLOAD // 1024 ** 3} GB")
+    folder = Path(root) / subject / "materials"
+    folder.mkdir(parents=True, exist_ok=True)
+    tmp = folder / f".upload-{secrets.token_hex(6)}"
+    try:
+        with tmp.open("wb") as f:
+            left = length
+            while left:
+                chunk = stream.read(min(left, 1 << 20))
+                if not chunk:
+                    raise ValueError(f"{base}: the upload was cut off")
+                f.write(chunk)
+                left -= len(chunk)
+        stem, ext, n = Path(base).stem, Path(base).suffix, 1
+        dest = folder / base
+        while dest.exists():
+            n += 1
+            dest = folder / f"{stem} ({n}){ext}"
+        tmp.rename(dest)
+        return dest
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 # ---------- the server ----------
 
 def make_handler(root, token):
@@ -241,6 +288,8 @@ def make_handler(root, token):
             url = urlparse(self.path)
             if not self._authorised(url):
                 return
+            if url.path == "/api/upload":  # raw file bytes, not JSON
+                return self._upload(url)
             try:
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
             except ValueError:
@@ -289,6 +338,22 @@ def make_handler(root, token):
                 return self._json({"error": str(e)}, 400)
             planner.today_plan(root, today, rebuild=True)  # keeps finished picks
             return self._json({"ok": True})
+
+        def _upload(self, url):
+            """POST /api/upload?subject=..&name=.. with the file as the body: saves it into materials/."""
+            q = parse_qs(url.query)
+            subject, name = q.get("subject", [""])[0], q.get("name", [""])[0]
+            self.close_connection = True  # on an error the body may be left unread
+            if not self._same_origin():
+                return self._json({"error": "requests must come from the study gui page"}, 403)
+            if subject not in subject_names(root):
+                return self._json({"error": f"no subject {subject}"}, 404)
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                dest = save_upload(root, subject, name, self.rfile, length)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 400)
+            return self._json({"ok": True, "saved": str(dest.relative_to(root / subject))})
 
         def _links(self, body):
             """Connect topics: `study links <Subject> --write`, the local embedding model, no LLM."""

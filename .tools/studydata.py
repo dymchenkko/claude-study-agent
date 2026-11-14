@@ -20,6 +20,13 @@ WEIGHTS = {"high": 3, "med": 2, "medium": 2, "low": 1}
 
 # ---------- small helpers ----------
 
+# Lecture material types `study ingest` can convert (the CLI and the gui upload share this list).
+DOC_EXT = {".pptx", ".docx", ".xlsx"}
+MEDIA_EXT = {".mp4", ".mov", ".mkv", ".webm", ".m4a", ".mp3", ".wav"}
+TEXT_EXT = {".md", ".txt"}
+MATERIAL_EXT = DOC_EXT | MEDIA_EXT | TEXT_EXT | {".pdf"}
+
+
 def _read(path):
     try:
         return Path(path).read_text(encoding="utf-8")
