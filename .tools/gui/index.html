@@ -258,7 +258,6 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .mapside { flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--paper); }
 .mapside .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 650; }
 .mapside .bar span { flex: 1; }
-.mapside .cmap-scroll { flex: 1; max-height: none; border: 0; border-radius: 0; }
 
 /* ---------- Reflect: what moved, connected map, replay (board F) ---------- */
 .moved { margin-bottom: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; box-shadow: var(--shadow); }
@@ -277,20 +276,65 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .replay input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
 .rticks { position: relative; height: 10px; }
 .rticks i { position: absolute; top: 1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--accent); opacity: .7; }
-.cmap-scroll { position: relative; overflow: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); max-height: 70vh; }
-.cmap { position: relative; transform-origin: 0 0; }
-.cmap svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.node { position: absolute; width: 176px; height: 50px; padding: 0 10px; border-radius: 10px; border: 1px solid transparent; display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: left; transition: background .18s, color .18s; }
-.node > span { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.node:hover { border-color: var(--accent); }
-.node.ns { background: transparent; border: 1px dashed var(--faint); color: var(--muted); font-weight: 500; }
-.node.sel { box-shadow: 0 0 0 3px var(--accent); }
-.node.cur { outline: 2px solid var(--accent); outline-offset: 2px; }
-.node.due::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--due); }
-.node .mist { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--raised); }
-.node .slip { flex: none; width: 9px; height: 9px; border-radius: 2px; background: var(--bad); box-shadow: 0 0 0 2px var(--raised); transform: rotate(45deg); }
 .legend .fr { width: 40px; background: linear-gradient(90deg, var(--m0), var(--m4)); }
+
+/* ---------- Night panels: the glowing course map ("sky") and the review timeline. Always dark, like a
+   window onto the night sky, in both page themes. Brightness = memory, colour = level, flicker = due. ---------- */
+.night { --n-panel: #110f2a; --n-panel2: #17143a; --n-ink: #eeedff; --n-muted: #aaa7d2; --n-faint: #7c78a6; --n-line: #29254f;
+  --n-warm: #ffc861; --n-due: #ff4f7b; --n-ready: #a993ff;
+  background: linear-gradient(180deg, var(--n-panel2), var(--n-panel)); color: var(--n-ink); border: 1px solid var(--n-line);
+  border-radius: 16px; overflow: hidden; position: relative; color-scheme: dark; margin-top: 12px; }
+.night + .night { margin-top: 14px; }
+.night-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid var(--n-line); }
+.night-bar .ttl { flex: 1; min-width: 160px; font-weight: 650; font-size: 14px; }
+.night-bar .ttl small { display: block; color: var(--n-muted); font-weight: 500; font-size: 12.5px; }
+.lenses { display: flex; flex-wrap: wrap; gap: 6px; }
+.lens { border: 1px solid var(--n-line); background: #0c0b22; color: var(--n-muted); font-size: 12.5px; font-weight: 600; padding: 4px 10px;
+  border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; }
+.lens i { width: 8px; height: 8px; border-radius: 50%; background: var(--n-faint); }
+.lens[aria-pressed="true"] { color: var(--n-ink); border-color: #ffc86166; background: #ffc86112; }
+.lens[aria-pressed="true"] i { background: var(--n-warm); box-shadow: 0 0 8px var(--n-warm); }
+.night .zoom { background: #0c0b22; border-color: var(--n-line); color: var(--n-ink); }
+.night button:focus-visible, .sky-svg .nd:focus-visible { outline: 2px solid var(--n-warm); outline-offset: 2px; }
+.sky-stage { position: relative; height: clamp(360px, 54vh, 580px); }
+.sky-svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sky-svg.drag { cursor: grabbing; }
+.sky-svg text { font-family: var(--sans); paint-order: stroke; stroke: #0b0a24; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.sky-svg .nd { cursor: pointer; transition: opacity .25s; outline: none; }
+.sky-svg .dim { opacity: .14; }
+.sky-svg .flow { animation: flow 1.6s linear infinite; }
+.sky-svg .route { animation: flow 1s linear infinite; }
+.breathe { animation: breathe 2.4s ease-in-out infinite; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
+@keyframes breathe { 50% { opacity: .2; } }
+.sky-tip { position: absolute; z-index: 3; pointer-events: none; background: #0c0b20f2; border: 1px solid var(--n-line); border-radius: 12px;
+  padding: 9px 12px; font-size: 12.5px; line-height: 1.45; color: var(--n-muted); max-width: 270px; box-shadow: 0 14px 40px -16px #000; }
+.sky-tip b { color: var(--n-ink); display: block; font-size: 13.5px; }
+.sky-tip .late { color: var(--n-due); font-weight: 700; }
+.sky-hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--n-faint); pointer-events: none; }
+.sky-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 9px 14px 11px; border-top: 1px solid var(--n-line); font-size: 12px; color: var(--n-muted); }
+.sky-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sky-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.mapside.night { margin: 0; border: 0; border-radius: 0; }
+.mapside > .sky { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.mapside .sky-stage { flex: 1; height: auto; min-height: 0; }
+.night .empty { color: var(--n-muted); padding: 16px; }
+/* the review timeline: one row per scheduled topic, a memory wave that fades and jumps back at each review */
+.tl { overflow-x: auto; padding: 4px 0 2px; }
+.tl svg { display: block; min-width: 780px; width: 100%; height: auto; }
+.tl text { font-family: var(--sans); fill: var(--n-ink); }
+.tl .muted { fill: var(--n-muted); } .tl .faint { fill: var(--n-faint); } .tl .b { font-weight: 700; }
+.tl .row { cursor: pointer; } .tl .row .hit { fill: transparent; }
+.tl .row:hover .hit, .tl .row.hl .hit { fill: #ffffff10; }
+.tl .wave { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sweep 1.1s cubic-bezier(.3,.7,.2,1) forwards; }
+.tl .fill { animation: fadein 1.1s ease-out both; }
+.tl .now { animation: breathe 1.6s ease-in-out infinite; }
+@keyframes sweep { to { stroke-dashoffset: 0; } }
+@keyframes fadein { from { opacity: 0; } }
+.tl-more { font-size: 12.5px; color: var(--n-muted); padding: 2px 14px 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .sky-svg .flow, .sky-svg .route, .breathe, .tl .wave, .tl .fill, .tl .now { animation: none; stroke-dashoffset: 0; }
+}
 
 @media (max-width: 1100px) {
   .app { grid-template-columns: 220px minmax(0, 1fr); }
@@ -340,6 +384,12 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
     </section>
     <section>
       <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
+      <div class="sec-head"><h3>Next three weeks</h3></div>
+      <div class="night" id="timelineBox"></div>
+      <div class="night" id="planSky"></div>
+      <div id="planFocus"></div>
+    </section>
+    <section>
       <div class="sec-head"><h3>Mistakes to fix</h3><span class="muted" id="mistakeCount"></span></div>
       <div id="mistakes"></div>
     </section>
@@ -364,7 +414,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
       </div></div>
     </div>
     <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize the tutor" tabindex="0" hidden></div>
-    <div class="mapside" id="mapSide" hidden></div>
+    <div class="mapside night" id="mapSide" hidden></div>
   </section>
 
   <main class="main" id="view-reflect" hidden>
@@ -376,16 +426,8 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
         <span class="map-tools" id="mapTools"></span>
         <div class="seg" id="mapMode"><button data-mode="map" class="on">Map</button><button data-mode="list">List</button></div></div>
       <div id="replay"></div>
-      <div class="legend">
-        <span><i class="fr"></i>fresher in memory</span>
-        <span><i style="border:1px dashed var(--faint)"></i>not started</span>
-        <span><i style="background:var(--due);height:4px"></i>review due</span>
-        <span><i style="background:var(--bad);border-radius:50%;width:9px;height:9px"></i>open mistake</span>
-        <span><i style="background:var(--bad);width:9px;height:9px;transform:rotate(45deg)"></i>slips when drawn</span>
-        <span>→ needed before</span>
-      </div>
       <div id="warnings"></div>
-      <div id="map"></div>
+      <div id="map" class="night"></div>
       <div id="focus"></div>
     </section>
   </main>
@@ -402,7 +444,7 @@ const LEVEL = ['not started', 'seen', 'shaky', 'ok', 'solid', 'mastered'];
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set(), view: 'plan',
-  zoom: +(store.get('study-zoom') || 1), day: null, playing: null, mapOpen: store.get('study-map-open') === '1' };
+  day: null, playing: null, mapOpen: store.get('study-map-open') === '1' };
 
 function setView(view) {
   state.view = view;
@@ -614,45 +656,492 @@ function freshAt(d, day) {
   });
 }
 
-const NW = 176, NH = 50, GX = 212, GY = 62, PAD = 16;
-function mapLayout(d) {
-  const n = d.topics.length, pos = [];
-  if (d.links.length) {
-    const rows = {};
-    d.topics.forEach((t, i) => { const c = d.depths[i]; rows[c] = (rows[c] ?? -1) + 1; pos[i] = { c, r: rows[c] }; });
-  } else {
-    const per = Math.max(6, Math.ceil(n / 5));
-    d.topics.forEach((t, i) => pos[i] = { c: Math.floor(i / per), r: i % per });
+// ---------- the sky: one glowing course map, shared by Plan, Reflect and the Study side panel ----------
+// Colour = level. Glow = how fresh a topic is in memory (an estimate); it flickers when a review is
+// overdue. Flowing lines run from a prerequisite to what it unlocks. Gold numbers = today's route.
+// Built once per subject and updated in place, so pan, zoom and the animation survive re-renders.
+const SKY = { col: ['#6c6a8f', '#ffc861', '#ff8a65', '#5fe0b5', '#4cc3ff', '#c9a8ff'], due: '#ff4f7b', warm: '#ffc861', ready: '#a993ff', flow: '#8fe3ff' };
+const SVGNS = 'http://www.w3.org/2000/svg', R0 = 13;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const svgEl = (tag, attrs, parent, text) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text != null) n.textContent = text;
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const codeOf = s => (String(s).match(/^([A-Za-z]{1,3}\d{1,3}[a-z]?)\s/) || [])[1] ?? null;
+const clip = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
+const labelOf = (s, n = 24) => { const c = codeOf(s); return clip(c ? String(s).slice(c.length).trim() : String(s), n); };
+const lenses = (() => {
+  const on = { glow: true, focus: false, route: true };
+  try { Object.assign(on, JSON.parse(localStorage.getItem('study-lenses') || '{}')); } catch {}
+  return on;
+})();
+const skyKey = d => d.name + '\n' + d.topics.map(t => t.topic).join('\n') + '\n' + JSON.stringify(d.links);
+// Topics that could be learned next: not started, and every prerequisite is at least "ok".
+const readyOf = d => d.topics.map((t, i) => { const pre = needsOf(d, i); return !started(t) && pre.length > 0 && pre.every(k => d.topics[k].level >= 3); });
+
+// Layout: a small force simulation. Course order runs left to right, prerequisites stay left of what
+// they unlock, nearby topics push apart. Deterministic, so the map looks the same every time.
+const layouts = new Map();
+function skyLayout(d) {
+  const key = skyKey(d);
+  if (layouts.has(key)) return layouts.get(key);
+  const n = d.topics.length, span = Math.max(n - 1, 1), wide = Math.max(480, Math.sqrt(n) * 175), deg = Array(n).fill(0), R = 118, ITER = 320;
+  d.links.forEach(([a, b]) => { deg[a]++; deg[b]++; });
+  const P = d.topics.map((t, i) => ({ x: i / span * wide, y: Math.sin(i * 2.399) * 120 }));
+  for (let it = 0; it < ITER; it++) {
+    const cool = 1 - it / ITER;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      let dx = P[j].x - P[i].x, dy = P[j].y - P[i].y;
+      const q = dx * dx + dy * dy;
+      if (q >= R * R) continue;
+      let dist = Math.sqrt(q);
+      if (dist < .01) { dx = .1; dy = (i % 2 ? .1 : -.1); dist = .14; }
+      const f = (R - dist) / dist * .22;
+      P[i].x -= dx * f; P[i].y -= dy * f; P[j].x += dx * f; P[j].y += dy * f;
+    }
+    for (const [s, t] of d.links) {
+      const A = P[s], B = P[t], dx = B.x - A.x, dy = B.y - A.y, dist = Math.hypot(dx, dy) || 1, f = (dist - 150) / dist * .06 * cool;
+      A.x += dx * f; A.y += dy * f; B.x -= dx * f; B.y -= dy * f;
+      const gap = A.x + 110 - B.x;
+      if (gap > 0) { A.x -= gap * .12; B.x += gap * .12; }
+    }
+    P.forEach((p, i) => { p.x += (i / span * wide - p.x) * .02 * (deg[i] ? .4 : 1); p.y *= 1 - (deg[i] ? .006 : .012); });
   }
-  const pts = pos.map(p => ({ x: PAD + p.c * GX, y: PAD + p.r * GY }));
-  const w = Math.max(...pts.map(p => p.x)) + NW + PAD, h = Math.max(...pts.map(p => p.y)) + NH + PAD;
-  return { pts, w, h };
+  const xs = P.map(p => p.x), ys = P.map(p => p.y);
+  const out = { pts: P, box: { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) } };
+  layouts.set(key, out);
+  return out;
 }
 
-function renderMapInto(el, d, side) {
-  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
-  const { pts, w, h } = mapLayout(d), fr = freshAt(d, state.day), cur = currentTopic(d), z = state.zoom, today = !state.day;
-  const edges = d.links.map(([a, b]) => {
-    const p = pts[a], q = pts[b], x1 = p.x + NW, y1 = p.y + NH / 2, x2 = q.x - 4, y2 = q.y + NH / 2, c = Math.max((x2 - x1) / 2, 30);
-    const lit = (fr[a] ?? 0) >= .5 && (fr[b] ?? 0) >= .5;
-    return `<path d="M ${x1} ${y1} C ${x1 + c} ${y1}, ${x2 - c} ${y2}, ${x2} ${y2}" style="fill:none;stroke:${lit ? 'var(--accent)' : 'var(--faint)'};stroke-width:1.5;opacity:${lit ? .9 : .45}" marker-end="url(#ah${lit ? 'L' : ''}${side ? 's' : ''})"/>`;
-  }).join('');
-  const nodes = d.topics.map((t, i) => {
-    const f = fr[i], ns = f === null || f === undefined, pc = ns ? 0 : Math.round(f * 100);
-    const ms = today && mistakesFor(d, t).length;
-    const style = `left:${pts[i].x}px;top:${pts[i].y}px;` + (ns ? '' :
-      `background:color-mix(in oklch, var(--m4) ${pc}%, var(--m0));color:${pc > 55 ? 'var(--m4-ink)' : 'var(--ink)'};`);
-    return `<button class="node ${ns ? 'ns' : ''} ${today && t.overdue !== null && !ns ? 'due' : ''} ${state.sel === i && !side ? 'sel' : ''} ${cur === t ? 'cur' : ''}"
-      style="${style}" data-node="${i}" title="${esc(t.topic)}"
-      aria-label="${esc(t.topic)}, ${ns ? 'not studied yet' : `${pc} percent fresh`}${t.slip ? ', slips when drawn' : ''}${ms ? ', open mistake' : ''}">
-      <span>${esc(t.topic)}</span>${ms ? '<i class="mist" title="open mistake"></i>' : ''}${t.slip && today ? '<i class="slip" title="Right in chat, wrong on your diagram"></i>' : ''}</button>`;
-  }).join('');
-  const defs = `<defs>${['', 'L'].map(k => `<marker id="ah${k}${side ? 's' : ''}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L8,4 L0,8 z" style="fill:${k ? 'var(--accent)' : 'var(--faint)'}"/></marker>`).join('')}</defs>`;
-  const map = `<div class="cmap-scroll"><div style="width:${w * z}px;height:${h * z}px"><div class="cmap" style="width:${w}px;height:${h}px;transform:scale(${z})">
-    <svg width="${w}" height="${h}" aria-hidden="true">${defs}${edges}</svg>${nodes}</div></div></div>`;
-  el.innerHTML = side ? `<div class="bar"><span>${esc(d.name)} map</span><button class="zoom" data-zoom="-1" aria-label="Zoom out">−</button>
-    <button class="zoom" data-zoom="1" aria-label="Zoom in">+</button><button class="zoom" data-map-close aria-label="Close the map">×</button></div>${map}` : map;
+const skies = new Set();
+const flick = (s, i) => .5 + .5 * Math.sin(s * 11 + i * 3.1) * Math.sin(s * 6.3 + i) * Math.sin(s * 17.7 + i * 1.7);
+
+class Sky {
+  // opts: { side, title(d), onPick(i), onHover(i | null) }
+  constructor(el, opts) {
+    this.el = el; this.opts = opts; this.id = 'sk' + Math.random().toString(36).slice(2, 8);
+    this.key = null; this.root = null; this.hover = null; this.views = {};
+    skies.add(this);
+  }
+
+  update(d, o) {
+    if (!d.topics.length) { this.el.innerHTML = '<div class="empty">No topics yet. Add materials with /ingest.</div>'; this.key = null; this.root = null; return; }
+    if (this.key !== skyKey(d) || !this.root || !this.el.contains(this.root)) this.build(d);
+    this.d = d; this.o = o;
+    this.ttl.innerHTML = this.opts.title ? this.opts.title(d, o) : '';
+    const ready = readyOf(d);
+    this.nodes.forEach((n, i) => {
+      const t = d.topics[i], f = o.fresh[i], ns = f === null || f === undefined, lvl = Math.max(0, Math.min(t.level, 5));
+      const ms = o.today ? mistakesFor(d, t).length : 0;
+      n.f = ns ? null : f;
+      n.late = o.today && !ns && t.overdue !== null && !d.reviews.paused;
+      n.core.setAttribute('fill', ns ? '#1d1a44' : SKY.col[lvl]);
+      n.core.setAttribute('stroke', ns ? '#8f84d8' : 'none');
+      n.halo.setAttribute('fill', `url(#${this.id}h${lvl})`);
+      n.shine.setAttribute('opacity', ns ? 0 : .75);
+      if (n.ct) n.ct.setAttribute('fill', ns ? '#d9d5ff' : '#140d22');
+      n.mist.setAttribute('opacity', ms ? 1 : 0);
+      n.slip.setAttribute('opacity', o.today && t.slip ? 1 : 0);
+      n.ready.style.display = o.today && ready[i] ? '' : 'none';
+      const mark = o.sel === i ? 'sel' : o.cur === i ? 'cur' : '';
+      n.mark.setAttribute('opacity', mark ? 1 : 0);
+      n.mark.setAttribute('stroke', mark === 'cur' ? SKY.warm : '#ffffff');
+      n.needs = n.late || !!ms || (o.today && t.slip) || (o.today && ready[i]);
+      const state = ns ? (ready[i] ? 'ready to learn' : 'not started') : `${LEVEL[t.level] ?? ''}, ${Math.round(f * 100)} percent fresh${n.late ? ', review due' : ''}`;
+      n.g.setAttribute('aria-label', `${t.topic}: ${state}${ms ? ', open mistake' : ''}`);
+    });
+    for (const e of this.edges) {
+      const lit = (o.fresh[e.a] ?? 0) >= .5 && (o.fresh[e.b] ?? 0) >= .5;
+      e.flow.setAttribute('opacity', lit ? .85 : 0);
+      e.base.setAttribute('opacity', lit ? .3 : .42);
+    }
+    // today's route: numbered gold badges in the plan's order, joined by a moving gold line
+    const route = o.route ?? [];
+    this.nodes.forEach(n => { n.badge.style.display = 'none'; });
+    route.forEach(({ i, n }) => { const nd = this.nodes[i]; nd.badge.style.display = ''; nd.bt.textContent = n; });
+    const pts = route.map(r => this.L.pts[r.i]);
+    this.routePath.setAttribute('d', pts.length > 1 ? pts.map((p, k) => k ? `Q${(pts[k - 1].x + p.x) / 2},${Math.min(pts[k - 1].y, p.y) - 40} ${p.x},${p.y}` : `M${p.x},${p.y}`).join(' ') : '');
+    this.applyLenses();
+    this.applyHover();
+    if (this.needFit) this.fit();
+  }
+
+  build(d) {
+    const L = this.L = skyLayout(d), id = this.id, side = this.opts.side;
+    this.key = skyKey(d); this.d = d; this.hover = null;
+    this.el.innerHTML = `<div class="sky">
+      <div class="night-bar"><span class="ttl"></span>
+        <div class="lenses" role="group" aria-label="Map layers">
+          <button class="lens" data-lens="glow" title="Brighter = fresher in memory; flickers when a review is due"><i></i>Memory glow</button>
+          <button class="lens" data-lens="focus" title="Dim everything that is fine right now"><i></i>Needs work</button>
+          <button class="lens" data-lens="route" title="Today's picks, in order"><i></i>Today's route</button></div>
+        <span class="map-tools"><button class="zoom" data-sky-zoom="-1" aria-label="Zoom out">−</button><button class="zoom" data-sky-zoom="1" aria-label="Zoom in">+</button>
+          <button class="zoom" data-sky-fit aria-label="Show the whole map" title="Show the whole map">⤢</button>${side ? '<button class="zoom" data-map-close aria-label="Close the map">×</button>' : ''}</span></div>
+      <div class="sky-stage"><svg class="sky-svg" role="group" aria-label="${esc(d.name)} course map"></svg><div class="sky-tip" hidden></div>
+        <div class="sky-hint">scroll to zoom · drag to move · click a topic</div></div>
+      ${side ? '' : `<div class="sky-legend">
+        <span><i style="background:${SKY.col[4]};box-shadow:0 0 10px ${SKY.col[4]}"></i>brighter = fresher in memory</span>
+        <span><i style="border:2px solid ${SKY.due}"></i>flickers: review due</span>
+        <span><i style="border:1px dashed #8f84d8"></i>not started</span>
+        <span><i class="breathe" style="border:2px solid ${SKY.ready}"></i>ready to learn</span>
+        <span><i style="background:${SKY.due};width:8px;height:8px"></i>open mistake</span>
+        <span><i style="background:${SKY.flow};border-radius:2px;height:3px;width:16px"></i>flows: needed before</span>
+        <span><i style="background:${SKY.warm};color:#1a0e00;font:800 8px/10px var(--sans);text-align:center">1</i>today's route</span>
+        <span>colour: ${[1, 2, 3, 4, 5].map(k => `<i style="background:${SKY.col[k]}" title="${LEVEL[k]}"></i>`).join('')} seen → mastered</span></div>`}</div>`;
+    this.root = this.el.firstElementChild;
+    this.ttl = this.root.querySelector('.ttl');
+    this.stage = this.root.querySelector('.sky-stage');
+    this.tip = this.root.querySelector('.sky-tip');
+    const svg = this.svg = this.root.querySelector('svg'), defs = svgEl('defs', {}, svg);
+    const rg = (gid, stops) => { const g = svgEl('radialGradient', { id: gid }, defs); stops.forEach(([o, c, a]) => svgEl('stop', { offset: o, 'stop-color': c, 'stop-opacity': a }, g)); };
+    SKY.col.forEach((c, i) => rg(`${id}h${i}`, [[0, c, .7], [.4, c, .22], [1, c, 0]]));
+    rg(`${id}core`, [[0, '#ffffff', 1], [1, '#ffffff', 0]]);
+    const bg = svgEl('linearGradient', { id: `${id}bg`, x1: 0, x2: 1, y1: 0, y2: 1 }, defs);
+    [[0, '#0d0b28'], [.6, '#120e2e'], [1, '#0a1729']].forEach(([o, c]) => svgEl('stop', { offset: o, 'stop-color': c }, bg));
+    svgEl('rect', { width: '100%', height: '100%', fill: `url(#${id}bg)` }, svg);
+    const stars = svgEl('g', { 'aria-hidden': 'true' }, svg);
+    for (let i = 0; i < 90; i++) svgEl('circle', { cx: `${((Math.sin(i * 91.7) * .5 + .5) * 100).toFixed(2)}%`, cy: `${((Math.sin(i * 47.3 + 1) * .5 + .5) * 100).toFixed(2)}%`,
+      r: .4 + (i % 5) * .22, fill: '#fff', opacity: .12 + (i % 4) * .1, class: i % 3 ? '' : 'breathe', style: `animation-delay:${(i % 9) * .35}s` }, stars);
+    this.world = svgEl('g', {}, svg);
+    const gl = svgEl('g', { 'aria-hidden': 'true' }, this.world), gr = svgEl('g', { 'aria-hidden': 'true' }, this.world), gn = svgEl('g', {}, this.world);
+    this.texts = [];
+    const txt = (parent, px, attrs, s) => { const t = svgEl('text', attrs, parent, s); this.texts.push([t, px]); return t; };
+    this.edges = d.links.map(([a, b]) => {
+      const p = L.pts[a], q = L.pts[b], dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1, bend = .16;
+      const cx = (p.x + q.x) / 2 - dy * bend, cy = (p.y + q.y) / 2 + dx * bend;
+      const path = `M${p.x},${p.y} Q${cx},${cy} ${q.x},${q.y}`;
+      // a small chevron just before the target shows the direction even when nothing flows
+      const u = 1 - (R0 + 9) / len, tx = (1 - u) ** 2 * p.x + 2 * (1 - u) * u * cx + u * u * q.x, ty = (1 - u) ** 2 * p.y + 2 * (1 - u) * u * cy + u * u * q.y;
+      const ang = Math.atan2(q.y - cy, q.x - cx) * 180 / Math.PI;
+      const base = svgEl('g', {}, gl);
+      svgEl('path', { d: path, fill: 'none', stroke: '#8f84d8', 'stroke-width': 1.3, 'vector-effect': 'non-scaling-stroke' }, base);
+      svgEl('path', { d: 'M-5,-4 L1,0 L-5,4', fill: 'none', stroke: '#8f84d8', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+        transform: `translate(${tx},${ty}) rotate(${ang})`, 'vector-effect': 'non-scaling-stroke' }, base);
+      const flow = svgEl('path', { d: path, fill: 'none', stroke: SKY.flow, 'stroke-width': 2, 'stroke-dasharray': '2 8', 'stroke-linecap': 'round', class: 'flow', 'vector-effect': 'non-scaling-stroke' }, gl);
+      return { a, b, base, flow };
+    });
+    this.routePath = svgEl('path', { fill: 'none', stroke: SKY.warm, 'stroke-width': 2.5, 'stroke-dasharray': '7 7', 'stroke-linecap': 'round', class: 'route', opacity: .85, 'vector-effect': 'non-scaling-stroke' }, gr);
+    this.nodes = d.topics.map((t, i) => {
+      const { x, y } = L.pts[i], g = svgEl('g', { class: 'nd', 'data-sky-node': i, tabindex: 0, role: 'button' }, gn);
+      const halo = svgEl('circle', { cx: x, cy: y, r: R0 * 3 }, g);
+      const ready = svgEl('circle', { cx: x, cy: y, r: R0 + 6, fill: 'none', stroke: SKY.ready, 'stroke-width': 1.8, class: 'breathe', 'vector-effect': 'non-scaling-stroke' }, g);
+      const ring = svgEl('circle', { cx: x, cy: y, r: R0 + 4, fill: 'none', stroke: SKY.due, 'stroke-width': 2, opacity: 0, 'vector-effect': 'non-scaling-stroke' }, g);
+      const mark = svgEl('circle', { cx: x, cy: y, r: R0 + 9, fill: 'none', 'stroke-width': 2, opacity: 0, 'vector-effect': 'non-scaling-stroke' }, g);
+      const core = svgEl('circle', { cx: x, cy: y, r: R0, 'stroke-dasharray': '2 2', 'vector-effect': 'non-scaling-stroke' }, g);
+      const shine = svgEl('circle', { cx: x - R0 * .3, cy: y - R0 * .3, r: R0 * .6, fill: `url(#${id}core)` }, g);
+      const code = codeOf(t.topic);
+      const ct = code ? txt(g, 10, { x, y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-weight': 800, style: 'stroke:none' }, code) : null;
+      const lab = txt(g, 11.5, { x, y: y + R0 + 6, 'text-anchor': 'middle', 'dominant-baseline': 'hanging', fill: '#dedbff', 'font-weight': 600 }, labelOf(t.topic));
+      const mx = x + R0 * .78, my = y - R0 * .78;
+      const mist = svgEl('circle', { cx: x - R0 * .78, cy: my, r: 4.2, fill: SKY.due, stroke: '#0b0a24', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }, g);
+      const slip = svgEl('rect', { x: x - R0 * .78 - 3.5, y: y + R0 * .78 - 3.5, width: 7, height: 7, fill: SKY.due, transform: `rotate(45 ${x - R0 * .78} ${y + R0 * .78})` }, g);
+      const badge = svgEl('g', {}, g);
+      svgEl('circle', { cx: mx + 2, cy: my - 2, r: 8, fill: SKY.warm }, badge);
+      const bt = svgEl('text', { x: mx + 2, y: my - 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 10, 'font-weight': 800, fill: '#1a0e00', style: 'stroke:none' }, badge);
+      return { g, halo, ready, ring, mark, core, shine, ct, lab, mist, slip, badge, bt, x, y, f: null, late: false, needs: false };
+    });
+    this.bind();
+    const saved = this.views[d.name];
+    if (saved) { this.t = { ...saved }; this.moved = true; this.applyView(); } else { this.moved = false; this.fit(); }
+  }
+
+  // ---- view: pan and zoom ----
+  size() { return [this.stage.clientWidth, this.stage.clientHeight]; }
+  applyView() {
+    const { x, y, k } = this.t;
+    this.world.setAttribute('transform', `translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${k.toFixed(4)})`);
+    for (const [t, px] of this.texts) t.setAttribute('font-size', (px / Math.max(k, .55)).toFixed(2));
+    this.labelsShown = k >= .5;
+    this.applyHover();
+    this.views[this.d.name] = { ...this.t };
+  }
+  fit(animate) {
+    const [W, H] = this.size();
+    if (!W || !H) { this.needFit = true; return; }
+    this.needFit = false;
+    const b = this.L.box, pad = 70, bw = b.x1 - b.x0 + pad * 2, bh = b.y1 - b.y0 + pad * 2;
+    const k = Math.max(.2, Math.min(W / bw, H / bh, 1.5));
+    const to = { k, x: W / 2 - (b.x0 + b.x1) / 2 * k, y: H / 2 - (b.y0 + b.y1) / 2 * k };
+    animate ? this.animateTo(to) : (this.t = to, this.applyView());
+    this.moved = false;
+  }
+  zoomAt(px, py, f) {
+    const k = Math.max(.2, Math.min(4, this.t.k * f)), wx = (px - this.t.x) / this.t.k, wy = (py - this.t.y) / this.t.k;
+    this.t = { k, x: px - wx * k, y: py - wy * k }; this.moved = true; this.applyView();
+  }
+  animateTo(to) {
+    cancelAnimationFrame(this.anim);
+    if (reduceMotion.matches) { this.t = to; this.applyView(); return; }
+    const from = { ...this.t }, t0 = performance.now(), ms = 650;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      this.t = { k: from.k + (to.k - from.k) * e, x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
+      this.applyView();
+      if (p < 1) this.anim = requestAnimationFrame(step);
+    };
+    this.anim = requestAnimationFrame(step);
+  }
+  flyTo(i) {
+    const n = this.nodes?.[i], [W, H] = this.size();
+    if (!n || !W) return;
+    const k = Math.max(this.t.k, 1.2);
+    this.moved = true;
+    this.animateTo({ k, x: W / 2 - n.x * k, y: H / 2 - n.y * k });
+  }
+
+  // ---- hover: light up what a topic needs and what it unlocks, dim the rest ----
+  related(i) {
+    const set = new Set([i]), walk = (from, dir) => {
+      for (const [a, b] of this.d.links) {
+        const [x, y] = dir ? [a, b] : [b, a];
+        if (x === from && !set.has(y)) { set.add(y); walk(y, dir); }
+      }
+    };
+    walk(i, true);
+    const down = new Set(set); set.clear(); set.add(i); walk(i, false);
+    return new Set([...down, ...set]);
+  }
+  setHover(i, from) {
+    if (this.hover === i) return;
+    this.hover = i;
+    this.applyHover();
+    if (i === null) this.tip.hidden = true; else this.showTip(i);
+    if (from !== 'outside') this.opts.onHover?.(i);
+  }
+  applyHover() {
+    if (!this.nodes) return;
+    const rel = this.hover === null ? null : this.related(this.hover);
+    this.nodes.forEach((n, i) => {
+      const dim = rel ? !rel.has(i) : lenses.focus && !n.needs && this.o?.sel !== i;
+      n.g.classList.toggle('dim', dim);
+      n.lab.style.display = this.labelsShown || (rel && rel.has(i)) || this.o?.sel === i || this.o?.cur === i || n.badge.style.display !== 'none' ? '' : 'none';
+    });
+    for (const e of this.edges) {
+      const on = !rel || (rel.has(e.a) && rel.has(e.b));
+      e.base.style.opacity = on ? '' : .08;
+      e.flow.style.opacity = on ? '' : 0;
+    }
+  }
+  showTip(i) {
+    const d = this.d, t = d.topics[i], n = this.nodes[i], f = n.f, ms = this.o.today ? mistakesFor(d, t).length : 0;
+    const need = needsOf(d, i).map(k => labelOf(d.topics[k].topic, 30)), unl = unlocksOf(d, i).map(k => labelOf(d.topics[k].topic, 30));
+    this.tip.innerHTML = `<b>${esc(t.topic)}</b>
+      ${f === null ? (readyOf(d)[i] ? 'Not started · <span style="color:#c9b8ff">ready to learn</span>' : 'Not started yet')
+        : `${esc(LEVEL[t.level] ?? '')} · ${Math.round(f * 100)}% fresh`}
+      ${n.late ? `<br><span class="late">review ${esc(lateText(t))}</span>` : t.next && f !== null ? `<br>next review ${esc(fmtDay(t.next))}` : ''}
+      ${ms ? `<br><span class="late">${ms} open mistake${ms > 1 ? 's' : ''}</span>` : ''}
+      ${need.length ? `<br>needs: ${esc(need.join(', '))}` : ''}${unl.length ? `<br>unlocks: ${esc(unl.join(', '))}` : ''}`;
+    this.tip.hidden = false;
+    const [W] = this.size(), sx = this.t.x + n.x * this.t.k, sy = this.t.y + n.y * this.t.k, w = this.tip.offsetWidth;
+    this.tip.style.left = Math.max(8, Math.min(W - w - 8, sx + 18)) + 'px';
+    this.tip.style.top = Math.max(8, sy - 18 - this.tip.offsetHeight) + 'px';
+  }
+
+  applyLenses() {
+    if (!this.root) return;
+    this.root.querySelectorAll('[data-lens]').forEach(b => b.setAttribute('aria-pressed', lenses[b.dataset.lens] ? 'true' : 'false'));
+    this.routePath.style.display = lenses.route ? '' : 'none';
+    if (!lenses.route) this.nodes.forEach(n => { n.badge.style.display = 'none'; });
+    this.applyHover();
+  }
+
+  tick(s) {
+    for (let i = 0; i < this.nodes.length; i++) {
+      const n = this.nodes[i];
+      if (n.f === null || !lenses.glow) {
+        n.halo.setAttribute('opacity', 0); n.core.setAttribute('opacity', 1);
+        n.ring.setAttribute('opacity', n.late && !lenses.glow ? .9 : 0);
+        continue;
+      }
+      let R = n.f;
+      if (n.late) R *= 1 - .5 * flick(s, i);
+      n.halo.setAttribute('r', (R0 * (1.5 + 2.8 * R)).toFixed(2));
+      n.halo.setAttribute('opacity', (.25 + .75 * R).toFixed(3));
+      n.core.setAttribute('opacity', (.5 + .5 * R).toFixed(3));
+      n.ring.setAttribute('opacity', n.late ? (.45 + .5 * flick(s * .7, i + 2)).toFixed(3) : 0);
+    }
+  }
+
+  bind() {
+    const svg = this.svg, ptrs = new Map();
+    let down = null;
+    const local = e => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const nodeAt = e => { const g = e.target.closest?.('[data-sky-node]'); return g ? +g.dataset.skyNode : null; };
+    svg.addEventListener('wheel', e => {
+      e.preventDefault();
+      const [x, y] = local(e);
+      this.zoomAt(x, y, Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016)));
+    }, { passive: false });
+    svg.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      svg.setPointerCapture(e.pointerId);
+      ptrs.set(e.pointerId, local(e));
+      if (ptrs.size === 1) down = { at: local(e), node: nodeAt(e), moved: 0 };
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') this.setHover(nodeAt(e)); return; }
+      const prev = ptrs.get(e.pointerId), cur = local(e);
+      if (ptrs.size === 1) {
+        this.t = { ...this.t, x: this.t.x + cur[0] - prev[0], y: this.t.y + cur[1] - prev[1] };
+        if (down) down.moved += Math.abs(cur[0] - prev[0]) + Math.abs(cur[1] - prev[1]);
+        if (down && down.moved > 4) { svg.classList.add('drag'); this.moved = true; this.setHover(null); this.applyView(); }
+      } else if (ptrs.size === 2) {
+        const other = [...ptrs].find(([k]) => k !== e.pointerId)[1];
+        const d0 = Math.hypot(prev[0] - other[0], prev[1] - other[1]) || 1, d1 = Math.hypot(cur[0] - other[0], cur[1] - other[1]);
+        this.zoomAt((cur[0] + other[0]) / 2, (cur[1] + other[1]) / 2, d1 / d0);
+        if (down) down.moved = 99;
+      }
+      ptrs.set(e.pointerId, cur);
+    });
+    const end = e => {
+      if (!ptrs.delete(e.pointerId)) return;
+      if (!ptrs.size) {
+        svg.classList.remove('drag');
+        if (down && down.moved <= 4 && e.type === 'pointerup') {
+          if (down.node !== null) this.opts.onPick?.(down.node);
+          else this.setHover(null);
+        }
+        down = null;
+      }
+    };
+    svg.addEventListener('pointerup', end);
+    svg.addEventListener('pointercancel', end);
+    svg.addEventListener('pointerleave', e => { if (!ptrs.size && e.pointerType === 'mouse') this.setHover(null); });
+    svg.addEventListener('focusin', e => { const i = nodeAt(e); if (i !== null) this.setHover(i); });
+    svg.addEventListener('focusout', () => this.setHover(null));
+    svg.addEventListener('keydown', e => {
+      const i = nodeAt(e);
+      if (i !== null && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.opts.onPick?.(i); }
+    });
+    this.root.addEventListener('click', e => {
+      const lens = e.target.closest('[data-lens]');
+      if (lens) {
+        lenses[lens.dataset.lens] = !lenses[lens.dataset.lens];
+        store.set('study-lenses', JSON.stringify(lenses));
+        for (const s of skies) if (s.root && s.o) s.update(s.d, s.o);
+        return;
+      }
+      const z = e.target.closest('[data-sky-zoom]');
+      if (z) { const [W, H] = this.size(); this.zoomAt(W / 2, H / 2, +z.dataset.skyZoom > 0 ? 1.3 : 1 / 1.3); return; }
+      if (e.target.closest('[data-sky-fit]')) this.fit(true);
+    });
+    new ResizeObserver(() => { if (this.needFit || !this.moved) this.fit(); }).observe(this.stage);
+  }
+}
+
+(function skyTick(ms) {
+  const s = reduceMotion.matches ? 0 : ms / 1000;
+  for (const sky of skies) if (sky.nodes && sky.root?.isConnected && sky.stage.clientWidth) sky.tick(s);
+  requestAnimationFrame(skyTick);
+})(0);
+
+const skyFor = {};
+function skyIn(el, side) {
+  return skyFor[el.id] ??= new Sky(el, {
+    side,
+    title: side ? d => esc(d.name) : el.id === 'planSky'
+      ? d => `How ${esc(d.name)} connects<small>Hover a topic to light up what it needs and unlocks. Click to open it.</small>`
+      : d => `${esc(d.name)} course map<small>${d.links.length ? 'Earlier topics on the left; lines flow from what you need to what it unlocks.' : 'No links yet, so topics sit in course order.'}</small>`,
+    onPick: i => pickTopic(i, side),
+    onHover: i => document.querySelectorAll('#timelineBox [data-ti]').forEach(r => r.classList.toggle('hl', +r.dataset.ti === i)),
+  });
+}
+// Today's picks for this subject, numbered as on the Plan page.
+const routeOf = d => (state.list?.plan.picks ?? []).map((p, k) => ({ p, n: k + 1 }))
+  .filter(({ p }) => p.subject === d.name && !p.done)
+  .map(({ p, n }) => ({ i: d.topics.findIndex(t => t.topic === p.topic), n })).filter(r => r.i >= 0);
+// Only the Reflect map follows the replay day; Plan and the side panel always show today.
+function skyState(d, side, replay) {
+  const cur = currentTopic(d), day = replay ? state.day : null;
+  return { fresh: freshAt(d, day), today: !day, sel: side ? -1 : state.sel, cur: cur ? d.topics.indexOf(cur) : -1, route: day ? [] : routeOf(d) };
+}
+function renderMapInto(el, d, side) { skyIn(el, side).update(d, skyState(d, side, el.id === 'map')); }
+function pickTopic(i, side) {
+  const d = state.detail;
+  if (side) { setTopic(d.name, d.topics[i].topic); renderStudyBits(); return; }
+  state.sel = state.sel === i ? null : i;
+  renderMap(d); renderPlanMaps(d); renderFocus(d);
+  if (state.sel !== null) document.getElementById(state.view === 'plan' ? 'planFocus' : 'focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ---------- Plan: the next three weeks as a horizontal timeline, linked to the sky ----------
+// Each row is a scheduled topic. The wave is the memory estimate: it fades after a study day and jumps
+// back at each review. Future reviews follow the 1 → 3 → 7 → 16 → 35 ladder, assuming each one goes well.
+const LADDER = [1, 3, 7, 16, 35], HORIZON = 21, TL_ROWS = 12;
+const stepAfter = iv => LADDER.find(x => x > iv) ?? LADDER.at(-1);
+function upcoming(t, today) {
+  if (!t.next || !t.interval) return [];
+  const out = [];
+  let day = t.next < today ? today : t.next, iv = t.interval;
+  while (daysBetween(today, day) < HORIZON && out.length < 8) { iv = stepAfter(iv); out.push({ day, iv }); day = addDays(day, iv); }
+  return out;
+}
+function renderTimeline(d) {
+  const box = document.getElementById('timelineBox'), today = state.list.today, route = routeOf(d);
+  const head = `<div class="night-bar"><span class="ttl">${esc(d.name)} reviews, day by day<small>The wave is how fresh each topic is in memory: it fades, then jumps back at each review. Circles are the next reviews if each goes well.</small></span></div>`;
+  if (d.reviews.paused) { box.innerHTML = head + '<div class="empty">Reviews are paused for this subject, so nothing is scheduled.</div>'; return; }
+  const lessons = route.filter(r => !d.topics[r.i].next);
+  const rows = d.topics.map((t, i) => ({ t, i, rev: upcoming(t, today) })).filter(r => r.rev.length)
+    .sort((a, b) => a.rev[0].day.localeCompare(b.rev[0].day) || (b.t.overdue ?? 0) - (a.t.overdue ?? 0));
+  lessons.forEach(r => rows.unshift({ t: d.topics[r.i], i: r.i, rev: [], lesson: true }));
+  if (!rows.length) { box.innerHTML = head + '<div class="empty">Nothing scheduled yet. Start a topic and its reviews appear here.</div>'; return; }
+  const shown = rows.slice(0, TL_ROWS), cw = 34, lw = 300, rh = 36, top = 46;
+  const Wd = lw + HORIZON * cw + 12, Hd = top + shown.length * rh + 8, X = off => lw + (off + .5) * cw;
+  const routeNo = new Map(route.map(r => [r.i, r.n]));
+  let s = `<svg viewBox="0 0 ${Wd} ${Hd}" role="img" aria-label="Reviews for the next three weeks"><defs>
+    <linearGradient id="tlNow" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${SKY.warm}" stop-opacity=".4"/><stop offset="1" stop-color="#ff8a65" stop-opacity=".04"/></linearGradient>
+    ${SKY.col.map((c, k) => `<linearGradient id="tlw${k}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".45"/><stop offset="1" stop-color="${c}" stop-opacity=".02"/></linearGradient>`).join('')}</defs>
+    <rect x="${lw}" y="${top - 8}" width="${cw}" height="${shown.length * rh + 8}" rx="8" fill="url(#tlNow)"/>`;
+  for (let k = 0; k < HORIZON; k++) {
+    const day = addDays(today, k), wd = new Date(day + 'T12:00').getDay();
+    if (k && (wd === 0 || wd === 6)) s += `<rect x="${lw + k * cw}" y="${top - 8}" width="${cw}" height="${shown.length * rh + 8}" fill="#fff" fill-opacity=".035"/>`;
+    s += `<text x="${X(k)}" y="${top - 26}" text-anchor="middle" class="faint" font-size="10">${k ? 'SMTWTFS'[wd] : 'today'}</text>
+      <text x="${X(k)}" y="${top - 13}" text-anchor="middle" class="${k ? 'muted' : 'b'}" font-size="11.5">${+day.slice(8)}</text>`;
+  }
+  shown.forEach((r, row) => {
+    const { t, i } = r, y0 = top + row * rh, mid = y0 + rh / 2, lvl = Math.max(0, Math.min(t.level, 5)), col = SKY.col[lvl];
+    const code = codeOf(t.topic), name = labelOf(t.topic, code ? 24 : 28), no = routeNo.get(i);
+    s += `<g class="row" data-ti="${i}" tabindex="0" role="button" aria-label="${esc(t.topic)}${t.overdue !== null && r.rev.length ? `, review ${esc(lateText(t))}` : ''}">
+      <rect class="hit" x="0" y="${y0}" width="${Wd}" height="${rh}" rx="6"/>
+      <line x1="0" x2="${Wd}" y1="${y0 + rh}" y2="${y0 + rh}" stroke="#29254f"/>
+      <circle cx="12" cy="${mid}" r="5" fill="${r.lesson ? 'none' : col}" ${r.lesson ? 'stroke="#8f84d8" stroke-dasharray="2 2"' : ''}/>
+      <text x="24" y="${mid}" dy=".35em" font-size="12.5">${code ? `<tspan class="b">${esc(code)} </tspan>` : ''}<tspan class="muted">${esc(name)}</tspan></text>`;
+    if (no) s += `<circle cx="${lw - 14}" cy="${mid}" r="8.5" fill="${SKY.warm}"/><text x="${lw - 14}" y="${mid}" dy=".35em" text-anchor="middle" font-size="10" class="b" style="fill:#1a0e00">${no}</text>`;
+    if (t.overdue && r.rev.length) s += `<text x="${lw - (no ? 28 : 8)}" y="${mid}" dy=".35em" text-anchor="end" font-size="10.5" class="b" style="fill:${SKY.due}">${t.overdue} d late</text>`;
+    if (r.lesson) {
+      const cx = X(0);
+      s += `<rect x="${cx - 6}" y="${mid - 6}" width="12" height="12" rx="3" transform="rotate(45 ${cx} ${mid})" fill="${SKY.warm}"/>
+        <text x="${cx + 14}" y="${mid}" dy=".35em" font-size="11" class="muted">new topic today</text>`;
+    } else {
+      // the memory wave: anchors are the last study day and each projected review
+      const anchors = [{ off: t.last ? daysBetween(today, t.last) : -1, iv: t.interval }, ...r.rev.map(v => ({ off: daysBetween(today, v.day), iv: v.iv }))];
+      const yOf = f => y0 + rh - 5 - f * (rh - 12);
+      const pts = [];
+      for (let off = -.5; off <= HORIZON - .5 + 1e-9; off += .25) {
+        let a = anchors[0];
+        for (const x of anchors) if (x.off <= off) a = x;
+        pts.push([X(off), yOf(Math.pow(2, -Math.max(off - a.off, 0) / (4 * a.iv)))]);
+      }
+      const line = pts.map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
+      s += `<path class="fill" d="${line}L${X(HORIZON - .5)},${y0 + rh - 5}L${X(-.5)},${y0 + rh - 5}Z" fill="url(#tlw${lvl})" style="animation-delay:${row * 60}ms"/>
+        <path class="wave" pathLength="1" d="${line}" fill="none" stroke="${col}" stroke-width="1.8" style="animation-delay:${row * 60}ms"/>`;
+      r.rev.forEach((v, k) => {
+        const off = daysBetween(today, v.day), cx = X(off), late = k === 0 && t.overdue !== null;
+        s += late ? `<circle class="now" cx="${cx}" cy="${mid}" r="6.5" fill="${SKY.due}"/>`
+          : `<circle cx="${cx}" cy="${mid}" r="6" fill="#110f2a" stroke="${col}" stroke-width="2.4"/>`;
+      });
+    }
+    s += '</g>';
+  });
+  s += '</svg>';
+  box.innerHTML = head + `<div class="tl">${s}</div>` + (rows.length > shown.length ? `<div class="tl-more">+ ${rows.length - shown.length} more topics with later reviews</div>` : '');
+}
+function renderPlanMaps(d) {
+  renderTimeline(d);
+  renderMapInto(document.getElementById('planSky'), d, false);
 }
 
 function renderReplay(d) {
@@ -675,14 +1164,14 @@ function renderReplay(d) {
 function renderMap(d) {
   const el = document.getElementById('map');
   document.getElementById('mapTools').innerHTML = state.mode === 'map' ? `
-    ${!d.hasLinksFile && d.topics.length ? `<button class="btn small" data-gen-links ${d.linksReady ? '' : 'disabled title="Needs semantic search: run study setup"'}>Connect topics</button>` : ''}
-    <button class="zoom" data-zoom="-1" aria-label="Zoom out">−</button><button class="zoom" data-zoom="1" aria-label="Zoom in">+</button>` : '';
+    ${!d.hasLinksFile && d.topics.length ? `<button class="btn small" data-gen-links ${d.linksReady ? '' : 'disabled title="Needs semantic search: run study setup"'}>Connect topics</button>` : ''}` : '';
+  el.classList.toggle('night', state.mode === 'map');
   document.getElementById('warnings').innerHTML = [
     ...(!d.links.length && d.topics.length && state.mode === 'map' ? ['<div class="note-line">No links yet, so topics sit in course order. <b>Connect topics</b> links topics whose material is alike, with the local search model (no Claude). Delete wrong links in links.json.</div>'] : []),
     ...d.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`)].join('');
   renderReplay(d);
-  if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
   if (state.mode === 'list') {
+    if (!d.topics.length) { el.innerHTML = '<div class="empty">No topics yet.</div>'; return; }
     el.innerHTML = `<table><thead><tr><th>#</th><th>Topic</th><th>Level</th><th class="hide-sm">Last studied</th><th>Next review</th></tr></thead><tbody>
       ${d.topics.map((t, i) => `<tr class="click" data-node="${i}"><td class="muted">${i + 1}</td><td>${esc(t.topic)}</td>
         <td><span class="lv">${[1,2,3,4,5].map(k => `<i style="${k <= t.level ? `background:var(--m${Math.max(t.level, 2)})` : ''}"></i>`).join('')}</span></td>
@@ -696,12 +1185,12 @@ function renderMap(d) {
 const lateText = t => t.overdue ? `${t.overdue} d late` : 'due today';
 
 function renderFocus(d) {
-  const el = document.getElementById('focus');
+  const els = [document.getElementById('focus'), document.getElementById('planFocus')];
   const t = d.topics[state.sel];
-  if (!t) { el.innerHTML = ''; return; }
+  if (!t) { els.forEach(el => { el.innerHTML = ''; }); return; }
   const ms = mistakesFor(d, t), i = state.sel;
   const names = ids => ids.map(k => esc(d.topics[k].topic)).join(', ');
-  el.innerHTML = `<div class="focus"><h4>${esc(t.topic)}</h4>
+  const html = `<div class="focus"><h4>${esc(t.topic)}</h4>
     <div class="facts"><span>${esc(LEVEL[t.level] ?? `level ${t.level}`)}</span>
       <span>last studied ${esc(t.last ?? 'never')}</span>
       <span>${t.overdue !== null ? `<b style="color:var(--due-text)">review ${lateText(t)}</b>` : `next review ${esc(t.next ?? '—')}`}</span>
@@ -716,6 +1205,7 @@ function renderFocus(d) {
       ${started(t) ? `<button class="btn small" data-study="lesson" data-topic-i="${i}">Continue learning</button>` : ''}
       ${d.diagrams ? `<button class="btn small" data-study="drawing" data-topic-i="${i}">Draw it</button>` : ''}
       <button class="btn small" data-close>Close</button></div></div>`;
+  els.forEach(el => { el.innerHTML = html; });
 }
 
 function renderDetail() {
@@ -729,7 +1219,7 @@ function renderDetail() {
     `<span class="chip">${d.topics.filter(started).length}/${d.topics.length} topics started</span>`,
     due ? `<span class="chip hot">${due} reviews due</span>` : ''].join('');
   document.getElementById('tutorSub').textContent = `${d.name} · answers come from your lectures`;
-  renderMistakes(d); renderNotes(d); renderMap(d); renderFocus(d); renderStudyBits(); renderChat();
+  renderMistakes(d); renderNotes(d); renderMap(d); renderPlanMaps(d); renderFocus(d); renderStudyBits(); renderChat();
 }
 
 function renderAll() {
@@ -949,12 +1439,9 @@ document.querySelector('.work').addEventListener('click', async e => {
   const ex = t.closest('[data-exam]'); if (ex) { write('/api/exam', { subject: ex.dataset.exam, value: ex.dataset.value }); return; }
   const rv = t.closest('[data-reviews]'); if (rv) { write('/api/reviews', { subject: rv.dataset.reviews, action: rv.dataset.action }); return; }
   const dm = t.closest('[data-dismiss]'); if (dm) { write('/api/dismiss', { key: dm.dataset.dismiss }); return; }
-  if (t.closest('[data-close]')) { state.sel = null; renderMap(d); renderFocus(d); return; }
+  if (t.closest('[data-close]')) { state.sel = null; renderMap(d); renderPlanMaps(d); renderFocus(d); return; }
   if (t.closest('[data-map-close]')) { state.mapOpen = false; store.set('study-map-open', '0'); renderStudyBits(); return; }
   if (t.closest('[data-play]')) { togglePlay(); return; }
-  const zm = t.closest('[data-zoom]');
-  if (zm) { state.zoom = Math.min(1.6, Math.max(0.5, +(state.zoom + 0.1 * +zm.dataset.zoom).toFixed(1))); store.set('study-zoom', state.zoom);
-    renderMap(d); if (state.mapOpen) renderMapInto(document.getElementById('mapSide'), d, true); return; }
   const gl = t.closest('[data-gen-links]');
   if (gl) {
     gl.disabled = true; gl.textContent = 'Connecting…';
@@ -971,14 +1458,21 @@ document.querySelector('.work').addEventListener('click', async e => {
   const flip = t.closest('[data-flip]');
   if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(d); return; }
   const node = t.closest('[data-node]');
-  if (node) {
-    const i = +node.dataset.node;
-    if (node.closest('#mapSide')) { setTopic(d.name, d.topics[i].topic); renderStudyBits(); return; }
-    state.sel = state.sel === i ? null : i;
-    renderMap(d); renderFocus(d);
-    if (state.sel !== null) document.getElementById('focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
+  if (node) { pickTopic(+node.dataset.node, false); return; }
+  // a timeline row: open that topic and fly the map to it
+  const tr = t.closest('[data-ti]');
+  if (tr) { const k = +tr.dataset.ti; if (state.sel !== k) pickTopic(k, false); skyFor.planSky?.flyTo(k); }
 });
+// Timeline rows and the Plan map light each other up.
+{
+  const box = document.getElementById('timelineBox');
+  const hl = i => { skyFor.planSky?.setHover(i, 'outside'); box.querySelectorAll('[data-ti]').forEach(r => r.classList.toggle('hl', +r.dataset.ti === i)); };
+  box.addEventListener('pointerover', e => { const r = e.target.closest('[data-ti]'); if (r) hl(+r.dataset.ti); });
+  box.addEventListener('pointerleave', () => hl(null));
+  box.addEventListener('focusin', e => { const r = e.target.closest('[data-ti]'); if (r) hl(+r.dataset.ti); });
+  box.addEventListener('focusout', () => hl(null));
+  box.addEventListener('keydown', e => { const r = e.target.closest('[data-ti]'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); r.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
+}
 document.getElementById('quick').addEventListener('click', e => {
   const b = e.target.closest('[data-cmd]'); if (!b) return;
   send(b.dataset.cmd === 'status' ? '/status' : `/${b.dataset.cmd} ${state.current ?? ''}`.trim());
