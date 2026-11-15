@@ -6,7 +6,7 @@
 <title>Claude Study Agent — AI tutor that studies from your own lecture PDFs</title>
 <meta name="description" content="Open-source AI study tutor for university students, built on Claude Code. It learns from your own lecture slides, PDFs and recordings, teaches topic by topic with citations, quizzes you with spaced repetition, logs mistakes and builds mock exams in your real exam format. Runs locally, no API key.">
 <link rel="canonical" href="https://dymchenkko.github.io/claude-study-agent/">
-<meta name="keywords" content="AI study tutor, study from lecture PDFs, Claude Code, NotebookLM alternative, Anki alternative, spaced repetition, mock exams, turn slides into flashcards, local RAG for students, semantic search PDF, lecture transcription, exam prep AI">
+<meta name="keywords" content="AI study tutor, study from lecture PDFs, Claude Code, NotebookLM for exam revision, works with Anki, spaced repetition, mock exams, turn slides into flashcards, local RAG for students, semantic search PDF, lecture transcription, exam prep AI">
 <meta name="author" content="dymchenkko">
 <meta name="robots" content="index, follow">
 
@@ -42,7 +42,7 @@
   "license": "https://opensource.org/licenses/MIT",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "author": { "@type": "Person", "name": "dymchenkko" },
-  "keywords": "AI study tutor, Claude Code, spaced repetition, mock exams, lecture PDFs, NotebookLM alternative, Anki alternative, local-first, OCR, semantic search",
+  "keywords": "AI study tutor, Claude Code, spaced repetition, mock exams, lecture PDFs, NotebookLM for exam revision, works with Anki, local-first, OCR, semantic search",
   "featureList": [
     "Teaches from your own course materials with page and timestamp citations",
     "Spaced repetition schedule per topic (1, 3, 7, 16, 35 days)",
@@ -66,7 +66,7 @@
     {
       "@type": "Question",
       "name": "How is it different from NotebookLM, ChatGPT or Anki?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Unlike a general chatbot, every answer is grounded in your own course materials with page citations. Unlike a flashcard app like Anki, it writes the questions for you and remembers why you got something wrong. It adds spaced repetition, mock exams in your real exam format, and local transcription and search of lecture recordings." }
+      "acceptedAnswer": { "@type": "Answer", "text": "NotebookLM is great for asking questions about your sources and generating quizzes, but each session starts fresh: it doesn't keep a review schedule, remember which ideas you keep getting wrong, or decide what you should study today. Anki is the best tool for memorising facts card by card, but you write or import the cards yourself, and it can't explain a lecture or test whether you understood it. Claude Study Agent runs the whole loop from your own files: it teaches one idea at a time, grades you, logs why you got something wrong, schedules topic reviews and builds mock exams in your real exam format. It works well alongside Anki: use it to understand, Anki to memorise." }
     },
     {
       "@type": "Question",
@@ -192,20 +192,22 @@ cd ~/Study &amp;&amp; claude          # then type /setup</code></pre>
 <section id="different">
   <h2>How is it different?</h2>
   <table>
-    <tr><th></th><th>General AI chatbot</th><th>Flashcard app (Anki)</th><th>Claude Study Agent</th></tr>
-    <tr><td>Answers from <i>your</i> materials, with citations</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
-    <tr><td>Creates the questions for you</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
-    <tr><td>Spaced repetition schedule</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-    <tr><td>Remembers <i>why</i> you got it wrong</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
-    <tr><td>Mock exams in your real format</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
-    <tr><td>Transcribes &amp; searches recordings</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓ (locally)</td></tr>
+    <tr><th></th><th>General AI chatbot</th><th>NotebookLM</th><th>Anki</th><th>Claude Study Agent</th></tr>
+    <tr><td>Answers from <i>your</i> materials, with citations</td><td>partly</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Writes the questions for you</td><td class="yes">✓</td><td class="yes">✓</td><td>add-ons / shared decks</td><td class="yes">✓</td></tr>
+    <tr><td>Spaced repetition</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓ (per card, FSRS)</td><td class="yes">✓ (per topic)</td></tr>
+    <tr><td>Remembers <i>why</i> you got it wrong</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Decides what to study today</td><td class="no">✗</td><td class="no">✗</td><td>due cards</td><td class="yes">✓</td></tr>
+    <tr><td>Mock exams in your real exam format</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+    <tr><td>Lecture recordings</td><td>partly</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓ (transcribed locally)</td></tr>
+    <tr><td>Free, with a phone app</td><td>partly</td><td class="yes">✓</td><td class="yes">✓ (iOS app is paid)</td><td class="no">✗ (needs Claude Code on a computer)</td></tr>
   </table>
 </section>
 
 <section id="faq">
   <h2>FAQ</h2>
   <details open><summary>What is Claude Study Agent?</summary><p>An open-source AI tutor for university courses, built as a set of Claude Code skills. You put your lecture slides, PDFs and recordings in a folder; it converts them to searchable text, teaches you topic by topic with short tasks and citations, schedules reviews with spaced repetition, logs your mistakes and builds mock exams in your course's exam format.</p></details>
-  <details><summary>How is it different from NotebookLM, ChatGPT or Anki?</summary><p>Unlike a general chatbot, every answer is grounded in your own course materials with page citations. Unlike a flashcard app like Anki, it writes the questions for you and remembers why you got something wrong. It adds spaced repetition, mock exams in your real exam format, and local transcription and search of lecture recordings.</p></details>
+  <details><summary>How is it different from NotebookLM, ChatGPT or Anki?</summary><p>NotebookLM is great for asking questions about your sources and generating quizzes, but each session starts fresh: it doesn't keep a review schedule, remember which ideas you keep getting wrong, or decide what you should study today. Anki is the best tool for memorising facts card by card, but you write or import the cards yourself, and it can't explain a lecture or test whether you understood it. Claude Study Agent runs the whole loop from your own files: it teaches one idea at a time, grades you, logs why you got something wrong, schedules topic reviews and builds mock exams in your real exam format. It works well alongside Anki: use it to understand, Anki to memorise.</p></details>
   <details><summary>Do I need an API key? What does it cost?</summary><p>No API key. It runs on your existing Claude Pro or Max subscription through Claude Code. Conversion, OCR, transcription and semantic search are free, open-source and run on your own machine.</p></details>
   <details><summary>Do my lecture files get uploaded anywhere?</summary><p>Your files stay on your computer. Conversion, OCR, transcription and the search index all run locally. Only the passages the tutor reads while teaching are sent to Claude, like any Claude Code session.</p></details>
   <details><summary>Which file types and languages does it support?</summary><p>PDF (including scanned PDFs via OCR), PPTX, DOCX, XLSX, Markdown and text, plus video and audio (MP4, MOV, MKV, WEBM, M4A, MP3, WAV) and lecture links. Materials can be in any language Claude reads, and semantic search works across languages.</p></details>

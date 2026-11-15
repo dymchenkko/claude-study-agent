@@ -4,7 +4,7 @@
   <b>An open-source AI study tutor that learns from your own lecture PDFs, slides and recordings.</b><br>
   It teaches topic by topic with citations, quizzes you with spaced repetition,<br>
   and builds mock exams in your real exam format — all from a folder on your computer, no API key.<br>
-  <sub>A local-first, open-source alternative to NotebookLM, ChatGPT and Anki for exam revision.</sub>
+  <sub>A local-first, open-source AI tutor for exam revision that teaches from your own lectures, tests you and schedules your reviews.</sub>
 </p>
 
 <p align="center">
@@ -205,14 +205,16 @@ Optional: `alias study=~/Study/.tools/study`.
 
 ## 🆚 How is it different?
 
-| | Chatbot / NotebookLM | Flashcard app (e.g. Anki) | **Claude Study Agent** |
-|---|:---:|:---:|:---:|
-| Answers from *your* course materials, with page citations | ✗ | ✗ | ✅ |
-| Creates the questions for you | ✅ | ✗ (you write cards) | ✅ |
-| Spaced repetition schedule | ✗ | ✅ | ✅ |
-| Remembers *why* you got something wrong | ✗ | ✗ | ✅ |
-| Mock exams in your real exam format | ✗ | ✗ | ✅ |
-| Transcribes and searches lecture recordings | ✗ | ✗ | ✅ (locally) |
+| | General AI chatbot | NotebookLM | Anki | **Claude Study Agent** |
+|---|:---:|:---:|:---:|:---:|
+| Answers from *your* materials, with citations | partly | ✅ | ✗ | ✅ |
+| Writes the questions for you | ✅ | ✅ | add-ons / shared decks | ✅ |
+| Spaced repetition | ✗ | ✗ | ✅ per card (FSRS) | ✅ per topic |
+| Remembers *why* you got it wrong | ✗ | ✗ | ✗ | ✅ |
+| Decides what to study today | ✗ | ✗ | due cards | ✅ |
+| Mock exams in your real exam format | ✗ | ✗ | ✗ | ✅ |
+| Lecture recordings | partly | ✅ | ✗ | ✅ transcribed locally |
+| Free, with a phone app | partly | ✅ | ✅ (iOS app is paid) | ✗ (needs Claude Code on a computer) |
 
 ## ❓ FAQ
 
@@ -225,7 +227,7 @@ An open-source AI tutor for university courses, built as a set of [Claude Code](
 <details>
 <summary><b>How is it different from NotebookLM, ChatGPT or Anki?</b></summary>
 
-Unlike a general chatbot or NotebookLM, it is a full study loop, not just Q&A over your documents: it decides what to teach next, tests you with one task at a time, grades honestly and schedules spaced-repetition reviews. Unlike a flashcard app like Anki, it writes the questions for you and remembers *why* you got something wrong. And every answer is cited from your own files, with local transcription and cross-language search of lecture recordings. See the [comparison table](#-how-is-it-different) above.
+NotebookLM is great for asking questions about your sources and generating quizzes, but each session starts fresh: it doesn't keep a review schedule, remember which ideas you keep getting wrong, or decide what you should study today. Anki is the best tool for memorising facts card by card, but you write or import the cards yourself, and it can't explain a lecture or test whether you understood it. Claude Study Agent runs the whole loop from your own files: it teaches one idea at a time, grades you, logs why you got something wrong, schedules topic reviews and builds mock exams in your real exam format. It works well alongside Anki: use it to understand, Anki to memorise. See the [comparison table](#-how-is-it-different) above.
 </details>
 
 <details>
