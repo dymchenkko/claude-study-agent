@@ -291,43 +291,48 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .rticks i { position: absolute; top: 1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--accent); opacity: .7; }
 .legend .fr { width: 40px; background: linear-gradient(90deg, var(--m0), var(--m4)); }
 
-/* ---------- Night panels: the glowing course map ("sky") and the review timeline. Always dark, like a
-   window onto the night sky, in both page themes. Brightness = memory, colour = level, flicker = due. ---------- */
-.night { --n-panel: #110f2a; --n-panel2: #17143a; --n-ink: #eeedff; --n-muted: #aaa7d2; --n-faint: #7c78a6; --n-line: #29254f;
-  --n-warm: #ffc861; --n-due: #ff4f7b; --n-ready: #a993ff;
-  background: linear-gradient(180deg, var(--n-panel2), var(--n-panel)); color: var(--n-ink); border: 1px solid var(--n-line);
+/* ---------- Dark panels: the course brain and the review timeline. Always dark, in both page themes.
+   Plain charcoal: brightness = memory, colour + shape = lecture, dashed ring = due. ---------- */
+.night { --n-panel: #121317; --n-panel2: #16171c; --n-ink: #eef0f6; --n-muted: #a3a6b3; --n-faint: #7a7d8a; --n-line: #2a2c35;
+  --n-warm: #ffc861; --n-due: #ff8a70; --n-ready: #b9a6ff;
+  background: var(--n-panel); color: var(--n-ink); border: 1px solid var(--n-line);
   border-radius: 16px; overflow: hidden; position: relative; color-scheme: dark; margin-top: 12px; }
 .night + .night { margin-top: 14px; }
 .night-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid var(--n-line); }
 .night-bar .ttl { flex: 1; min-width: 160px; font-weight: 650; font-size: 14px; }
 .night-bar .ttl small { display: block; color: var(--n-muted); font-weight: 500; font-size: 12.5px; }
-.lenses { display: flex; flex-wrap: wrap; gap: 6px; }
-.lens { border: 1px solid var(--n-line); background: #0c0b22; color: var(--n-muted); font-size: 12.5px; font-weight: 600; padding: 4px 10px;
-  border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; }
-.lens i { width: 8px; height: 8px; border-radius: 50%; background: var(--n-faint); }
-.lens[aria-pressed="true"] { color: var(--n-ink); border-color: #ffc86166; background: #ffc86112; }
-.lens[aria-pressed="true"] i { background: var(--n-warm); box-shadow: 0 0 8px var(--n-warm); }
-.night .zoom { background: #0c0b22; border-color: var(--n-line); color: var(--n-ink); }
-.night button:focus-visible, .sky-svg .nd:focus-visible { outline: 2px solid var(--n-warm); outline-offset: 2px; }
-.sky-stage { position: relative; height: clamp(360px, 54vh, 580px); }
-.sky-svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-.sky-svg.drag { cursor: grabbing; }
-.sky-svg text { font-family: var(--sans); paint-order: stroke; stroke: #0b0a24; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
-.sky-svg .nd { cursor: pointer; transition: opacity .25s; outline: none; }
-.sky-svg .dim { opacity: .14; }
-.sky-svg .flow { animation: flow 1.6s linear infinite; }
-.sky-svg .route { animation: flow 1s linear infinite; }
+.night .zoom { background: #1b1c22; border-color: var(--n-line); color: var(--n-ink); }
+.night .zoom.names[aria-pressed="true"] { border-color: #ffc86188; color: var(--n-warm); }
+.night button:focus-visible { outline: 2px solid var(--n-warm); outline-offset: 2px; }
+.sky-stage { position: relative; height: clamp(380px, 58vh, 620px); }
+.brain-cv { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.brain-cv.drag { cursor: grabbing; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.vh:focus-within { clip: auto; width: auto; height: auto; left: 12px; top: 12px; z-index: 4; background: var(--n-panel2); border: 1px solid var(--n-line);
+  border-radius: 10px; padding: 6px; max-width: 70%; max-height: 60%; overflow: auto; white-space: normal; }
+.brain-list button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--n-ink); font: inherit; font-size: 12.5px; padding: 3px 6px; border-radius: 6px; }
+.brain-legend { position: absolute; left: 12px; bottom: 12px; width: 230px; max-width: calc(100% - 24px); background: #16171cec; border: 1px solid var(--n-line);
+  border-radius: 12px; padding: 12px 14px; font-size: 12.5px; color: var(--n-muted); }
+.brain-legend .bl-top { display: flex; gap: 22px; margin-bottom: 8px; }
+.brain-legend .bl-top b { display: block; font-size: 22px; color: var(--n-ink); letter-spacing: -.02em; line-height: 1.1; }
+.brain-legend .bl-top small { font-size: 11.5px; }
+.brain-legend .bl-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--n-line); color: var(--n-ink); }
+.brain-legend .bl-row span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.brain-legend em { font-style: normal; color: var(--n-muted); font-weight: 600; }
+.brain-legend .bl-key { margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--n-faint); }
+.shp { width: 9px; height: 9px; flex: none; display: inline-block; background: var(--c); }
+.shp.circle { border-radius: 50%; } .shp.diamond { transform: rotate(45deg) scale(.85); }
+.shp.triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); } .shp.hex { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+.shp.pent { clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); }
+@media (max-width: 700px) { .brain-legend { display: none; } }
 .breathe { animation: breathe 2.4s ease-in-out infinite; }
-@keyframes flow { to { stroke-dashoffset: -20; } }
 @keyframes breathe { 50% { opacity: .2; } }
-.sky-tip { position: absolute; z-index: 3; pointer-events: none; background: #0c0b20f2; border: 1px solid var(--n-line); border-radius: 12px;
+.sky-tip { position: absolute; z-index: 3; pointer-events: none; background: #16171cf2; border: 1px solid var(--n-line); border-radius: 12px;
   padding: 9px 12px; font-size: 12.5px; line-height: 1.45; color: var(--n-muted); max-width: 270px; box-shadow: 0 14px 40px -16px #000; }
 .sky-tip b { color: var(--n-ink); display: block; font-size: 13.5px; }
+.sky-tip .where { display: block; font-size: 11.5px; color: var(--n-faint); margin-bottom: 2px; }
 .sky-tip .late { color: var(--n-due); font-weight: 700; }
 .sky-hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--n-faint); pointer-events: none; }
-.sky-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 9px 14px 11px; border-top: 1px solid var(--n-line); font-size: 12px; color: var(--n-muted); }
-.sky-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.sky-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
 .mapside.night { margin: 0; border: 0; border-radius: 0; }
 .mapside > .sky { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .mapside .sky-stage { flex: 1; height: auto; min-height: 0; }
@@ -346,7 +351,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 @keyframes fadein { from { opacity: 0; } }
 .tl-more { font-size: 12.5px; color: var(--n-muted); padding: 2px 14px 10px; }
 @media (prefers-reduced-motion: reduce) {
-  .sky-svg .flow, .sky-svg .route, .breathe, .tl .wave, .tl .fill, .tl .now { animation: none; stroke-dashoffset: 0; }
+  .breathe, .tl .wave, .tl .fill, .tl .now { animation: none; stroke-dashoffset: 0; }
 }
 
 @media (max-width: 1100px) {
@@ -671,240 +676,186 @@ function freshAt(d, day) {
   });
 }
 
-// ---------- the sky: one glowing course map, shared by Plan, Reflect and the Study side panel ----------
-// Colour = level. Glow = how fresh a topic is in memory (an estimate); it flickers when a review is
-// overdue. Flowing lines run from a prerequisite to what it unlocks. Gold numbers = today's route.
-// Built once per subject and updated in place, so pan, zoom and the animation survive re-renders.
+// ---------- the course brain: one map, shared by Plan, Reflect and the Study side panel ----------
+// Each lecture/source is a region with its own colour and shape. Brightness = how fresh a topic is in
+// memory (an estimate); a dashed ring = review due. Lines run from a prerequisite to what it unlocks.
 const SKY = { col: ['#6c6a8f', '#ffc861', '#ff8a65', '#5fe0b5', '#4cc3ff', '#c9a8ff'], due: '#ff4f7b', warm: '#ffc861', ready: '#a993ff', flow: '#8fe3ff' };
-const SVGNS = 'http://www.w3.org/2000/svg', R0 = 13;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const svgEl = (tag, attrs, parent, text) => {
-  const n = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
-  if (text != null) n.textContent = text;
-  if (parent) parent.appendChild(n);
-  return n;
-};
 const codeOf = s => (String(s).match(/^([A-Za-z]{1,3}\d{1,3}[a-z]?)\s/) || [])[1] ?? null;
 const clip = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
 const labelOf = (s, n = 24) => { const c = codeOf(s); return clip(c ? String(s).slice(c.length).trim() : String(s), n); };
-const lenses = (() => {
-  const on = { glow: true, focus: false, route: true };
-  try { Object.assign(on, JSON.parse(localStorage.getItem('study-lenses') || '{}')); } catch {}
-  return on;
-})();
 const skyKey = d => d.name + '\n' + d.topics.map(t => t.topic).join('\n') + '\n' + JSON.stringify(d.links);
 // Topics that could be learned next: not started, and every prerequisite is at least "ok".
 const readyOf = d => d.topics.map((t, i) => { const pre = needsOf(d, i); return !started(t) && pre.length > 0 && pre.every(k => d.topics[k].level >= 3); });
 
-// Layout: a small force simulation. Course order runs left to right, prerequisites stay left of what
-// they unlock, nearby topics push apart. Deterministic, so the map looks the same every time.
-const layouts = new Map();
-function skyLayout(d) {
-  const key = skyKey(d);
-  if (layouts.has(key)) return layouts.get(key);
-  const n = d.topics.length, span = Math.max(n - 1, 1), wide = Math.max(480, Math.sqrt(n) * 175), deg = Array(n).fill(0), R = 118, ITER = 320;
-  d.links.forEach(([a, b]) => { deg[a]++; deg[b]++; });
-  const P = d.topics.map((t, i) => ({ x: i / span * wide, y: Math.sin(i * 2.399) * 120 }));
-  for (let it = 0; it < ITER; it++) {
-    const cool = 1 - it / ITER;
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-      let dx = P[j].x - P[i].x, dy = P[j].y - P[i].y;
-      const q = dx * dx + dy * dy;
-      if (q >= R * R) continue;
-      let dist = Math.sqrt(q);
-      if (dist < .01) { dx = .1; dy = (i % 2 ? .1 : -.1); dist = .14; }
-      const f = (R - dist) / dist * .22;
-      P[i].x -= dx * f; P[i].y -= dy * f; P[j].x += dx * f; P[j].y += dy * f;
-    }
-    for (const [s, t] of d.links) {
-      const A = P[s], B = P[t], dx = B.x - A.x, dy = B.y - A.y, dist = Math.hypot(dx, dy) || 1, f = (dist - 150) / dist * .06 * cool;
-      A.x += dx * f; A.y += dy * f; B.x -= dx * f; B.y -= dy * f;
-      const gap = A.x + 110 - B.x;
-      if (gap > 0) { A.x -= gap * .12; B.x += gap * .12; }
-    }
-    P.forEach((p, i) => { p.x += (i / span * wide - p.x) * .02 * (deg[i] ? .4 : 1); p.y *= 1 - (deg[i] ? .006 : .012); });
+// ---------- regions: each lecture or source file is a region of the brain ----------
+// Topics carry `source` (from syllabus.md: "L1", "Lab3", "wyklad_2"). Sources keep course order and are
+// merged into at most 6 regions. With fewer than 3 sources, the course is split into parts by order.
+const LOBES = [
+  { lobe: 'frontal', c: [-0.6, 0.12, 0], r: [0.34, 0.36, 0.55], col: '#7c83ff', shape: 'square' },
+  { lobe: 'parietal', c: [0.12, 0.38, 0], r: [0.3, 0.2, 0.55], col: '#f2b33d', shape: 'diamond' },
+  { lobe: 'temporal', c: [0.02, -0.26, 0], r: [0.36, 0.17, 0.6], col: '#2dd4a7', shape: 'circle' },
+  { lobe: 'occipital', c: [0.72, 0.1, 0], r: [0.2, 0.26, 0.5], col: '#ff6b8a', shape: 'triangle' },
+  { lobe: 'cerebellum', c: [0.6, -0.5, 0], r: [0.2, 0.1, 0.36], col: '#5aa9ff', shape: 'hex' },
+  { lobe: 'centre', c: [-0.12, 0.06, 0], r: [0.2, 0.14, 0.3], col: '#c792ea', shape: 'pent' },
+];
+function brainRegions(d) {
+  const n = d.topics.length, src = [];
+  let prev = '';
+  d.topics.forEach(t => { prev = t.source || prev; src.push(prev); });
+  const names = [...new Set(src.filter(Boolean))];
+  let of, labels;
+  if (names.length >= 3) {
+    // walk the sources in course order and cut them into G groups of about the same number of topics
+    const G = Math.min(LOBES.length, names.length), cnt = names.map(nm => src.filter(s => s === nm).length), per = n / G, grp = [];
+    let acc = 0, g = 0;
+    names.forEach((nm, k) => { if (g < G - 1 && acc > 0 && acc + cnt[k] / 2 > per * (g + 1)) g++; grp.push(g); acc += cnt[k]; });
+    of = src.map(s => grp[Math.max(0, names.indexOf(s))]);
+    labels = Array.from({ length: g + 1 }, (_, k) => {
+      const inG = names.filter((_, j) => grp[j] === k);
+      return inG.length > 1 ? `${clip(inG[0], 14)} … ${clip(inG.at(-1), 14)}` : clip(inG[0], 26);
+    });
+  } else {
+    const G = Math.max(1, Math.min(LOBES.length, Math.ceil(n / 6)));
+    of = d.topics.map((_, i) => Math.floor(i * G / n));
+    labels = Array.from({ length: G }, (_, g) => {
+      const idx = of.map((x, i) => x === g ? i + 1 : 0).filter(Boolean);
+      return `Topics ${idx[0]}–${idx.at(-1)}`;
+    });
   }
-  const xs = P.map(p => p.x), ys = P.map(p => p.y);
-  const out = { pts: P, box: { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) } };
-  layouts.set(key, out);
+  return { of, labels };
+}
+
+// Deterministic 3D positions: topics spread inside their lobe, a cloud of faint dots draws the brain.
+const brainModels = new Map();
+function brainModel(d) {
+  const key = skyKey(d) + '\n' + d.topics.map(t => t.source || '').join('|');
+  if (brainModels.has(key)) return brainModels.get(key);
+  let seed = 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const R = brainRegions(d);
+  const P = d.topics.map((t, i) => {
+    const L = LOBES[R.of[i]];
+    for (let k = 0; k < 60; k++) {
+      const u = [rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1];
+      if (u[0] ** 2 + u[1] ** 2 + u[2] ** 2 < .6) return [L.c[0] + u[0] * L.r[0], L.c[1] + u[1] * L.r[1], L.c[2] + u[2] * L.r[2]];
+    }
+    return L.c.slice();
+  });
+  // push apart topics that landed too close, then pull each back inside its lobe
+  for (let it = 0; it < 80; it++) {
+    for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+      const dx = P[j][0] - P[i][0], dy = P[j][1] - P[i][1], dz = P[j][2] - P[i][2], q = Math.hypot(dx, dy, dz) || .001;
+      if (q > .11) continue;
+      const f = (.11 - q) / q * .25;
+      P[i][0] -= dx * f; P[i][1] -= dy * f; P[i][2] -= dz * f; P[j][0] += dx * f; P[j][1] += dy * f; P[j][2] += dz * f;
+    }
+    P.forEach((p, i) => {
+      const L = LOBES[R.of[i]], v = [0, 1, 2].map(a => (p[a] - L.c[a]) / L.r[a]), m = Math.hypot(...v);
+      if (m > .85) for (let a = 0; a < 3; a++) p[a] = L.c[a] + v[a] / m * .85 * L.r[a];
+    });
+  }
+  const shell = [];
+  for (let k = 0; k < 9000 && shell.length < 1500; k++) {
+    const x = rnd() * 2.2 - 1.1, y = rnd() * 1.6 - .8, z = rnd() * 1.6 - .8;
+    if (Math.abs(z) < .035) continue;
+    const cb = ((x + .04) / 1) ** 2 + ((y - .06) / .62) ** 2 + (z / .72) ** 2;
+    const inCb = cb < 1 && y > -.42 - .12 * Math.cos((x + .1) * 2.2);
+    const inCe = ((x - .6) / .3) ** 2 + ((y + .5) / .17) ** 2 + (z / .46) ** 2 < 1;
+    if ((inCb && (cb > .72 || rnd() < .12)) || (inCe && rnd() < .7)) shell.push([x, y, z]);
+  }
+  const out = { P, shell, region: R.of, labels: R.labels };
+  brainModels.set(key, out);
   return out;
 }
 
-const skies = new Set();
-const flick = (s, i) => .5 + .5 * Math.sin(s * 11 + i * 3.1) * Math.sin(s * 6.3 + i) * Math.sin(s * 17.7 + i * 1.7);
+const brains = new Set();
+const brainNames = { on: store.get('study-brain-names') === '1' };
 
+// The course brain: drawn on a canvas, turned by dragging, zoomed by scrolling. Built once per subject and
+// updated in place, so the camera survives re-renders. Motion only when something changes, plus a very slow
+// turn when nobody is touching it (off with reduced motion).
 class Sky {
   // opts: { side, title(d), onPick(i), onHover(i | null) }
   constructor(el, opts) {
-    this.el = el; this.opts = opts; this.id = 'sk' + Math.random().toString(36).slice(2, 8);
-    this.key = null; this.root = null; this.hover = null; this.views = {};
-    skies.add(this);
+    this.el = el; this.opts = opts; this.key = null; this.root = null; this.hover = null;
+    this.cam = { rot: .6, tilt: -.18, zoom: 1 }; this.goal = null; this.idle = 0; this.pulses = []; this.prev = null;
+    brains.add(this);
   }
 
   update(d, o) {
     if (!d.topics.length) { this.el.innerHTML = '<div class="empty">No topics yet. Add materials with /ingest.</div>'; this.key = null; this.root = null; return; }
-    if (this.key !== skyKey(d) || !this.root || !this.el.contains(this.root)) this.build(d);
+    const key = skyKey(d) + d.topics.map(t => t.source || '').join('|');
+    if (this.key !== key || !this.root || !this.el.contains(this.root)) this.build(d, key);
+    // a topic that just got fresher (a review in the chat) gets a pulse and signals from what it needs
+    if (this.prev && this.prev.name === d.name && o.today && !reduceMotion.matches)
+      o.fresh.forEach((f, i) => { const p = this.prev.fresh[i]; if (f != null && (p == null || f - p > .15)) this.pulses.push({ i, t0: performance.now() }); });
+    this.prev = o.today ? { name: d.name, fresh: o.fresh.slice() } : this.prev;
     this.d = d; this.o = o;
     this.ttl.innerHTML = this.opts.title ? this.opts.title(d, o) : '';
-    const ready = readyOf(d);
-    this.nodes.forEach((n, i) => {
-      const t = d.topics[i], f = o.fresh[i], ns = f === null || f === undefined, lvl = Math.max(0, Math.min(t.level, 5));
-      const ms = o.today ? mistakesFor(d, t).length : 0;
-      n.f = ns ? null : f;
-      n.late = o.today && !ns && t.overdue !== null && !d.reviews.paused;
-      n.core.setAttribute('fill', ns ? '#1d1a44' : SKY.col[lvl]);
-      n.core.setAttribute('stroke', ns ? '#8f84d8' : 'none');
-      n.halo.setAttribute('fill', `url(#${this.id}h${lvl})`);
-      n.shine.setAttribute('opacity', ns ? 0 : .75);
-      if (n.ct) n.ct.setAttribute('fill', ns ? '#d9d5ff' : '#140d22');
-      n.mist.setAttribute('opacity', ms ? 1 : 0);
-      n.slip.setAttribute('opacity', o.today && t.slip ? 1 : 0);
-      n.ready.style.display = o.today && ready[i] ? '' : 'none';
-      const mark = o.sel === i ? 'sel' : o.cur === i ? 'cur' : '';
-      n.mark.setAttribute('opacity', mark ? 1 : 0);
-      n.mark.setAttribute('stroke', mark === 'cur' ? SKY.warm : '#ffffff');
-      n.needs = n.late || !!ms || (o.today && t.slip) || (o.today && ready[i]);
-      const state = ns ? (ready[i] ? 'ready to learn' : 'not started') : `${LEVEL[t.level] ?? ''}, ${Math.round(f * 100)} percent fresh${n.late ? ', review due' : ''}`;
-      n.g.setAttribute('aria-label', `${t.topic}: ${state}${ms ? ', open mistake' : ''}`);
-    });
-    for (const e of this.edges) {
-      const lit = (o.fresh[e.a] ?? 0) >= .5 && (o.fresh[e.b] ?? 0) >= .5;
-      e.flow.setAttribute('opacity', lit ? .85 : 0);
-      e.base.setAttribute('opacity', lit ? .3 : .42);
-    }
-    // today's route: numbered gold badges in the plan's order, joined by a moving gold line
-    const route = o.route ?? [];
-    this.nodes.forEach(n => { n.badge.style.display = 'none'; });
-    route.forEach(({ i, n }) => { const nd = this.nodes[i]; nd.badge.style.display = ''; nd.bt.textContent = n; });
-    const pts = route.map(r => this.L.pts[r.i]);
-    this.routePath.setAttribute('d', pts.length > 1 ? pts.map((p, k) => k ? `Q${(pts[k - 1].x + p.x) / 2},${Math.min(pts[k - 1].y, p.y) - 40} ${p.x},${p.y}` : `M${p.x},${p.y}`).join(' ') : '');
-    this.applyLenses();
-    this.applyHover();
-    if (this.needFit) this.fit();
+    this.ready = readyOf(d);
+    this.late = d.topics.map((t, i) => o.today && o.fresh[i] != null && t.overdue !== null && !d.reviews.paused);
+    this.route = new Map((o.route ?? []).map(r => [r.i, r.n]));
+    this.renderLegend();
+    this.renderList();
+    this.dirty = true;
   }
 
-  build(d) {
-    const L = this.L = skyLayout(d), id = this.id, side = this.opts.side;
-    this.key = skyKey(d); this.d = d; this.hover = null;
+  build(d, key) {
+    this.key = key; this.d = d; this.hover = null; this.M = brainModel(d);
+    const side = this.opts.side;
     this.el.innerHTML = `<div class="sky">
       <div class="night-bar"><span class="ttl"></span>
-        <div class="lenses" role="group" aria-label="Map layers">
-          <button class="lens" data-lens="glow" title="Brighter = fresher in memory; flickers when a review is due"><i></i>Memory glow</button>
-          <button class="lens" data-lens="focus" title="Dim everything that is fine right now"><i></i>Needs work</button>
-          <button class="lens" data-lens="route" title="Today's picks, in order"><i></i>Today's route</button></div>
-        <span class="map-tools"><button class="zoom" data-sky-zoom="-1" aria-label="Zoom out">−</button><button class="zoom" data-sky-zoom="1" aria-label="Zoom in">+</button>
-          <button class="zoom" data-sky-fit aria-label="Show the whole map" title="Show the whole map">⤢</button>${side ? '<button class="zoom" data-map-close aria-label="Close the map">×</button>' : ''}</span></div>
-      <div class="sky-stage"><svg class="sky-svg" role="group" aria-label="${esc(d.name)} course map"></svg><div class="sky-tip" hidden></div>
-        <div class="sky-hint">scroll to zoom · drag to move · click a topic</div></div>
-      ${side ? '' : `<div class="sky-legend">
-        <span><i style="background:${SKY.col[4]};box-shadow:0 0 10px ${SKY.col[4]}"></i>brighter = fresher in memory</span>
-        <span><i style="border:2px solid ${SKY.due}"></i>flickers: review due</span>
-        <span><i style="border:1px dashed #8f84d8"></i>not started</span>
-        <span><i class="breathe" style="border:2px solid ${SKY.ready}"></i>ready to learn</span>
-        <span><i style="background:${SKY.due};width:8px;height:8px"></i>open mistake</span>
-        <span><i style="background:${SKY.flow};border-radius:2px;height:3px;width:16px"></i>flows: needed before</span>
-        <span><i style="background:${SKY.warm};color:#1a0e00;font:800 8px/10px var(--sans);text-align:center">1</i>today's route</span>
-        <span>colour: ${[1, 2, 3, 4, 5].map(k => `<i style="background:${SKY.col[k]}" title="${LEVEL[k]}"></i>`).join('')} seen → mastered</span></div>`}</div>`;
+        <span class="map-tools"><button class="zoom names" data-brain-names aria-pressed="${brainNames.on}" title="Show every topic name" aria-label="Show every topic name">Aa</button>
+          <button class="zoom" data-sky-fit aria-label="Reset the view" title="Reset the view">⤢</button>${side ? '<button class="zoom" data-map-close aria-label="Close the map">×</button>' : ''}</span></div>
+      <div class="sky-stage"><canvas class="brain-cv" aria-hidden="true"></canvas><div class="sky-tip" hidden></div>
+        <div class="brain-list vh" role="group" aria-label="${esc(d.name)} topics"></div>
+        ${side ? '' : '<div class="brain-legend"></div>'}
+        <div class="sky-hint">drag to turn · scroll to zoom · click a topic</div></div></div>`;
     this.root = this.el.firstElementChild;
     this.ttl = this.root.querySelector('.ttl');
     this.stage = this.root.querySelector('.sky-stage');
+    this.cv = this.root.querySelector('canvas');
     this.tip = this.root.querySelector('.sky-tip');
-    const svg = this.svg = this.root.querySelector('svg'), defs = svgEl('defs', {}, svg);
-    const rg = (gid, stops) => { const g = svgEl('radialGradient', { id: gid }, defs); stops.forEach(([o, c, a]) => svgEl('stop', { offset: o, 'stop-color': c, 'stop-opacity': a }, g)); };
-    SKY.col.forEach((c, i) => rg(`${id}h${i}`, [[0, c, .7], [.4, c, .22], [1, c, 0]]));
-    rg(`${id}core`, [[0, '#ffffff', 1], [1, '#ffffff', 0]]);
-    const bg = svgEl('linearGradient', { id: `${id}bg`, x1: 0, x2: 1, y1: 0, y2: 1 }, defs);
-    [[0, '#0d0b28'], [.6, '#120e2e'], [1, '#0a1729']].forEach(([o, c]) => svgEl('stop', { offset: o, 'stop-color': c }, bg));
-    svgEl('rect', { width: '100%', height: '100%', fill: `url(#${id}bg)` }, svg);
-    const stars = svgEl('g', { 'aria-hidden': 'true' }, svg);
-    for (let i = 0; i < 90; i++) svgEl('circle', { cx: `${((Math.sin(i * 91.7) * .5 + .5) * 100).toFixed(2)}%`, cy: `${((Math.sin(i * 47.3 + 1) * .5 + .5) * 100).toFixed(2)}%`,
-      r: .4 + (i % 5) * .22, fill: '#fff', opacity: .12 + (i % 4) * .1, class: i % 3 ? '' : 'breathe', style: `animation-delay:${(i % 9) * .35}s` }, stars);
-    this.world = svgEl('g', {}, svg);
-    const gl = svgEl('g', { 'aria-hidden': 'true' }, this.world), gr = svgEl('g', { 'aria-hidden': 'true' }, this.world), gn = svgEl('g', {}, this.world);
-    this.texts = [];
-    const txt = (parent, px, attrs, s) => { const t = svgEl('text', attrs, parent, s); this.texts.push([t, px]); return t; };
-    this.edges = d.links.map(([a, b]) => {
-      const p = L.pts[a], q = L.pts[b], dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1, bend = .16;
-      const cx = (p.x + q.x) / 2 - dy * bend, cy = (p.y + q.y) / 2 + dx * bend;
-      const path = `M${p.x},${p.y} Q${cx},${cy} ${q.x},${q.y}`;
-      // a small chevron just before the target shows the direction even when nothing flows
-      const u = 1 - (R0 + 9) / len, tx = (1 - u) ** 2 * p.x + 2 * (1 - u) * u * cx + u * u * q.x, ty = (1 - u) ** 2 * p.y + 2 * (1 - u) * u * cy + u * u * q.y;
-      const ang = Math.atan2(q.y - cy, q.x - cx) * 180 / Math.PI;
-      const base = svgEl('g', {}, gl);
-      svgEl('path', { d: path, fill: 'none', stroke: '#8f84d8', 'stroke-width': 1.3, 'vector-effect': 'non-scaling-stroke' }, base);
-      svgEl('path', { d: 'M-5,-4 L1,0 L-5,4', fill: 'none', stroke: '#8f84d8', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-        transform: `translate(${tx},${ty}) rotate(${ang})`, 'vector-effect': 'non-scaling-stroke' }, base);
-      const flow = svgEl('path', { d: path, fill: 'none', stroke: SKY.flow, 'stroke-width': 2, 'stroke-dasharray': '2 8', 'stroke-linecap': 'round', class: 'flow', 'vector-effect': 'non-scaling-stroke' }, gl);
-      return { a, b, base, flow };
-    });
-    this.routePath = svgEl('path', { fill: 'none', stroke: SKY.warm, 'stroke-width': 2.5, 'stroke-dasharray': '7 7', 'stroke-linecap': 'round', class: 'route', opacity: .85, 'vector-effect': 'non-scaling-stroke' }, gr);
-    this.nodes = d.topics.map((t, i) => {
-      const { x, y } = L.pts[i], g = svgEl('g', { class: 'nd', 'data-sky-node': i, tabindex: 0, role: 'button' }, gn);
-      const halo = svgEl('circle', { cx: x, cy: y, r: R0 * 3 }, g);
-      const ready = svgEl('circle', { cx: x, cy: y, r: R0 + 6, fill: 'none', stroke: SKY.ready, 'stroke-width': 1.8, class: 'breathe', 'vector-effect': 'non-scaling-stroke' }, g);
-      const ring = svgEl('circle', { cx: x, cy: y, r: R0 + 4, fill: 'none', stroke: SKY.due, 'stroke-width': 2, opacity: 0, 'vector-effect': 'non-scaling-stroke' }, g);
-      const mark = svgEl('circle', { cx: x, cy: y, r: R0 + 9, fill: 'none', 'stroke-width': 2, opacity: 0, 'vector-effect': 'non-scaling-stroke' }, g);
-      const core = svgEl('circle', { cx: x, cy: y, r: R0, 'stroke-dasharray': '2 2', 'vector-effect': 'non-scaling-stroke' }, g);
-      const shine = svgEl('circle', { cx: x - R0 * .3, cy: y - R0 * .3, r: R0 * .6, fill: `url(#${id}core)` }, g);
-      const code = codeOf(t.topic);
-      const ct = code ? txt(g, 10, { x, y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-weight': 800, style: 'stroke:none' }, code) : null;
-      const lab = txt(g, 11.5, { x, y: y + R0 + 6, 'text-anchor': 'middle', 'dominant-baseline': 'hanging', fill: '#dedbff', 'font-weight': 600 }, labelOf(t.topic));
-      const mx = x + R0 * .78, my = y - R0 * .78;
-      const mist = svgEl('circle', { cx: x - R0 * .78, cy: my, r: 4.2, fill: SKY.due, stroke: '#0b0a24', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }, g);
-      const slip = svgEl('rect', { x: x - R0 * .78 - 3.5, y: y + R0 * .78 - 3.5, width: 7, height: 7, fill: SKY.due, transform: `rotate(45 ${x - R0 * .78} ${y + R0 * .78})` }, g);
-      const badge = svgEl('g', {}, g);
-      svgEl('circle', { cx: mx + 2, cy: my - 2, r: 8, fill: SKY.warm }, badge);
-      const bt = svgEl('text', { x: mx + 2, y: my - 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 10, 'font-weight': 800, fill: '#1a0e00', style: 'stroke:none' }, badge);
-      return { g, halo, ready, ring, mark, core, shine, ct, lab, mist, slip, badge, bt, x, y, f: null, late: false, needs: false };
-    });
+    this.list = this.root.querySelector('.brain-list');
+    this.legend = this.root.querySelector('.brain-legend');
     this.bind();
-    const saved = this.views[d.name];
-    if (saved) { this.t = { ...saved }; this.moved = true; this.applyView(); } else { this.moved = false; this.fit(); }
   }
 
-  // ---- view: pan and zoom ----
-  size() { return [this.stage.clientWidth, this.stage.clientHeight]; }
-  applyView() {
-    const { x, y, k } = this.t;
-    this.world.setAttribute('transform', `translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${k.toFixed(4)})`);
-    for (const [t, px] of this.texts) t.setAttribute('font-size', (px / Math.max(k, .55)).toFixed(2));
-    this.labelsShown = k >= .5;
-    this.applyHover();
-    this.views[this.d.name] = { ...this.t };
+  renderLegend() {
+    if (!this.legend) return;
+    const d = this.d, M = this.M, lit = i => this.o.fresh[i] != null;
+    const n = d.topics.filter((_, i) => lit(i)).length, links = d.links.filter(([a, b]) => lit(a) && lit(b)).length;
+    this.legend.innerHTML = `<div class="bl-top"><div><b>${n}</b><small>topics learned</small></div><div><b>${links}</b><small>connections</small></div></div>
+      ${M.labels.map((lab, g) => { const idx = M.region.map((r, i) => r === g ? i : -1).filter(i => i >= 0);
+        return `<div class="bl-row"><span><i class="shp ${LOBES[g].shape}" style="--c:${LOBES[g].col}"></i>${esc(lab)}</span><em>${idx.filter(lit).length}/${idx.length}</em></div>`; }).join('')}
+      <div class="bl-key">brighter = fresher · dashed ring = review due · hollow = not started${this.route.size ? ' · numbers = today' : ''}</div>`;
   }
-  fit(animate) {
-    const [W, H] = this.size();
-    if (!W || !H) { this.needFit = true; return; }
-    this.needFit = false;
-    const b = this.L.box, pad = 70, bw = b.x1 - b.x0 + pad * 2, bh = b.y1 - b.y0 + pad * 2;
-    const k = Math.max(.2, Math.min(W / bw, H / bh, 1.5));
-    const to = { k, x: W / 2 - (b.x0 + b.x1) / 2 * k, y: H / 2 - (b.y0 + b.y1) / 2 * k };
-    animate ? this.animateTo(to) : (this.t = to, this.applyView());
-    this.moved = false;
+
+  renderList() {
+    const d = this.d;
+    this.list.innerHTML = d.topics.map((t, i) => {
+      const f = this.o.fresh[i], state = f == null ? (this.ready[i] ? 'ready to learn' : 'not started') : `${LEVEL[t.level] ?? ''}, ${Math.round(f * 100)} percent fresh${this.late[i] ? ', review due' : ''}`;
+      return `<button data-sky-node="${i}" aria-label="${esc(t.topic)}: ${esc(state)}">${esc(t.topic)}</button>`;
+    }).join('');
   }
-  zoomAt(px, py, f) {
-    const k = Math.max(.2, Math.min(4, this.t.k * f)), wx = (px - this.t.x) / this.t.k, wy = (py - this.t.y) / this.t.k;
-    this.t = { k, x: px - wx * k, y: py - wy * k }; this.moved = true; this.applyView();
-  }
-  animateTo(to) {
-    cancelAnimationFrame(this.anim);
-    if (reduceMotion.matches) { this.t = to; this.applyView(); return; }
-    const from = { ...this.t }, t0 = performance.now(), ms = 650;
-    const step = now => {
-      const p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3);
-      this.t = { k: from.k + (to.k - from.k) * e, x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
-      this.applyView();
-      if (p < 1) this.anim = requestAnimationFrame(step);
-    };
-    this.anim = requestAnimationFrame(step);
-  }
+
+  // ---- camera ----
+  fit() { this.goal = { rot: .6, tilt: -.18, zoom: 1 }; this.idle = 0; }
   flyTo(i) {
-    const n = this.nodes?.[i], [W, H] = this.size();
-    if (!n || !W) return;
-    const k = Math.max(this.t.k, 1.2);
-    this.moved = true;
-    this.animateTo({ k, x: W / 2 - n.x * k, y: H / 2 - n.y * k });
+    const p = this.M?.P[i];
+    if (!p) return;
+    let rot = Math.atan2(-p[0], p[2]) + Math.PI;
+    while (rot - this.cam.rot > Math.PI) rot -= 2 * Math.PI;
+    while (rot - this.cam.rot < -Math.PI) rot += 2 * Math.PI;
+    this.goal = { rot, tilt: -.12, zoom: 1.35 }; this.idle = 0;
+  }
+
+  project(p) {
+    const { rot, tilt, zoom } = this.cam, W = this.W, H = this.H, sc = Math.min(W * .36, H * .72) * zoom, cx = W / 2 + (this.legend && W > 700 ? 80 : 0);
+    const ca = Math.cos(rot), sa = Math.sin(rot), ct = Math.cos(tilt), st = Math.sin(tilt);
+    const x1 = p[0] * ca + p[2] * sa, z1 = -p[0] * sa + p[2] * ca, y1 = p[1] * ct - z1 * st, z2 = p[1] * st + z1 * ct, k = 3 / (3 + z2);
+    return { X: cx + x1 * sc * k, Y: H * .47 - y1 * sc * k, k, z: z2 };
   }
 
   // ---- hover: light up what a topic needs and what it unlocks, dim the rest ----
@@ -921,100 +872,163 @@ class Sky {
   }
   setHover(i, from) {
     if (this.hover === i) return;
-    this.hover = i;
-    this.applyHover();
+    this.hover = i; this.idle = 0; this.dirty = true;
     if (i === null) this.tip.hidden = true; else this.showTip(i);
     if (from !== 'outside') this.opts.onHover?.(i);
   }
-  applyHover() {
-    if (!this.nodes) return;
-    const rel = this.hover === null ? null : this.related(this.hover);
-    this.nodes.forEach((n, i) => {
-      const dim = rel ? !rel.has(i) : lenses.focus && !n.needs && this.o?.sel !== i;
-      n.g.classList.toggle('dim', dim);
-      n.lab.style.display = this.labelsShown || (rel && rel.has(i)) || this.o?.sel === i || this.o?.cur === i || n.badge.style.display !== 'none' ? '' : 'none';
-    });
-    for (const e of this.edges) {
-      const on = !rel || (rel.has(e.a) && rel.has(e.b));
-      e.base.style.opacity = on ? '' : .08;
-      e.flow.style.opacity = on ? '' : 0;
-    }
-  }
   showTip(i) {
-    const d = this.d, t = d.topics[i], n = this.nodes[i], f = n.f, ms = this.o.today ? mistakesFor(d, t).length : 0;
+    const d = this.d, t = d.topics[i], f = this.o.fresh[i], ms = this.o.today ? mistakesFor(d, t).length : 0;
     const need = needsOf(d, i).map(k => labelOf(d.topics[k].topic, 30)), unl = unlocksOf(d, i).map(k => labelOf(d.topics[k].topic, 30));
-    this.tip.innerHTML = `<b>${esc(t.topic)}</b>
-      ${f === null ? (readyOf(d)[i] ? 'Not started · <span style="color:#c9b8ff">ready to learn</span>' : 'Not started yet')
+    const where = this.M.labels[this.M.region[i]];
+    this.tip.innerHTML = `<b>${esc(t.topic)}</b><span class="where">${esc(where)}</span>
+      ${f == null ? (this.ready[i] ? 'Not started · <span style="color:#c9b8ff">ready to learn</span>' : 'Not started yet')
         : `${esc(LEVEL[t.level] ?? '')} · ${Math.round(f * 100)}% fresh`}
-      ${n.late ? `<br><span class="late">review ${esc(lateText(t))}</span>` : t.next && f !== null ? `<br>next review ${esc(fmtDay(t.next))}` : ''}
+      ${this.late[i] ? `<br><span class="late">review ${esc(lateText(t))}</span>` : t.next && f != null ? `<br>next review ${esc(fmtDay(t.next))}` : ''}
       ${ms ? `<br><span class="late">${ms} open mistake${ms > 1 ? 's' : ''}</span>` : ''}
       ${need.length ? `<br>needs: ${esc(need.join(', '))}` : ''}${unl.length ? `<br>unlocks: ${esc(unl.join(', '))}` : ''}`;
     this.tip.hidden = false;
-    const [W] = this.size(), sx = this.t.x + n.x * this.t.k, sy = this.t.y + n.y * this.t.k, w = this.tip.offsetWidth;
-    this.tip.style.left = Math.max(8, Math.min(W - w - 8, sx + 18)) + 'px';
-    this.tip.style.top = Math.max(8, sy - 18 - this.tip.offsetHeight) + 'px';
+    this.placeTip();
+  }
+  placeTip() {
+    if (this.hover === null || this.tip.hidden || !this.proj) return;
+    const q = this.proj[this.hover], w = this.tip.offsetWidth;
+    this.tip.style.left = Math.max(8, Math.min(this.W - w - 8, q.X + 18)) + 'px';
+    this.tip.style.top = Math.max(8, q.Y - 18 - this.tip.offsetHeight) + 'px';
   }
 
-  applyLenses() {
-    if (!this.root) return;
-    this.root.querySelectorAll('[data-lens]').forEach(b => b.setAttribute('aria-pressed', lenses[b.dataset.lens] ? 'true' : 'false'));
-    this.routePath.style.display = lenses.route ? '' : 'none';
-    if (!lenses.route) this.nodes.forEach(n => { n.badge.style.display = 'none'; });
-    this.applyHover();
-  }
-
-  tick(s) {
-    for (let i = 0; i < this.nodes.length; i++) {
-      const n = this.nodes[i];
-      if (n.f === null || !lenses.glow) {
-        n.halo.setAttribute('opacity', 0); n.core.setAttribute('opacity', 1);
-        n.ring.setAttribute('opacity', n.late && !lenses.glow ? .9 : 0);
-        continue;
-      }
-      let R = n.f;
-      if (n.late) R *= 1 - .5 * flick(s, i);
-      n.halo.setAttribute('r', (R0 * (1.5 + 2.8 * R)).toFixed(2));
-      n.halo.setAttribute('opacity', (.25 + .75 * R).toFixed(3));
-      n.core.setAttribute('opacity', (.5 + .5 * R).toFixed(3));
-      n.ring.setAttribute('opacity', n.late ? (.45 + .5 * flick(s * .7, i + 2)).toFixed(3) : 0);
+  // ---- drawing ----
+  frame(dt, now) {
+    const cv = this.cv, W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;
+    const still = reduceMotion.matches;
+    this.idle += dt;
+    let moving = false;
+    if (this.goal) {
+      const e = still ? 1 : 1 - Math.pow(.0015, dt);
+      for (const k of ['rot', 'tilt', 'zoom']) this.cam[k] += (this.goal[k] - this.cam[k]) * e;
+      if (Math.abs(this.goal.rot - this.cam.rot) + Math.abs(this.goal.zoom - this.cam.zoom) < .002) this.goal = null;
+      moving = true;
+    } else if (!still && !this.drag && this.hover === null && !(this.o.sel >= 0) && this.idle > 2.5) {
+      this.cam.rot += .1 * Math.min(1, (this.idle - 2.5) / 2) * dt; moving = true;
     }
+    this.pulses = this.pulses.filter(p => now - p.t0 < 1800);
+    if (!moving && !this.dirty && !this.pulses.length && W === this.W && H === this.H) return;
+    this.dirty = false;
+    const dpr = devicePixelRatio || 1;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    this.W = W; this.H = H;
+    const g = cv.getContext('2d'), d = this.d, o = this.o, M = this.M;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = 'rgba(205,210,225,.2)';
+    for (const p of M.shell) { const q = this.project(p), s = 1.5 * q.k; g.globalAlpha = Math.max(.25, Math.min(1, 1.15 - q.z * .9)); g.fillRect(q.X, q.Y, s, s); }
+    g.globalAlpha = 1;
+    const proj = this.proj = M.P.map(p => this.project(p));
+    const rel = this.hover === null ? null : this.related(this.hover);
+    const lit = i => o.fresh[i] != null, col = i => LOBES[M.region[i]].col;
+    for (const [a, b] of d.links) {
+      const hot = rel && rel.has(a) && rel.has(b);
+      g.strokeStyle = hot ? col(b) : '#ffffff';
+      g.globalAlpha = hot ? .95 : rel ? .05 : lit(a) && lit(b) ? .3 : .1;
+      g.lineWidth = hot ? 1.8 : 1;
+      g.beginPath(); g.moveTo(proj[a].X, proj[a].Y); g.lineTo(proj[b].X, proj[b].Y); g.stroke();
+    }
+    g.globalAlpha = 1;
+    for (const pu of this.pulses) {
+      const b = proj[pu.i], e = (now - pu.t0) / 1000;
+      for (const j of needsOf(d, pu.i)) {
+        const f = Math.min(1, e / .75); if (f >= 1) break;
+        const a = proj[j]; g.fillStyle = col(pu.i); g.beginPath(); g.arc(a.X + (b.X - a.X) * f, a.Y + (b.Y - a.Y) * f, 4, 0, 6.283); g.fill();
+      }
+      if (e > .7) { const f = Math.min(1, (e - .7) / 1); g.strokeStyle = col(pu.i); g.globalAlpha = 1 - f; g.lineWidth = 2; g.beginPath(); g.arc(b.X, b.Y, 8 + f * 34, 0, 6.283); g.stroke(); g.globalAlpha = 1; }
+    }
+    const shape = (kind, x, y, r) => {
+      g.beginPath();
+      if (kind === 'square') g.rect(x - r * .85, y - r * .85, r * 1.7, r * 1.7);
+      else if (kind === 'diamond') { g.moveTo(x, y - r * 1.15); g.lineTo(x + r * 1.15, y); g.lineTo(x, y + r * 1.15); g.lineTo(x - r * 1.15, y); g.closePath(); }
+      else if (kind === 'triangle') { g.moveTo(x, y - r * 1.2); g.lineTo(x + r * 1.1, y + r * .8); g.lineTo(x - r * 1.1, y + r * .8); g.closePath(); }
+      else if (kind === 'hex' || kind === 'pent') {
+        const m = kind === 'hex' ? 6 : 5;
+        for (let k = 0; k < m; k++) { const an = 2 * Math.PI / m * k - Math.PI / 2, px = x + Math.cos(an) * r * 1.05, py = y + Math.sin(an) * r * 1.05; k ? g.lineTo(px, py) : g.moveTo(px, py); }
+        g.closePath();
+      } else g.arc(x, y, r, 0, 6.283);
+    };
+    const order = proj.map((_, i) => i).sort((a, b) => proj[b].z - proj[a].z);
+    for (const i of order) {
+      const t = d.topics[i], q = proj[i], L = LOBES[M.region[i]], f = o.fresh[i], dim = rel && !rel.has(i);
+      const r = (f != null ? 5 + Math.max(0, Math.min(t.level, 5)) * 1.4 : 4.5) * q.k;
+      g.globalAlpha = dim ? .15 : 1;
+      shape(L.shape, q.X, q.Y, r);
+      if (f != null) { g.fillStyle = L.col; g.globalAlpha *= .3 + .7 * f; g.fill(); g.globalAlpha = dim ? .15 : 1; }
+      else { g.strokeStyle = this.ready[i] ? '#b9a6ff' : '#6b6d7a'; g.lineWidth = this.ready[i] ? 1.6 : 1.2; g.setLineDash(this.ready[i] ? [] : [2, 2]); g.stroke(); g.setLineDash([]); }
+      if (this.late[i]) { g.strokeStyle = L.col; g.lineWidth = 1.2; g.setLineDash([3, 3]); shape(L.shape, q.X, q.Y, r + 5); g.stroke(); g.setLineDash([]); }
+      if (o.today && mistakesFor(d, t).length) { g.fillStyle = '#ff6b6b'; g.beginPath(); g.arc(q.X - r, q.Y - r, 3, 0, 6.283); g.fill(); }
+      const mark = i === o.sel || i === this.hover ? '#ffffff' : i === o.cur ? SKY.warm : null;
+      if (mark) { g.strokeStyle = mark; g.lineWidth = 1.6; shape(L.shape, q.X, q.Y, r + 3); g.stroke(); }
+      const n = this.route.get(i);
+      if (n) {
+        g.fillStyle = SKY.warm; g.beginPath(); g.arc(q.X + r + 3, q.Y - r - 3, 7.5, 0, 6.283); g.fill();
+        g.fillStyle = '#1a0e00'; g.font = '800 10px ' + getComputedStyle(this.stage).fontFamily; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(n, q.X + r + 3, q.Y - r - 2.5); g.textAlign = 'start';
+      }
+    }
+    g.globalAlpha = 1;
+    g.font = '600 12px ' + getComputedStyle(this.stage).fontFamily; g.textBaseline = 'middle';
+    d.topics.forEach((t, i) => {
+      const show = i === this.hover || i === o.sel || i === o.cur || this.route.has(i) || (rel && rel.has(i)) || brainNames.on;
+      if (!show) return;
+      const q = proj[i], txt = labelOf(t.topic, 26), w = g.measureText(txt).width;
+      g.fillStyle = 'rgba(18,19,24,.86)'; g.fillRect(q.X + 10, q.Y - 10, w + 12, 20);
+      g.fillStyle = '#eef0f6'; g.fillText(txt, q.X + 16, q.Y);
+    });
+    this.placeTip();
   }
 
   bind() {
-    const svg = this.svg, ptrs = new Map();
+    const cv = this.cv, ptrs = new Map();
     let down = null;
-    const local = e => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-    const nodeAt = e => { const g = e.target.closest?.('[data-sky-node]'); return g ? +g.dataset.skyNode : null; };
-    svg.addEventListener('wheel', e => {
+    const local = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const nodeAt = ([x, y]) => {
+      let best = null, bd = 16;
+      (this.proj || []).forEach((q, i) => { const dd = Math.hypot(q.X - x, q.Y - y); if (dd < bd) { bd = dd; best = i; } });
+      return best;
+    };
+    cv.addEventListener('wheel', e => {
       e.preventDefault();
-      const [x, y] = local(e);
-      this.zoomAt(x, y, Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016)));
+      this.cam.zoom = Math.max(.6, Math.min(3, this.cam.zoom * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016))));
+      this.goal = null; this.idle = 0; this.dirty = true;
     }, { passive: false });
-    svg.addEventListener('pointerdown', e => {
+    cv.addEventListener('pointerdown', e => {
       if (e.button) return;
-      svg.setPointerCapture(e.pointerId);
+      cv.setPointerCapture(e.pointerId);
       ptrs.set(e.pointerId, local(e));
-      if (ptrs.size === 1) down = { at: local(e), node: nodeAt(e), moved: 0 };
+      if (ptrs.size === 1) down = { at: local(e), node: nodeAt(local(e)), moved: 0 };
+      this.goal = null; this.idle = 0;
     });
-    svg.addEventListener('pointermove', e => {
-      if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') this.setHover(nodeAt(e)); return; }
+    cv.addEventListener('pointermove', e => {
+      if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') { const i = nodeAt(local(e)); this.setHover(i); cv.style.cursor = i === null ? '' : 'pointer'; } return; }
       const prev = ptrs.get(e.pointerId), cur = local(e);
       if (ptrs.size === 1) {
-        this.t = { ...this.t, x: this.t.x + cur[0] - prev[0], y: this.t.y + cur[1] - prev[1] };
         if (down) down.moved += Math.abs(cur[0] - prev[0]) + Math.abs(cur[1] - prev[1]);
-        if (down && down.moved > 4) { svg.classList.add('drag'); this.moved = true; this.setHover(null); this.applyView(); }
+        if (down && down.moved > 4) {
+          this.drag = true; cv.classList.add('drag'); this.setHover(null);
+          this.cam.rot += (cur[0] - prev[0]) * .008;
+          this.cam.tilt = Math.max(-.9, Math.min(.9, this.cam.tilt + (cur[1] - prev[1]) * .006));
+          this.dirty = true;
+        }
       } else if (ptrs.size === 2) {
         const other = [...ptrs].find(([k]) => k !== e.pointerId)[1];
         const d0 = Math.hypot(prev[0] - other[0], prev[1] - other[1]) || 1, d1 = Math.hypot(cur[0] - other[0], cur[1] - other[1]);
-        this.zoomAt((cur[0] + other[0]) / 2, (cur[1] + other[1]) / 2, d1 / d0);
+        this.cam.zoom = Math.max(.6, Math.min(3, this.cam.zoom * d1 / d0)); this.dirty = true;
         if (down) down.moved = 99;
       }
       ptrs.set(e.pointerId, cur);
+      this.idle = 0;
     });
     const end = e => {
       if (!ptrs.delete(e.pointerId)) return;
       if (!ptrs.size) {
-        svg.classList.remove('drag');
+        cv.classList.remove('drag'); this.drag = false;
         if (down && down.moved <= 4 && e.type === 'pointerup') {
           if (down.node !== null) this.opts.onPick?.(down.node);
           else this.setHover(null);
@@ -1022,36 +1036,30 @@ class Sky {
         down = null;
       }
     };
-    svg.addEventListener('pointerup', end);
-    svg.addEventListener('pointercancel', end);
-    svg.addEventListener('pointerleave', e => { if (!ptrs.size && e.pointerType === 'mouse') this.setHover(null); });
-    svg.addEventListener('focusin', e => { const i = nodeAt(e); if (i !== null) this.setHover(i); });
-    svg.addEventListener('focusout', () => this.setHover(null));
-    svg.addEventListener('keydown', e => {
-      const i = nodeAt(e);
-      if (i !== null && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.opts.onPick?.(i); }
-    });
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+    cv.addEventListener('pointerleave', e => { if (!ptrs.size && e.pointerType === 'mouse') this.setHover(null); });
+    this.list.addEventListener('focusin', e => { const b = e.target.closest('[data-sky-node]'); if (b) { this.setHover(+b.dataset.skyNode); this.flyTo(+b.dataset.skyNode); } });
+    this.list.addEventListener('focusout', () => this.setHover(null));
+    this.list.addEventListener('click', e => { const b = e.target.closest('[data-sky-node]'); if (b) this.opts.onPick?.(+b.dataset.skyNode); });
     this.root.addEventListener('click', e => {
-      const lens = e.target.closest('[data-lens]');
-      if (lens) {
-        lenses[lens.dataset.lens] = !lenses[lens.dataset.lens];
-        store.set('study-lenses', JSON.stringify(lenses));
-        for (const s of skies) if (s.root && s.o) s.update(s.d, s.o);
+      if (e.target.closest('[data-brain-names]')) {
+        brainNames.on = !brainNames.on;
+        store.set('study-brain-names', brainNames.on ? '1' : '0');
+        for (const b of brains) if (b.root) { b.root.querySelector('[data-brain-names]')?.setAttribute('aria-pressed', brainNames.on); b.dirty = true; }
         return;
       }
-      const z = e.target.closest('[data-sky-zoom]');
-      if (z) { const [W, H] = this.size(); this.zoomAt(W / 2, H / 2, +z.dataset.skyZoom > 0 ? 1.3 : 1 / 1.3); return; }
-      if (e.target.closest('[data-sky-fit]')) this.fit(true);
+      if (e.target.closest('[data-sky-fit]')) this.fit();
     });
-    new ResizeObserver(() => { if (this.needFit || !this.moved) this.fit(); }).observe(this.stage);
   }
 }
 
-(function skyTick(ms) {
-  const s = reduceMotion.matches ? 0 : ms / 1000;
-  for (const sky of skies) if (sky.nodes && sky.root?.isConnected && sky.stage.clientWidth) sky.tick(s);
-  requestAnimationFrame(skyTick);
-})(0);
+(function brainTick(ms) {
+  const dt = Math.min(.05, (ms - (brainTick.last ?? ms)) / 1000);
+  brainTick.last = ms;
+  for (const b of brains) if (b.root?.isConnected && b.o) b.frame(dt, ms);
+  requestAnimationFrame(brainTick);
+})(performance.now());
 
 const skyFor = {};
 function skyIn(el, side) {

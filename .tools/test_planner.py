@@ -119,6 +119,23 @@ class Weight(unittest.TestCase):
         self.assertEqual(sd.topic_weight("Something else entirely", self.SYL), 2)
 
 
+class Source(unittest.TestCase):
+    def test_source_key(self):
+        self.assertEqual(sd.source_key("L1 (26 Sep, M. Kleć) [00:33:00]–[00:37:00]"), "L1")
+        self.assertEqual(sd.source_key("Lab3 § Próbkowanie, Zadanie 1"), "Lab3")
+        self.assertEqual(sd.source_key("HW1 `homework/analiza-dzwieku-1/…czesc 1.pdf` p.13"), "HW1")
+        self.assertEqual(sd.source_key("PRI Wykład 0.pdf p.3–6; PRI Wykład 0.mp4 [00:01]"), "PRI Wykład 0")
+        self.assertEqual(sd.source_key("`homework/hw-1/part 1.pdf` p.4"), "part 1")
+        self.assertEqual(sd.source_key("wyklad_1 p.13–19"), "wyklad_1")
+        self.assertEqual(sd.source_key(""), "")
+
+    def test_topic_source(self):
+        syl = sd.parse_syllabus("| # | Topic | Sources | Exam weight |\n|---|---|---|---|\n"
+                                "| 1 | Karnaugh maps: building from a truth table | W3.pdf p.2 | high |\n")
+        self.assertEqual(sd.topic_source("Karnaugh maps", syl), "W3")
+        self.assertEqual(sd.topic_source("Something else", syl), "")
+
+
 class Events(Tmp):
     def test_import_once_and_only_with_started_topics(self):
         topics = sd.parse_progress(progress(("A", 2, "2026-10-01", "2026-10-02", 1), ("B", 0, "", "", "")), TODAY)
