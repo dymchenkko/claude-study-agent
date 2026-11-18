@@ -68,12 +68,34 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01
 .work > [hidden] { display: none !important; }
 .work > .main, .work > .study { flex: 1; min-height: 0; }
 
-/* ---------- modes: one job on screen at a time ---------- */
-.modes { flex: none; display: flex; justify-content: center; padding: 12px 64px 12px 16px; border-bottom: 1px solid var(--line); }
-.modes .seg { border-radius: 12px; background: var(--paper); padding: 3px; gap: 2px; }
-.modes .seg button { min-height: 40px; padding: 0 22px; border-radius: 9px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
-.modes .seg button.on { box-shadow: var(--shadow); color: var(--accent); }
-.modes .live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+/* ---------- one screen: the tutor is home; Progress slides in from the right ---------- */
+.work { position: relative; }
+.work > .study { margin-top: 0; }
+.study > [hidden] { display: none !important; }
+.prog { color: var(--ink); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.prog .live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.tutor header { padding-right: max(var(--gutter), 60px); }
+.scrim { position: absolute; inset: 0; z-index: 5; background: #0a0a0e33; animation: fadein .25s ease both; }
+.progress-panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 6; width: min(1040px, 100%); display: flex; flex-direction: column;
+  background: var(--paper); border-left: 1px solid var(--line); box-shadow: -24px 0 60px -30px #000; animation: slidein .45s cubic-bezier(.05,.7,.1,1) both; }
+.progress-panel[hidden], .scrim[hidden] { display: none; }
+.pp-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 64px 12px 36px; border-bottom: 1px solid var(--line); }
+.pp-head h2 { font-size: 20px; }
+.pp-close { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; width: 34px; height: 34px; font-size: 18px; line-height: 1; }
+.progress-panel .main { flex: 1; min-height: 0; }
+.progress-panel section { margin-top: 28px; }
+@keyframes slidein { from { transform: translateX(48px); } }
+.today-card { max-width: none; margin: 12px var(--gutter) 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); flex: none; }
+.today.today-card .kicker { font-size: 11px; }
+.today.today-card h2 { font-size: 16px; margin: 2px 0 8px; }
+.today.today-card .sub, .today.today-card .note-line { display: none; }
+.today-card .picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.today-card .pick { display: inline-flex; width: auto; max-width: 100%; gap: 8px; padding: 6px 10px 6px 6px; border-radius: 99px; box-shadow: none; }
+.today-card .pick .num { width: 22px; height: 22px; font-size: 12px; flex: none; }
+.today-card .pick .what { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.today-card .pick .why, .today-card .pick .mins { display: none; }
+.today-card .btn { padding: 6px 14px; font-size: 13.5px; }
+.today-card.done .picks, .today-card.done .btn { display: none; }
 .session-notes { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: var(--shadow); }
 .session-notes ul, .session-notes ol { margin: 4px 0 8px; padding-left: 20px; } .session-notes li { margin-bottom: 4px; }
 .session-notes h4 { margin: 12px 0 4px; font-family: var(--head); font-size: 15px; font-weight: 650; }
@@ -359,8 +381,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 }
 @media (max-width: 720px) {
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
-  .modes { padding: 8px 56px 8px 16px; justify-content: flex-start; }
-  .modes .seg button { padding: 0 14px; }
+  .pp-head { padding: 12px 56px 10px 16px; }
   .rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; gap: 8px; overflow-x: auto; padding-right: 56px; }
   .brand { display: none; }
   #subjects { display: flex; gap: 8px; }
@@ -387,43 +408,17 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
   </nav>
 
   <div class="work">
-  <nav class="modes" aria-label="Mode"><div class="seg" id="modes">
-    <button data-view="plan">Plan</button>
-    <button data-view="study">Study</button>
-    <button data-view="reflect">Reflect</button>
-  </div></nav>
-
-  <main class="main" id="view-plan">
-    <div class="today" id="todayPlan"></div>
-    <div id="prompts"></div>
-    <section>
-      <div class="sec-head"><h3>Your rhythm</h3></div>
-      <div id="rhythm"></div>
-    </section>
-    <section>
-      <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
-      <div class="sec-head"><h3>Next three weeks</h3></div>
-      <div class="night" id="timelineBox"></div>
-      <div class="night" id="planSky"></div>
-      <div id="planFocus"></div>
-    </section>
-    <section>
-      <div class="sec-head"><h3>Mistakes to fix</h3><span class="muted" id="mistakeCount"></span></div>
-      <div id="mistakes"></div>
-    </section>
-  </main>
-
-  <section class="study" id="view-study" aria-label="Study" hidden>
+  <section class="study" id="view-study" aria-label="Study">
     <aside class="topic-strip" id="topicStrip" aria-label="Where this topic sits" hidden></aside>
     <div class="tutor" id="tutor">
-      <header><div><h3>Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></div>
+      <header><div><h3 id="tutorTitle">Tutor</h3><div class="muted" id="tutorSub">Answers come from your lectures.</div></div>
         <label class="topic-pick">Topic <select id="topicSel"></select></label>
-        <button class="newchat" id="mapToggle" title="Show the course map beside the chat">Map</button>
+        <button class="newchat prog" id="progressBtn" data-view="progress" title="Your plan, the course brain, what moved">Progress</button>
         <button class="newchat" id="newChat" title="Start a fresh conversation">New chat</button></header>
+      <div class="today today-card" id="todayPlan"></div>
       <div class="log" id="log"></div>
       <div class="quick" id="quick">
-        <button data-cmd="today">Today</button><button data-cmd="review">Review</button>
-        <button data-cmd="quiz">Quiz</button><button data-cmd="status">Status</button>
+        <button data-cmd="review">Review</button><button data-cmd="quiz">Quiz</button>
         <span id="drawBtns"></span>
       </div>
       <div class="compose"><div class="pending" id="pending" aria-label="Files to add"></div><div class="box">
@@ -435,14 +430,26 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
     </div>
     <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize the tutor" tabindex="0" hidden></div>
     <div class="mapside night" id="mapSide" hidden></div>
+    <button class="mapToggle" id="mapToggle" hidden></button>
   </section>
 
-  <main class="main" id="view-reflect" hidden>
-    <div class="head"><h2 id="reflectTitle">Reflect</h2></div>
-    <div id="moved"></div>
-    <div id="notes"></div>
+  <div class="scrim" id="scrim" data-view="study" hidden></div>
+  <aside class="progress-panel" id="progress" aria-label="Progress" hidden>
+    <div class="pp-head"><h2>Progress</h2><button class="pp-close" data-view="study" aria-label="Close progress">×</button></div>
+    <main class="main" id="view-plan">
+    <div id="prompts"></div>
     <section>
-      <div class="sec-head"><h3>Course map</h3>
+      <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
+      <div class="sec-head"><h3>Next three weeks</h3></div>
+      <div class="night" id="timelineBox"></div>
+      <div class="night" id="planSky" hidden></div>
+      <div id="planFocus" hidden></div>
+    </section>
+    <section id="view-reflect">
+      <div class="head"><h2 id="reflectTitle">What moved</h2></div>
+      <div id="moved"></div>
+      <div id="notes"></div>
+      <div class="sec-head"><h3>Course brain</h3>
         <span class="map-tools" id="mapTools"></span>
         <div class="seg" id="mapMode"><button data-mode="map" class="on">Map</button><button data-mode="list">List</button></div></div>
       <div id="replay"></div>
@@ -450,7 +457,16 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
       <div id="map" class="night"></div>
       <div id="focus"></div>
     </section>
-  </main>
+    <section>
+      <div class="sec-head"><h3>Mistakes to fix</h3><span class="muted" id="mistakeCount"></span></div>
+      <div id="mistakes"></div>
+    </section>
+    <section>
+      <div class="sec-head"><h3>Your rhythm</h3></div>
+      <div id="rhythm"></div>
+    </section>
+    </main>
+  </aside>
   </div>
 </div>
 
@@ -463,19 +479,20 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const LEVEL = ['not started', 'seen', 'shaky', 'ok', 'solid', 'mastered'];
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
-let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set(), view: 'plan',
-  day: null, playing: null, mapOpen: store.get('study-map-open') === '1' };
+let state = { list: null, current: null, detail: null, mode: 'map', sel: null, flipped: new Set(), view: 'study',
+  day: null, playing: null, mapOpen: false };
 
 function setView(view) {
-  state.view = view;
-  for (const v of ['plan', 'study', 'reflect']) document.getElementById(`view-${v}`).hidden = v !== view;
-  document.querySelectorAll('#modes button').forEach(b => {
-    const on = b.dataset.view === view;
-    b.classList.toggle('on', on);
-    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
-  });
-  store.set('study-view', view);
-  if (view === 'study') { layoutStudy(); logEl.scrollTop = logEl.scrollHeight; input.focus(); }
+  // One screen: the tutor is always there. 'plan', 'reflect' and 'progress' open the Progress panel.
+  const open = view !== 'study', panel = document.getElementById('progress');
+  state.view = open ? 'progress' : 'study';
+  panel.hidden = !open; document.getElementById('scrim').hidden = !open;
+  document.getElementById('progressBtn').setAttribute('aria-expanded', open);
+  if (open) {
+    if (view === 'reflect') document.getElementById('view-reflect').scrollIntoView({ block: 'start' });
+    else document.getElementById('view-plan').scrollTop = 0;
+    panel.querySelector('.pp-close').focus({ preventScroll: true });
+  } else { layoutStudy(); logEl.scrollTop = logEl.scrollHeight; input.focus(); }
 }
 
 const fmtDay = (iso, opts = { day: 'numeric', month: 'short' }) => new Date(iso + 'T12:00').toLocaleDateString(undefined, opts);
@@ -526,8 +543,9 @@ function renderToday() {
   const head = !left.length ? 'Done for today'
     : rhythm.overdue ? `${rhythm.overdue} topic${rhythm.overdue === 1 ? ' is' : 's are'} overdue. ${left.length === 1 ? 'This one is' : `These ${left.length} are`} enough today.`
     : `Nothing overdue. ${left.length} short pick${left.length === 1 ? '' : 's'} for today.`;
-  const sub = !left.length ? `All ${picks.length} picks finished. Anything more is a bonus. Check Reflect for what moved.`
+  const sub = !left.length ? `All ${picks.length} picks finished. Anything more is a bonus. Open Progress for what moved.`
     : 'Picked from your open mistakes, exam dates and what has waited longest. The rest can wait without you falling behind.';
+  el.classList.toggle('done', !left.length);
   el.innerHTML = `<div class="kicker">Today · about ${left.length * 5} minutes</div><h2>${esc(head)}</h2><p class="sub">${esc(sub)}</p>
     <div class="picks">${picks.map((p, i) => `
       <button class="pick ${p.done ? 'done' : ''}" data-pick="${i}" ${p.done ? 'disabled' : ''}>
@@ -617,8 +635,8 @@ function renderStudyBits() {
   sel.innerHTML = `<option value="">Choose a topic…</option>` +
     d.topics.map(x => `<option ${t && x.topic === t.topic ? 'selected' : ''}>${esc(x.topic)}</option>`).join('');
   const strip = document.getElementById('topicStrip');
-  strip.hidden = !d.links.length;
-  if (d.links.length) {
+  strip.hidden = !d.links.length || !t;
+  if (d.links.length && t) {
     const i = t ? d.topics.indexOf(t) : -1;
     const list = ids => ids.length ? ids.map(k => `<button class="step" data-topic="${esc(d.topics[k].topic)}">${swatch(d.topics[k])}<span>${esc(d.topics[k].topic)}</span></button>`).join('')
       : '<div class="none">nothing</div>';
@@ -676,7 +694,7 @@ function freshAt(d, day) {
   });
 }
 
-// ---------- the course brain: one map, shared by Plan, Reflect and the Study side panel ----------
+// ---------- the course brain: shown in the Progress panel ----------
 // Each lecture/source is a region with its own colour and shape. Brightness = how fresh a topic is in
 // memory (an estimate); a dashed ring = review due. Lines run from a prerequisite to what it unlocks.
 const SKY = { col: ['#6c6a8f', '#ffc861', '#ff8a65', '#5fe0b5', '#4cc3ff', '#c9a8ff'], due: '#ff4f7b', warm: '#ffc861', ready: '#a993ff', flow: '#8fe3ff' };
@@ -773,8 +791,8 @@ const brains = new Set();
 const brainNames = { on: store.get('study-brain-names') === '1' };
 
 // The course brain: drawn on a canvas, turned by dragging, zoomed by scrolling. Built once per subject and
-// updated in place, so the camera survives re-renders. Motion only when something changes, plus a very slow
-// turn when nobody is touching it (off with reduced motion).
+// updated in place, so the camera survives re-renders. It turns slowly on its own and pauses while you hover a
+// topic or drag; a review that makes a topic fresher sends a short pulse. Still with reduced motion.
 class Sky {
   // opts: { side, title(d), onPick(i), onHover(i | null) }
   constructor(el, opts) {
@@ -908,8 +926,9 @@ class Sky {
       for (const k of ['rot', 'tilt', 'zoom']) this.cam[k] += (this.goal[k] - this.cam[k]) * e;
       if (Math.abs(this.goal.rot - this.cam.rot) + Math.abs(this.goal.zoom - this.cam.zoom) < .002) this.goal = null;
       moving = true;
-    } else if (!still && !this.drag && this.hover === null && !(this.o.sel >= 0) && this.idle > 2.5) {
-      this.cam.rot += .1 * Math.min(1, (this.idle - 2.5) / 2) * dt; moving = true;
+    } else if (!still && !this.drag && this.hover === null && this.idle > 1) {
+      // turns on its own like Kumi's brain, about one full turn every 25 s; pauses while you hover or drag
+      this.cam.rot += .25 * Math.min(1, this.idle - 1) * dt; moving = true;
     }
     this.pulses = this.pulses.filter(p => now - p.t0 < 1800);
     if (!moving && !this.dirty && !this.pulses.length && W === this.W && H === this.H) return;
@@ -1087,7 +1106,7 @@ function pickTopic(i, side) {
   if (side) { setTopic(d.name, d.topics[i].topic); renderStudyBits(); return; }
   state.sel = state.sel === i ? null : i;
   renderMap(d); renderPlanMaps(d); renderFocus(d);
-  if (state.sel !== null) document.getElementById(state.view === 'plan' ? 'planFocus' : 'focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (state.sel !== null) document.getElementById('focus').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 // ---------- Plan: the next three weeks as a horizontal timeline, linked to the sky ----------
@@ -1344,10 +1363,10 @@ function md(src) {
 function renderChat() {
   const name = state.current, c = name ? chatFor(name) : null;
   const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 60;
-  const welcome = `<div class="bubble tutor-msg">Pick something from <b>Plan</b>, choose a topic above, or just ask.
+  const welcome = `<div class="bubble tutor-msg">Press <b>Start</b> above for today's picks, choose a topic, or just ask.
     I answer from your own lectures and show where, like <span class="cite">Wykład 2 [00:20:02]</span>.</div>`;
   const ready = state.list?.agentReady !== false ? '' :
-    `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>. Plan and Reflect still work from your files.</div>`;
+    `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>. Progress still works from your files.</div>`;
   logEl.innerHTML = ready + (!c || !c.messages.length ? welcome : c.messages.map(m => {
     if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}</div>`;
     const busy = c.running && m === c.messages[c.messages.length - 1];
@@ -1374,9 +1393,9 @@ function renderChat() {
   document.querySelectorAll('[data-pick], [data-study], [data-gen-links], #quick button').forEach(b => {
     if (!b.classList.contains('done')) b.disabled = running;
   });
-  const study = document.querySelector('#modes [data-view="study"]');
-  study.querySelector('.live')?.remove();
-  if (running) study.insertAdjacentHTML('beforeend', '<span class="live" title="The tutor is working"></span>');
+  const prog = document.getElementById('progressBtn');
+  prog.querySelector('.live')?.remove();
+  if (running) prog.insertAdjacentHTML('beforeend', '<span class="live" title="The tutor is working"></span>');
   document.querySelectorAll('[data-draw]').forEach(b => { b.disabled ||= !currentTopic(); });
 }
 
@@ -1506,7 +1525,7 @@ document.getElementById('mapMode').addEventListener('click', e => {
   document.querySelectorAll('#mapMode button').forEach(x => x.classList.toggle('on', x === b));
   renderMap(state.detail);
 });
-document.getElementById('modes').addEventListener('click', e => {
+document.addEventListener('click', e => {
   const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view);
 });
 document.querySelector('.work').addEventListener('input', e => {
@@ -1553,12 +1572,12 @@ document.querySelector('.work').addEventListener('click', async e => {
   if (node) { pickTopic(+node.dataset.node, false); return; }
   // a timeline row: open that topic and fly the map to it
   const tr = t.closest('[data-ti]');
-  if (tr) { const k = +tr.dataset.ti; if (state.sel !== k) pickTopic(k, false); skyFor.planSky?.flyTo(k); }
+  if (tr) { const k = +tr.dataset.ti; if (state.sel !== k) pickTopic(k, false); skyFor.map?.flyTo(k); }
 });
-// Timeline rows and the Plan map light each other up.
+// Timeline rows and the course brain light each other up.
 {
   const box = document.getElementById('timelineBox');
-  const hl = i => { skyFor.planSky?.setHover(i, 'outside'); box.querySelectorAll('[data-ti]').forEach(r => r.classList.toggle('hl', +r.dataset.ti === i)); };
+  const hl = i => { skyFor.map?.setHover(i, 'outside'); box.querySelectorAll('[data-ti]').forEach(r => r.classList.toggle('hl', +r.dataset.ti === i)); };
   box.addEventListener('pointerover', e => { const r = e.target.closest('[data-ti]'); if (r) hl(+r.dataset.ti); });
   box.addEventListener('pointerleave', () => hl(null));
   box.addEventListener('focusin', e => { const r = e.target.closest('[data-ti]'); if (r) hl(+r.dataset.ti); });
@@ -1600,8 +1619,8 @@ document.getElementById('theme').addEventListener('click', () => {
 { const t = store.get('study-theme'); if (t) document.documentElement.dataset.theme = t; }
 // The tutor edits the files from the terminal too: re-read them when the page gets focus.
 window.addEventListener('focus', () => { if (!state.playing) reload(); });
-const savedView = store.get('study-view');
-setView(['plan', 'study', 'reflect'].includes(savedView) ? savedView : 'plan');
+setView('study');
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.view === 'progress') setView('study'); });
 reload();
 </script>
 </body>
