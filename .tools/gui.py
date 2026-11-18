@@ -59,6 +59,7 @@ def subject_detail(root, name, today):
     for t in topics:
         t["slip"] = sd.topic_key(t["topic"]) in slipping
         t["weight"] = sd.topic_weight(t["topic"], syllabus)
+        t["source"] = sd.topic_source(t["topic"], syllabus)
         t["fresh"] = sd.freshness(days_between(t["last"], today) if t["last"] else None, t["interval"])
     last = sd.last_session(folder)
     started = sum(1 for t in topics if t["level"] > 0 or t["last"])

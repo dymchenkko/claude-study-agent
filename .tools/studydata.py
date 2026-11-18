@@ -140,7 +140,8 @@ def parse_syllabus(md):
     for r in table_rows(md, ["topic", "exam"]):
         if _col(r, "topic"):
             word = (_col(r, "exam").split() or [""])[0].lower().strip("*.,")
-            rows.append({"topic": _col(r, "topic"), "weight": WEIGHTS.get(word, 2)})
+            rows.append({"topic": _col(r, "topic"), "weight": WEIGHTS.get(word, 2),
+                         "source": source_key(_col(r, "source"))})
     return rows
 
 
@@ -151,18 +152,49 @@ def _tokens(s):
     return set(_WORD.findall(str(s).casefold()))
 
 
-def topic_weight(topic, syllabus):
-    """Exam weight of a progress topic: high 3, med 2, low 1, blank or no match 2. Progress names are
-    short forms of the syllabus rows, so match by shared words (at least half of the topic's)."""
+def _syllabus_row(topic, syllabus):
+    """The syllabus row a progress topic belongs to. Progress names are short forms of the syllabus
+    rows, so match by shared words (at least half of the topic's)."""
     words, best, score = _tokens(topic), None, 0.0
     for row in syllabus:
         if same_topic(topic, row["topic"]):
-            return row["weight"]
+            return row
         if words:
             s = len(words & _tokens(row["topic"])) / len(words)
             if s > score:
                 best, score = row, s
-    return best["weight"] if best and score >= 0.5 else 2
+    return best if best and score >= 0.5 else None
+
+
+def topic_weight(topic, syllabus):
+    """Exam weight of a progress topic: high 3, med 2, low 1, blank or no match 2."""
+    row = _syllabus_row(topic, syllabus)
+    return row["weight"] if row else 2
+
+
+def topic_source(topic, syllabus):
+    """Short name of the lecture or file a topic comes from ("L1", "Lab3", "wyklad_2"), or ""."""
+    row = _syllabus_row(topic, syllabus)
+    return row.get("source", "") if row else ""
+
+
+_SRC_CUT = re.compile(r"\s+(?:p\.|pp\.|s\.|slides?\b|§|\(|\[)|[;,]")
+_SRC_CODE = re.compile(r"[A-Za-z]{1,5}\d{1,3}[a-z]?")
+
+
+def source_key(text):
+    """The lecture/file part of a syllabus Sources cell: "L1 (26 Sep) [00:33:00]" -> "L1",
+    "PRI Wykład 0.pdf p.3–6; …" -> "PRI Wykład 0", "`homework/hw-1/part 1.pdf` p.4" -> "part 1"."""
+    s = str(text or "").replace("`", "").strip()
+    if not s:
+        return ""
+    first = s.split()[0]
+    if _SRC_CODE.fullmatch(first):
+        return first
+    s = _SRC_CUT.split(s, 1)[0].strip()
+    s = s.rstrip("/").rsplit("/", 1)[-1]
+    s = re.sub(r"\.(pdf|pptx?|docx?|mp4|m4a|mp3|wav|md|txt|html?)$", "", s, flags=re.I)
+    return s.strip(" …")[:40]
 
 
 # ---------- fields in a subject's CLAUDE.md ----------
