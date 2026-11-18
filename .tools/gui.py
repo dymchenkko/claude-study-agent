@@ -196,28 +196,36 @@ def save_transcript(root, subject, prompt, reply, now=None):
 # ---------- adding lecture materials ----------
 
 MAX_UPLOAD = 4 * 1024 ** 3  # 4 GB: a long lecture video
+MAX_SCREEN = 25 * 1024 ** 2  # 25 MB: a screenshot or a phone photo
+SCREEN_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+SCREEN_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
 
 
-def upload_name(name):
-    """The bare file name to keep, or ValueError. No folders, no hidden files, only types ingest converts."""
+def upload_name(name, kind="material"):
+    """The bare file name to keep, or ValueError. No folders, no hidden files, only types we can use:
+    lecture materials ingest converts, or screenshots the tutor looks at."""
     base = Path(str(name).replace("\\", "/")).name.strip()
     if not base or base.startswith(".") or any(c in base for c in "\0\r\n"):
         raise ValueError("bad file name")
-    if Path(base).suffix.lower() not in sd.MATERIAL_EXT:
-        kinds = ", ".join(sorted(sd.MATERIAL_EXT))
-        raise ValueError(f"{base}: this file type can't be studied yet (use {kinds})")
+    allowed = SCREEN_EXT if kind == "screen" else sd.MATERIAL_EXT
+    if Path(base).suffix.lower() not in allowed:
+        kinds = ", ".join(sorted(allowed))
+        what = "a screenshot" if kind == "screen" else "studied yet"
+        raise ValueError(f"{base}: this file type can't be {what} (use {kinds})")
     return base
 
 
-def save_upload(root, subject, name, stream, length):
-    """Copy `length` bytes from `stream` into <Subject>/materials/. Never overwrites: a clash gets ' (2)'.
+def save_upload(root, subject, name, stream, length, kind="material"):
+    """Copy `length` bytes from `stream` into <Subject>/materials/ (lecture files, ingested later) or
+    <Subject>/screens/ (screenshots for the tutor, never ingested). Never overwrites: a clash gets ' (2)'.
     Written to a hidden temp file first (ingest skips dot files), so a broken upload leaves nothing behind."""
-    base = upload_name(name)
+    base = upload_name(name, kind)
+    limit = MAX_SCREEN if kind == "screen" else MAX_UPLOAD
     if length <= 0:
         raise ValueError(f"{base} is empty")
-    if length > MAX_UPLOAD:
-        raise ValueError(f"{base} is larger than {MAX_UPLOAD // 1024 ** 3} GB")
-    folder = Path(root) / subject / "materials"
+    if length > limit:
+        raise ValueError(f"{base} is larger than {limit // 1024 ** 2} MB" if kind == "screen" else f"{base} is larger than {limit // 1024 ** 3} GB")
+    folder = Path(root) / subject / ("screens" if kind == "screen" else "materials")
     folder.mkdir(parents=True, exist_ok=True)
     tmp = folder / f".upload-{secrets.token_hex(6)}"
     try:
@@ -238,6 +246,15 @@ def save_upload(root, subject, name, stream, length):
         return dest
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def screen_file(root, subject, name):
+    """Path of a saved screenshot, or None. Only bare names inside <Subject>/screens/."""
+    base = Path(str(name)).name
+    if base != str(name) or base.startswith(".") or Path(base).suffix.lower() not in SCREEN_EXT:
+        return None
+    path = Path(root) / subject / "screens" / base
+    return path if path.is_file() else None
 
 
 # ---------- the server ----------
@@ -283,6 +300,13 @@ def make_handler(root, token):
                 if parts[2] not in subject_names(root):
                     return self._json({"error": f"no subject {parts[2]}"}, 404)
                 return self._json(subject_detail(root, parts[2], today))
+            if parts == ["api", "screen"]:  # a screenshot sent to the tutor, shown back in the chat
+                q = parse_qs(url.query)
+                subject = q.get("subject", [""])[0]
+                path = screen_file(root, subject, q.get("name", [""])[0]) if subject in subject_names(root) else None
+                if not path:
+                    return self._json({"error": "not found"}, 404)
+                return self._send(200, path.read_bytes(), SCREEN_TYPES[path.suffix.lower()])
             return self._json({"error": "not found"}, 404)
 
         def do_POST(self):
@@ -341,9 +365,11 @@ def make_handler(root, token):
             return self._json({"ok": True})
 
         def _upload(self, url):
-            """POST /api/upload?subject=..&name=.. with the file as the body: saves it into materials/."""
+            """POST /api/upload?subject=..&name=..[&kind=screen] with the file as the body: saves it into
+            materials/ (lecture files) or screens/ (screenshots for the tutor)."""
             q = parse_qs(url.query)
             subject, name = q.get("subject", [""])[0], q.get("name", [""])[0]
+            kind = "screen" if q.get("kind", [""])[0] == "screen" else "material"
             self.close_connection = True  # on an error the body may be left unread
             if not self._same_origin():
                 return self._json({"error": "requests must come from the study gui page"}, 403)
@@ -351,10 +377,10 @@ def make_handler(root, token):
                 return self._json({"error": f"no subject {subject}"}, 404)
             try:
                 length = int(self.headers.get("Content-Length") or 0)
-                dest = save_upload(root, subject, name, self.rfile, length)
+                dest = save_upload(root, subject, name, self.rfile, length, kind)
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
-            return self._json({"ok": True, "saved": str(dest.relative_to(root / subject))})
+            return self._json({"ok": True, "saved": str(dest.relative_to(root / subject)), "name": dest.name})
 
         def _links(self, body):
             """Connect topics: `study links <Subject> --write`, the local embedding model, no LLM."""

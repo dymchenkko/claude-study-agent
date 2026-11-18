@@ -219,6 +219,10 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
   border-radius: 99px; padding: 3px 4px 3px 11px; }
 .fchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fchip small { color: var(--muted); flex: none; }
+.fchip img { width: 26px; height: 26px; object-fit: cover; border-radius: 6px; flex: none; }
+.bubble .shots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bubble .shots a { display: block; }
+.bubble .shots img { display: block; max-width: 260px; max-height: 200px; border-radius: 10px; border: 1px solid #ffffff40; background: var(--surface); }
 .fchip button { flex: none; border: 0; background: none; color: inherit; width: 22px; height: 22px; border-radius: 50%; line-height: 1; padding: 0; }
 .fchip button:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
 .theme { position: fixed; right: 16px; top: 18px; z-index: 2; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; width: 32px; height: 32px; font-size: 14px; }
@@ -422,8 +426,8 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
         <span id="drawBtns"></span>
       </div>
       <div class="compose"><div class="pending" id="pending" aria-label="Files to add"></div><div class="box">
-        <button class="attach" id="attach" title="Attach lecture files (or drop them here), add a note if you like, then Send" aria-label="Add lecture files">📎</button>
-        <input type="file" id="fileInput" multiple hidden accept=".pdf,.pptx,.docx,.xlsx,.md,.txt,.mp4,.mov,.mkv,.webm,.m4a,.mp3,.wav">
+        <button class="attach" id="attach" title="Attach lecture files or screenshots (or drop / paste them here), add a note if you like, then Send" aria-label="Add lecture files or screenshots">📎</button>
+        <input type="file" id="fileInput" multiple hidden accept=".pdf,.pptx,.docx,.xlsx,.md,.txt,.mp4,.mov,.mkv,.webm,.m4a,.mp3,.wav,.png,.jpg,.jpeg,.gif,.webp">
         <textarea id="input" placeholder="Ask your tutor… (Enter to send, Shift+Enter for a new line)" rows="2"></textarea>
         <button class="btn primary" id="send">Send</button>
       </div></div>
@@ -1368,7 +1372,9 @@ function renderChat() {
   const ready = state.list?.agentReady !== false ? '' :
     `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>. Progress still works from your files.</div>`;
   logEl.innerHTML = ready + (!c || !c.messages.length ? welcome : c.messages.map(m => {
-    if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}</div>`;
+    if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}${m.images?.length ? `<div class="shots">${m.images.map(im => {
+      const u = `/api/screen?t=${encodeURIComponent(token)}&subject=${encodeURIComponent(im.s)}&name=${encodeURIComponent(im.n)}`;
+      return `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Screenshot ${esc(im.n)}" loading="lazy"></a>`; }).join('')}</div>` : ''}</div>`;
     const busy = c.running && m === c.messages[c.messages.length - 1];
     return (m.text ? `<div class="bubble tutor-msg">${md(m.text)}</div>` : '') +
       (m.error ? `<div class="bubble error">${esc(m.error)}</div>` : '') +
@@ -1384,9 +1390,11 @@ function renderChat() {
   attachBtn.textContent = c?.uploading ? `Adding ${c.uploading}…` : '📎';
   const pend = c?.pending ?? [];
   const kb = n => n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
-  document.getElementById('pending').innerHTML = pend.map((f, i) => `<span class="fchip" title="${esc(f.name)}">📄 <span>${esc(f.name)}</span>
+  document.getElementById('pending').innerHTML = pend.map((f, i) => `<span class="fchip" title="${esc(f.name)}">${isScreen(f) ? `<img src="${f._url ??= URL.createObjectURL(f)}" alt="">` : '📄'} <span>${esc(f.name)}</span>
     <small>${kb(f.size)}</small><button data-unstage="${i}" aria-label="Remove ${esc(f.name)}" ${running || c?.uploading ? 'disabled' : ''}>×</button></span>`).join('');
-  input.placeholder = pend.length
+  input.placeholder = pend.length && pend.every(isScreen)
+    ? 'Ask about the screenshot (optional), e.g. "is my diagram right?". Enter sends it.'
+    : pend.length
     ? 'Add a note for the tutor (optional), e.g. "lecture 5, the exam focuses on the diagrams". Enter adds the files.'
     : 'Ask your tutor… (Enter to send, Shift+Enter for a new line)';
   sendBtn.classList.toggle('stop', running);
@@ -1399,13 +1407,13 @@ function renderChat() {
   document.querySelectorAll('[data-draw]').forEach(b => { b.disabled ||= !currentTopic(); });
 }
 
-async function send(text) {
+async function send(text, shown) {
   const name = state.current; if (!name) return;
   const c = chatFor(name); text = text.trim();
   if (!text || c.running) return;
   input.value = '';
   const reply = { role: 'tutor', text: '', tools: [] };
-  c.messages.push({ role: 'me', text }, reply);
+  c.messages.push(shown ? { role: 'me', text: shown.text, images: shown.images } : { role: 'me', text }, reply);
   c.running = true; renderChat();
   try {
     const res = await fetch(`/api/chat?t=${encodeURIComponent(token)}`, { method: 'POST',
@@ -1438,13 +1446,18 @@ async function send(text) {
   }
 }
 
-// Lecture files: attaching only stages them under the message box. Send uploads them into
-// <Subject>/materials/ and then asks the tutor to /ingest them, together with your note.
+// Lecture files and screenshots: attaching (or dropping, or pasting a screenshot) only stages them under the
+// message box. Send uploads lecture files into <Subject>/materials/ and asks the tutor to /ingest them;
+// screenshots go to <Subject>/screens/ and the tutor looks at them with your note.
+const isScreen = f => /^image\/(png|jpe?g|gif|webp)$/.test(f.type) || /\.(png|jpe?g|gif|webp)$/i.test(f.name);
 function stage(files) {
   const name = state.current; files = [...files];
   if (!name || !files.length) return;
   const c = chatFor(name); if (c.running || c.uploading) return;
   c.pending ??= [];
+  const stamp = new Date().toISOString().slice(0, 19).replace('T', ' ').replace(/:/g, '.');
+  files = files.map((f, k) => isScreen(f) && /^image\.\w+$/i.test(f.name)  // a pasted screenshot is always "image.png"
+    ? new File([f], `Screenshot ${stamp}${files.length > 1 ? ` (${k + 1})` : ''}.${f.type.split('/')[1].replace('jpeg', 'jpg')}`, { type: f.type }) : f);
   for (const f of files) if (!c.pending.some(p => p.name === f.name && p.size === f.size)) c.pending.push(f);
   renderChat(); input.focus();
 }
@@ -1456,24 +1469,32 @@ function submit() {
 }
 async function addFiles(name, note) {
   const c = chatFor(name), files = c.pending; c.pending = [];
-  const saved = [], failed = [];
+  const saved = [], shots = [], failed = [];
   for (const [i, f] of files.entries()) {
     c.uploading = `${i + 1}/${files.length}`; if (name === state.current) renderChat();
+    const kind = isScreen(f) ? 'screen' : 'material';
     try {
-      const q = `t=${encodeURIComponent(token)}&subject=${encodeURIComponent(name)}&name=${encodeURIComponent(f.name)}`;
+      const q = `t=${encodeURIComponent(token)}&subject=${encodeURIComponent(name)}&name=${encodeURIComponent(f.name)}&kind=${kind}`;
       const r = await fetch(`/api/upload?${q}`, { method: 'POST', body: f }).then(r => r.json());
-      if (r.error) failed.push(r.error); else saved.push(r.saved);
+      if (r.error) failed.push(r.error); else (kind === 'screen' ? shots : saved).push(r);
     } catch (err) {
       failed.push(`${f.name}: ${err.message}`);
     }
+    if (f._url) URL.revokeObjectURL(f._url);
   }
   c.uploading = null;
   if (failed.length) { c.messages.push({ role: 'tutor', text: '', error: `Not added: ${failed.join(' · ')}` }); saveChat(name); }
   if (name === state.current) renderChat();
   note = note.trim();
+  if (!saved.length && !shots.length) return;
+  if (name === state.current) input.value = '';
+  const look = shots.length ? `\n\nScreenshot${shots.length > 1 ? 's' : ''} (open with Read and look at ${shots.length > 1 ? 'them' : 'it'}): ${shots.map(r => `${name}/${r.saved}`).join(', ')}` : '';
+  const images = shots.map(r => ({ s: name, n: r.name }));
   if (saved.length) {
-    if (name === state.current) input.value = '';
-    send(`/ingest ${name}\nI just added ${saved.join(', ')}. ${note || 'Convert the new files and update the topic map.'}`);
+    const text = `/ingest ${name}\nI just added ${saved.map(r => r.saved).join(', ')}. ${note || 'Convert the new files and update the topic map.'}${look}`;
+    send(text, { text: `${note || 'Added ' + saved.map(r => r.name).join(', ')}`, images });
+  } else {
+    send(`${note || 'Here is a screenshot. Tell me what you see and help me with it.'}${look}`, { text: note || '', images });
   }
 }
 
@@ -1489,6 +1510,10 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
 });
 const fileInput = document.getElementById('fileInput');
+input.addEventListener('paste', e => {
+  const shots = [...(e.clipboardData?.files ?? [])].filter(isScreen);
+  if (shots.length) { e.preventDefault(); stage(shots); }
+});
 document.getElementById('attach').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => { stage(fileInput.files); fileInput.value = ''; });
 document.getElementById('pending').addEventListener('click', e => {
