@@ -77,6 +77,24 @@ class Upload(unittest.TestCase):
             gui.save_upload(self.root, "PRI", "big.pdf", io.BytesIO(b"abc"), 10)
         self.assertEqual(list((self.root / "PRI/materials").iterdir()), [])
 
+    def test_screenshots_go_to_screens_not_materials(self):
+        data = b"\x89PNG fake"
+        dest = gui.save_upload(self.root, "PRI", "Screenshot 2026-11-18.png", io.BytesIO(data), len(data), "screen")
+        self.assertEqual(dest, self.root / "PRI/screens/Screenshot 2026-11-18.png")
+        self.assertFalse((self.root / "PRI/materials").exists())
+        self.assertEqual(gui.screen_file(self.root, "PRI", "Screenshot 2026-11-18.png"), dest)
+
+    def test_screens_only_take_images(self):
+        with self.assertRaises(ValueError):
+            gui.save_upload(self.root, "PRI", "notes.pdf", io.BytesIO(b"x"), 1, "screen")
+        with self.assertRaises(ValueError):
+            gui.save_upload(self.root, "PRI", "huge.png", io.BytesIO(b"x"), gui.MAX_SCREEN + 1, "screen")
+
+    def test_screen_file_stays_in_screens(self):
+        gui.save_upload(self.root, "PRI", "a.png", io.BytesIO(b"x"), 1, "screen")
+        for bad in ("../progress.md", "../screens/a.png", ".hidden.png", "a.txt", "missing.png"):
+            self.assertIsNone(gui.screen_file(self.root, "PRI", bad))
+
 
 if __name__ == "__main__":
     unittest.main()
