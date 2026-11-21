@@ -199,9 +199,18 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .stopped { font-size: 12px; color: var(--faint); }
 .btn.stop { background: var(--raised); color: var(--ink); border-color: var(--line); box-shadow: none; }
 .cite { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; margin: 2px 2px 0 0; }
-.quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--gutter) 10px; }
-.quick button { border: 1px solid var(--line); background: var(--raised); border-radius: 99px; padding: 4px 12px; font-size: 13px; }
-.quick button:hover { border-color: var(--accent); color: var(--accent); }
+/* Quiet text actions: no boxes, just icon + label; the next step of a drawing task is the only coloured one. */
+.quick { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 0 calc(var(--gutter) - 9px) 8px; }
+.quick button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; border-radius: 8px;
+  padding: 5px 9px; font-size: 13px; color: var(--muted); transition: color .15s, background .15s; }
+.quick button:hover:not(:disabled) { color: var(--ink); background: var(--surface); }
+.quick button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.quick .ico { width: 14px; height: 14px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.quick .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); margin: 0 4px; flex: none; }
+.quick button.go { color: var(--accent); font-weight: 600; }
+.quick button.go:hover:not(:disabled) { color: var(--accent); }
+#drawBtns { display: contents; }
+@media (prefers-reduced-motion: reduce) { .quick button { transition: none; } }
 .compose { padding: 0 var(--gutter) 16px; }
 .box { display: flex; gap: 8px; align-items: flex-end; border: 1px solid var(--line); border-radius: 14px; background: var(--raised); padding: 8px; }
 .box:focus-within { border-color: var(--accent); }
@@ -289,9 +298,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .topic-pick { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
 .topic-pick select { font: inherit; font-size: 13px; color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; max-width: 220px; }
 .newchat.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-.quick .draw { border-color: var(--accent-soft); color: var(--accent); }
-.quick button:disabled { opacity: .45; cursor: not-allowed; }
-.quick .hint { font-size: 12px; color: var(--faint); align-self: center; }
+.quick button:disabled { opacity: .5; cursor: default; }
 .divider { flex: none; width: 9px; cursor: col-resize; background: var(--line); background-clip: content-box; padding: 0 4px; touch-action: none; }
 .divider:hover, .divider:focus-visible, .divider.drag { background-color: var(--accent); outline: none; }
 .mapside { flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--paper); }
@@ -422,7 +429,15 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
       <div class="today today-card" id="todayPlan"></div>
       <div class="log" id="log"></div>
       <div class="quick" id="quick">
-        <button data-cmd="review">Review</button><button data-cmd="quiz">Quiz</button>
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+          <symbol id="i-rev" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9"/><path d="M2.5 2.5v2.5H5"/></symbol>
+          <symbol id="i-quiz" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1"/><path d="M8 11.3v.1"/></symbol>
+          <symbol id="i-pen" viewBox="0 0 16 16"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></symbol>
+          <symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></symbol>
+          <symbol id="i-topic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="6"/></symbol>
+        </svg>
+        <button data-cmd="review"><svg class="ico"><use href="#i-rev"/></svg>Review</button><span class="dot"></span>
+        <button data-cmd="quiz"><svg class="ico"><use href="#i-quiz"/></svg>Quiz</button>
         <span id="drawBtns"></span>
       </div>
       <div class="compose"><div class="pending" id="pending" aria-label="Files to add"></div><div class="box">
@@ -628,6 +643,7 @@ function currentTopic(d = state.detail) {
   const name = store.get(topicKey(d.name));
   return d.topics.find(t => t.topic === name) ?? null;
 }
+const drawKey = s => `study-drawing-${s}`;
 function setTopic(subject, topic) { store.set(topicKey(subject), topic ?? ''); }
 const needsOf = (d, i) => d.links.filter(([, b]) => b === i).map(([a]) => a);
 const unlocksOf = (d, i) => d.links.filter(([a]) => a === i).map(([, b]) => b);
@@ -649,11 +665,12 @@ function renderStudyBits() {
          <div class="none">${esc(LEVEL[t.level] ?? '')}${t.fresh !== null ? ` · ${Math.round(t.fresh * 100)}% fresh` : ''}</div>
          <h5>Unlocks</h5>${list(unlocksOf(d, i))}`;
   }
-  const running = !!chatFor(d.name).running, why = t ? '' : 'Choose a topic';
-  document.getElementById('drawBtns').innerHTML = d.diagrams ? `
-    <button class="draw" data-draw="drawing" ${t && !running ? '' : 'disabled'} title="${why || 'A drawing task in draw.io'}">Draw it</button>
-    <button class="draw" data-draw="saved" ${t && !running ? '' : 'disabled'} title="${why || 'Ask the tutor to grade the saved diagram'}">I've saved it</button>
-    ${t ? '' : '<span class="hint">Choose a topic</span>'}` : '';
+  // One drawing action at a time: pick a topic → Draw it → (task given) I've saved it, grade it → back to Draw it.
+  const running = !!chatFor(d.name).running, drawing = t && store.get(drawKey(d.name)) === t.topic;
+  document.getElementById('drawBtns').innerHTML = !d.diagrams ? '' : `<span class="dot"></span>` + (
+    !t ? `<button data-pick-topic title="Pick the topic in the header first"><svg class="ico"><use href="#i-topic"/></svg>Choose a topic to draw</button>`
+    : drawing ? `<button class="go" data-draw="saved" ${running ? 'disabled' : ''} title="Ask the tutor to grade the diagram you saved"><svg class="ico"><use href="#i-check"/></svg>I've saved it, grade it</button>`
+    : `<button data-draw="drawing" ${running ? 'disabled' : ''} title="A drawing task in draw.io"><svg class="ico"><use href="#i-pen"/></svg>Draw it</button>`);
   document.getElementById('mapToggle').classList.toggle('on', state.mapOpen);
   if (state.mapOpen) renderMapInto(document.getElementById('mapSide'), d, true);
   layoutStudy();
@@ -1589,7 +1606,12 @@ document.querySelector('.work').addEventListener('click', async e => {
   const st = t.closest('[data-study]');
   if (st) { const topic = d.topics[+st.dataset.topicI].topic; startStudy(d.name, topic, prompts[st.dataset.study](d.name, topic)); return; }
   const dr = t.closest('[data-draw]');
-  if (dr) { const cur = currentTopic(); if (cur) send(prompts[dr.dataset.draw](d.name, cur.topic)); return; }
+  if (dr) {
+    const cur = currentTopic(); if (!cur) return;
+    store.set(drawKey(d.name), dr.dataset.draw === 'drawing' ? cur.topic : '');
+    send(prompts[dr.dataset.draw](d.name, cur.topic)); renderStudyBits(); return;
+  }
+  if (t.closest('[data-pick-topic]')) { const sel = document.getElementById('topicSel'); sel.focus(); try { sel.showPicker?.(); } catch {} return; }
   const step = t.closest('[data-topic]'); if (step) { setTopic(d.name, step.dataset.topic); renderStudyBits(); return; }
   const flip = t.closest('[data-flip]');
   if (flip) { const i = +flip.dataset.flip; state.flipped.has(i) ? state.flipped.delete(i) : state.flipped.add(i); renderMistakes(d); return; }
