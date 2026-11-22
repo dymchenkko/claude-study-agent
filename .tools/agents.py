@@ -5,13 +5,22 @@ output into simple events for the page. Another agent would be another class wit
   {"type": "session", "sessionId"}   to continue the chat later
   {"type": "text", "text"}           a piece of the reply
   {"type": "tool", "label"}          what the tutor is doing, in plain words
+  {"type": "blocked"}                Claude's safety filter withheld part of the reply
   {"type": "error", "message"}
   {"type": "done", "sessionId", "text"}
 """
 
 import json
+import os
+import re
 import shutil
 import subprocess
+from pathlib import Path
+
+# A resumed chat reloads its whole history on every message. Past this size (screenshots and pasted
+# terminal output add up fast) the tutor gets slow and is more likely to be blocked, so the server
+# starts a fresh session and hands over the last few messages instead.
+MAX_SESSION_BYTES = 2_500_000
 
 NOTE = (
     "The student is using the study dashboard, a web page, not the terminal. Replies are shown as "
@@ -42,6 +51,20 @@ class ClaudeAdapter:
     def available(self):
         return bool(self.binary)
 
+    def session_file(self, session_id):
+        """Where Claude Code keeps this chat: <config>/projects/<cwd with non-alphanumerics as ->/<id>.jsonl"""
+        if not session_id or not re.fullmatch(r"[\w-]+", session_id):
+            return None
+        config = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+        return config / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(Path(self.root).resolve())) / f"{session_id}.jsonl"
+
+    def too_long(self, session_id):
+        f = self.session_file(session_id)
+        try:
+            return bool(f) and f.stat().st_size > MAX_SESSION_BYTES
+        except OSError:
+            return False
+
     def start(self, prompt, subject, session_id=None):
         # print mode cannot ask for permission, so the browser tools are allowed up front
         cmd = [self.binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
@@ -52,6 +75,13 @@ class ClaudeAdapter:
             cmd += ["--resume", session_id]
         return Run(subprocess.Popen(cmd, cwd=self.root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, encoding="utf-8", bufsize=1))
+
+
+def _refused(kind, e, ev):
+    """The safety filter stopped a reply: the API ends that message with stop_reason "refusal"."""
+    if kind == "stream_event" and ev.get("type") == "message_delta":
+        return (ev.get("delta") or {}).get("stop_reason") == "refusal"
+    return kind == "assistant" and (e.get("message") or {}).get("stop_reason") == "refusal"
 
 
 class Run:
@@ -66,7 +96,7 @@ class Run:
             self.proc.terminate()
 
     def events(self):
-        session, text, other, after_tool, finished = None, "", [], False, False
+        session, text, other, after_tool, finished, blocked = None, "", [], False, False, False
         for line in self.proc.stdout:
             try:
                 e = json.loads(line)
@@ -74,6 +104,9 @@ class Run:
                 other.append(line)  # stderr: kept for the error message
                 continue
             kind, ev = e.get("type"), e.get("event", {})
+            if not blocked and _refused(kind, e, ev):
+                blocked = True
+                yield {"type": "blocked"}
             if kind == "system" and e.get("subtype") == "init":
                 session = e.get("session_id")
                 yield {"type": "session", "sessionId": session}

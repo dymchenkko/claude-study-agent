@@ -197,6 +197,9 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .activity .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .25; transform: scale(.8); } }
 .stopped { font-size: 12px; color: var(--faint); }
+.bubble.notice { background: var(--raised); color: var(--muted); border: 1px dashed var(--line); font-size: 13px; }
+.bubble.notice .newchat { margin-top: 6px; }
+.chatnote { font-size: 12px; color: var(--faint); text-align: center; margin: 2px 0; }
 .btn.stop { background: var(--raised); color: var(--ink); border-color: var(--line); box-shadow: none; }
 .cite { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 0 6px; margin: 2px 2px 0 0; }
 /* Quiet text actions: no boxes, just icon + label; the next step of a drawing task is the only coloured one. */
@@ -1343,13 +1346,13 @@ function togglePlay() {
 
 // ---------- chat with the tutor (through the agent adapter on the server) ----------
 const input = document.getElementById('input'), sendBtn = document.getElementById('send'), logEl = document.getElementById('log');
-const chats = {};  // subject -> { sessionId, messages: [{role, text, tools, error, stopped}], running, runId }
+const chats = {};  // subject -> { sessionId, messages: [{role, text, tools, error, stopped, blocked, fresh}], running, runId, carry }
 const chatFor = name => chats[name] ??= (() => {
   let saved = null; try { saved = JSON.parse(localStorage.getItem(`study-chat-${name}`)); } catch {}
-  return { sessionId: saved?.sessionId ?? null, messages: saved?.messages ?? [], running: false, runId: null };
+  return { sessionId: saved?.sessionId ?? null, messages: saved?.messages ?? [], carry: saved?.carry, running: false, runId: null };
 })();
 const saveChat = name => { const c = chats[name]; try {
-  localStorage.setItem(`study-chat-${name}`, JSON.stringify({ sessionId: c.sessionId, messages: c.messages.slice(-60) })); } catch {} };
+  localStorage.setItem(`study-chat-${name}`, JSON.stringify({ sessionId: c.sessionId, messages: c.messages.slice(-60), carry: c.carry })); } catch {} };
 
 // Small, safe Markdown: escape first, then add formatting. Citations like (Lecture3.pdf p.12) become chips.
 const CITE = /\(([^()\n]{2,140}?(?:\.pdf|\.pptx?|\.mp4|\.docx?|\.md|\[\d{1,2}:\d{2}(?::\d{2})?\]|\bp\.\s?\d+|\bslide\s\d+)[^()\n]{0,60})\)/gi;
@@ -1389,11 +1392,16 @@ function renderChat() {
   const ready = state.list?.agentReady !== false ? '' :
     `<div class="bubble error">Can't find <b>${esc(state.list?.agent)}</b> on this computer. Install Claude Code and sign in, then reopen <code>study gui</code>. Progress still works from your files.</div>`;
   logEl.innerHTML = ready + (!c || !c.messages.length ? welcome : c.messages.map(m => {
+    if (m.role === 'note') return `<div class="chatnote">${esc(m.text)}</div>`;
     if (m.role === 'me') return `<div class="bubble me">${esc(m.text)}${m.images?.length ? `<div class="shots">${m.images.map(im => {
       const u = `/api/screen?t=${encodeURIComponent(token)}&subject=${encodeURIComponent(im.s)}&name=${encodeURIComponent(im.n)}`;
       return `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Screenshot ${esc(im.n)}" loading="lazy"></a>`; }).join('')}</div>` : ''}</div>`;
     const busy = c.running && m === c.messages[c.messages.length - 1];
-    return (m.text ? `<div class="bubble tutor-msg">${md(m.text)}</div>` : '') +
+    return (m.fresh ? '<div class="chatnote">The old chat had grown too long, so the tutor started a fresh one and got your last few messages.</div>' : '') +
+      (m.text ? `<div class="bubble tutor-msg">${md(m.text)}</div>` : '') +
+      (m.blocked ? `<div class="bubble notice">Part of this reply was blocked by Claude's safety filter. It sometimes reacts to
+        hacking and pentest topics, even for homework. Pasting your terminal output and asking why a step works usually gets through.
+        ${busy ? '' : '<button class="newchat" data-fresh>Start a fresh session</button> keeps this screen and passes on your last messages.'}</div>` : '') +
       (m.error ? `<div class="bubble error">${esc(m.error)}</div>` : '') +
       (busy ? `<div class="activity"><span class="pulse"></span>${esc(m.tools?.at(-1) ?? 'Thinking')}…</div>` : '') +
       (m.stopped ? '<div class="stopped">Stopped.</div>' : '');
@@ -1430,11 +1438,15 @@ async function send(text, shown) {
   if (!text || c.running) return;
   input.value = '';
   const reply = { role: 'tutor', text: '', tools: [] };
+  // last few messages, so a new session (after a blocked reply, or when the old one grew too long) can pick up
+  const recent = c.carry ?? c.messages.filter(m => m.role !== 'note' && m.text).slice(-4).map(m => ({ role: m.role, text: m.text }));
   c.messages.push(shown ? { role: 'me', text: shown.text, images: shown.images } : { role: 'me', text }, reply);
   c.running = true; renderChat();
+  const gen = c.gen = (c.gen ?? 0) + 1, abort = c.abort = new AbortController();
+  const live = () => c.gen === gen;  // false once New chat has reset this conversation
   try {
-    const res = await fetch(`/api/chat?t=${encodeURIComponent(token)}`, { method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, subject: name, sessionId: c.sessionId }) });
+    const res = await fetch(`/api/chat?t=${encodeURIComponent(token)}`, { method: 'POST', signal: abort.signal,
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, subject: name, sessionId: c.sessionId, recent }) });
     if (!res.ok) { reply.error = (await res.json().catch(() => ({}))).error ?? `Error ${res.status}`; return; }
     const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
     for (;;) {
@@ -1444,8 +1456,11 @@ async function send(text, shown) {
         const chunk = buf.slice(0, k); buf = buf.slice(k + 2);
         if (!chunk.startsWith('data: ')) continue;
         const ev = JSON.parse(chunk.slice(6));
+        if (!live()) continue;
         if (ev.type === 'start') c.runId = ev.runId;
-        else if (ev.type === 'session') c.sessionId = ev.sessionId;
+        else if (ev.type === 'session') { c.sessionId = ev.sessionId; delete c.carry; }
+        else if (ev.type === 'fresh') reply.fresh = true;
+        else if (ev.type === 'blocked') reply.blocked = true;
         else if (ev.type === 'text') reply.text += ev.text;
         else if (ev.type === 'tool') reply.tools.push(ev.label);
         else if (ev.type === 'error') reply.error = ev.message;
@@ -1454,9 +1469,11 @@ async function send(text, shown) {
       }
     }
   } catch (err) {
-    reply.error = `Lost the connection to study gui (${err.message}). Is it still running?`;
+    if (live()) reply.error = `Lost the connection to study gui (${err.message}). Is it still running?`;
   } finally {
-    c.running = false; c.runId = null; delete reply.tools;
+    delete reply.tools;
+    if (!live()) return;  // New chat already reset this conversation
+    c.running = false; c.runId = null; c.abort = null;
     saveChat(name);
     if (name === state.current) renderChat();
     reload();  // the tutor updated progress.md / mistakes.md / events.jsonl: show it
@@ -1549,10 +1566,19 @@ document.getElementById('pending').addEventListener('click', e => {
     stage(e.dataTransfer.files);
   });
 })();
-document.getElementById('newChat').addEventListener('click', () => {
-  const c = state.current && chatFor(state.current); if (!c || c.running) return;
-  c.sessionId = null; c.messages = []; saveChat(state.current); renderChat();
-});
+// New chat also ends a run that hangs: ask the server to stop it, drop the stream, and start over.
+function resetChat(name, keepScreen) {
+  const c = chatFor(name);
+  if (c.running) { stop(); c.abort?.abort(); }
+  c.gen = (c.gen ?? 0) + 1; c.running = false; c.runId = null; c.abort = null; c.sessionId = null;
+  if (keepScreen) {
+    c.carry = c.messages.filter(m => m.role !== 'note' && m.text).slice(-4).map(m => ({ role: m.role, text: m.text }));
+    c.messages.push({ role: 'note', text: 'Fresh tutor session. It gets your last few messages.' });
+  } else { delete c.carry; c.messages = []; }
+  saveChat(name); renderChat();
+}
+document.getElementById('newChat').addEventListener('click', () => { if (state.current) resetChat(state.current, false); });
+logEl.addEventListener('click', e => { if (e.target.closest('[data-fresh]') && state.current) resetChat(state.current, true); });
 document.getElementById('topicSel').addEventListener('change', e => { setTopic(state.current, e.target.value); renderStudyBits(); });
 document.getElementById('mapToggle').addEventListener('click', () => {
   state.mapOpen = !state.mapOpen; store.set('study-map-open', state.mapOpen ? '1' : '0'); renderStudyBits();

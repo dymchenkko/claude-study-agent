@@ -411,7 +411,12 @@ def make_handler(root, token):
             if not adapter.available():
                 return self._json({"error": f"{adapter.name} is not installed or not on PATH"}, 503)
             run_id = secrets.token_hex(8)
-            run = adapter.start(prompt, subject, body.get("sessionId") or None)
+            session_id = str(body.get("sessionId") or "") or None
+            fresh = bool(session_id) and adapter.too_long(session_id)
+            if fresh:
+                session_id = None
+            sent = prompt if session_id else handover(body.get("recent")) + prompt
+            run = adapter.start(sent, subject, session_id)
             with lock:
                 runs[run_id] = run
             self.send_response(200)
@@ -421,6 +426,8 @@ def make_handler(root, token):
             reply = ""
             try:
                 self._event({"type": "start", "runId": run_id})
+                if fresh:
+                    self._event({"type": "fresh"})
                 for ev in run.events():
                     if ev["type"] == "done":
                         reply = ev.get("text", "")
@@ -434,6 +441,23 @@ def make_handler(root, token):
                     save_transcript(root, subject, prompt, reply)
 
     return Handler
+
+
+def handover(recent, keep=4, chars=1200):
+    """A new tutor session starts blind. When the page passes the last few chat messages (after a
+    blocked reply, or when the old session grew too long), put them in front of the prompt."""
+    lines = []
+    for m in (recent if isinstance(recent, list) else [])[-keep:]:
+        text = str((m or {}).get("text") or "").strip() if isinstance(m, dict) else ""
+        if not text:
+            continue
+        if len(text) > chars:  # a tutor reply ends with the task: keep the end
+            text = "…" + text[-chars:]
+        lines.append(f"{'Student' if m.get('role') == 'me' else 'Tutor'}: {text}")
+    if not lines:
+        return ""
+    return ("(This continues an earlier chat with the student that had to be restarted. "
+            "Its last messages were:\n\n" + "\n\n".join(lines) + "\n\nPick up from there.)\n\n")
 
 
 def serve(root, port=0, open_browser=True):

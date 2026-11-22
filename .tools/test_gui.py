@@ -1,8 +1,10 @@
 """Tests for the file readers behind `study gui`. Run: python3 .tools/test_gui.py"""
 
 import io
+import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import gui
@@ -94,6 +96,57 @@ class Upload(unittest.TestCase):
         gui.save_upload(self.root, "PRI", "a.png", io.BytesIO(b"x"), 1, "screen")
         for bad in ("../progress.md", "../screens/a.png", ".hidden.png", "a.txt", "missing.png"):
             self.assertIsNone(gui.screen_file(self.root, "PRI", bad))
+
+
+class Handover(unittest.TestCase):
+    def test_empty_or_junk_gives_nothing(self):
+        for recent in (None, [], "text", [None, 3, {"role": "me", "text": "  "}]):
+            self.assertEqual(gui.handover(recent), "")
+
+    def test_keeps_last_messages_and_end_of_long_replies(self):
+        recent = [{"role": "me", "text": f"q{i}"} for i in range(5)] + [{"role": "tutor", "text": "x" * 2000 + "TASK"}]
+        out = gui.handover(recent)
+        self.assertNotIn("q1", out)
+        self.assertIn("Student: q4", out)
+        self.assertIn("TASK", out)
+        self.assertLess(len(out), 2000)
+
+
+class Blocked(unittest.TestCase):
+    def run_lines(self, *events):
+        import agents
+
+        class Proc:
+            stdout = [json.dumps(e) + "\n" for e in events]
+            returncode = 0
+            def wait(self): pass
+            def poll(self): return 0
+        return [e["type"] for e in agents.Run(Proc()).events()]
+
+    def test_refusal_is_reported_once(self):
+        refusal = {"type": "stream_event", "event": {"type": "message_delta", "delta": {"stop_reason": "refusal"}}}
+        assistant = {"type": "assistant", "message": {"stop_reason": "refusal", "content": []}}
+        done = {"type": "result", "session_id": "s"}
+        self.assertEqual(self.run_lines(refusal, assistant, done), ["blocked", "done"])
+
+    def test_normal_reply_is_not_blocked(self):
+        ok = {"type": "stream_event", "event": {"type": "message_delta", "delta": {"stop_reason": "end_turn"}}}
+        self.assertEqual(self.run_lines(ok, {"type": "result"}), ["done"])
+
+
+class LongSession(unittest.TestCase):
+    def test_size_check(self):
+        import agents
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.dict("os.environ", {"CLAUDE_CONFIG_DIR": d}):
+            a = agents.ClaudeAdapter(d)
+            f = a.session_file("abc-1")
+            f.parent.mkdir(parents=True)
+            f.write_bytes(b"x" * 10)
+            self.assertFalse(a.too_long("abc-1"))
+            with unittest.mock.patch.object(agents, "MAX_SESSION_BYTES", 5):
+                self.assertTrue(a.too_long("abc-1"))
+            self.assertFalse(a.too_long("missing"))
+            self.assertIsNone(a.session_file("../etc"))
 
 
 if __name__ == "__main__":
