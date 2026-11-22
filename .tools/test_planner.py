@@ -253,7 +253,8 @@ class Planner(Tmp):
         self.assertEqual([p["subject"] for p in picks], ["A", "A"])  # no lesson left in A, P paused
 
     def test_lesson_order_prefers_nearest_exam_then_oldest_session(self):
-        for name, exam in (("Late", "2027-02-01"), ("Soon", "2026-11-20"), ("NoExam", "none"), ("Unknown", "unknown")):
+        # Soon is 25 days away: close enough to rank first, not close enough for focus mode
+        for name, exam in (("Late", "2027-02-01"), ("Soon", "2026-12-02"), ("NoExam", "none"), ("Unknown", "unknown")):
             make_subject(self.root, name, [("t", 0, "", "", "")], exam=exam)
         states = [planner.subject_state(self.root, n, TODAY) for n in sd.subject_names(self.root)]
         self.assertEqual([s["name"] for s in planner.lesson_order(states)], ["Soon", "Late", "Unknown", "NoExam"])
@@ -345,6 +346,58 @@ class Planner(Tmp):
         self.assertEqual(len(planner.for_session(plan, minutes=2)), 1)
         self.assertEqual(len(planner.for_session(plan, minutes=60)), 2)
         self.assertEqual(planner.for_session(plan, subject="a"), [plan["picks"][0]])
+
+
+DEADLINES = "| Item | Kind | Date | Points | Got | Need | Notes |\n|---|---|---|---|---|---|---|\n"
+
+
+class Focus(Tmp):
+    def deadlines(self, name, *rows):
+        (Path(self.root) / name / "deadlines.md").write_text(
+            DEADLINES + "".join(f"| {' | '.join(r)} |\n" for r in rows), encoding="utf-8")
+
+    def states(self):
+        return [planner.subject_state(self.root, n, TODAY) for n in sd.subject_names(self.root)]
+
+    def test_close_test_puts_subject_in_focus_and_quiets_others(self):
+        make_subject(self.root, "BSI", [(f"B{i}", 1, "2026-10-01", "2026-10-02", 1) for i in range(2)]
+                     + [("B new", 0, "", "", "")])
+        make_subject(self.root, "PRI", [(f"P{i}", 1, "2026-09-01", "2026-09-02", 1) for i in range(4)]
+                     + [("P new", 0, "", "", "")], mistakes=["P0", "P1"])
+        self.deadlines("BSI", ("Kolokwium 1", "test", "2026-11-14", "40", "", "25", ""))
+        states = self.states()
+        self.assertEqual(planner.focus(states)["BSI"]["days"], 7)
+        picks = planner.build_picks(states)
+        self.assertEqual([p["subject"] for p in picks], ["BSI", "BSI", "BSI"])  # PRI's mistakes wait
+        self.assertTrue(all(p["kind"] != "lesson" or p["subject"] == "BSI" for p in picks))
+        self.assertIn(("BSI", "B new"), [(p["subject"], p["topic"]) for p in picks])
+
+    def test_homework_window_done_rows_and_paused_subjects(self):
+        make_subject(self.root, "A", [("t", 0, "", "", "")])
+        make_subject(self.root, "B", [("t", 0, "", "", "")], extra="- **Reviews:** paused since 2026-11-01\n")
+        self.deadlines("A", ("HW far", "homework", "2026-11-20", "5", "", "", ""),
+                       ("HW done", "homework", "2026-11-08", "5", "5", "", ""))
+        self.deadlines("B", ("Lab", "lab", "2026-11-08", "5", "", "", ""))
+        self.assertEqual(planner.focus(self.states()), {})  # 13 days is past the homework window
+
+        self.deadlines("A", ("HW", "homework", "29.11.2026", "5", "", "", ""), ("HW soon", "homework", "2026-11-10", "5", "", "", ""))
+        self.assertEqual(planner.focus(self.states())["A"]["item"], "HW soon")
+
+    def test_exam_date_in_claude_md_counts(self):
+        make_subject(self.root, "A", [("t", 0, "", "", "")], exam="2026-11-17")
+        self.assertEqual(planner.focus(self.states())["A"]["kind"], "exam")
+
+    def test_stakes_order(self):
+        make_subject(self.root, "A", [("t", 0, "", "", "")])
+        make_subject(self.root, "B", [("t", 0, "", "", "")])
+        self.deadlines("A", ("Big later", "test", "2026-12-07", "40", "", "", ""),   # 40 / 30 days
+                       ("Small soon", "homework", "2026-11-09", "5", "", "", ""),  # 5 / 2 days
+                       ("No date", "test", "", "40", "", "", ""),
+                       ("Missed", "homework", "2026-11-01", "5", "", "", ""),
+                       ("Done", "homework", "2026-11-09", "5", "4", "", ""))
+        self.deadlines("B", ("Unscored", "lab", "2026-11-12", "", "", "", ""))  # 10 / 5 days
+        self.assertEqual([r["item"] for r in planner.stakes(self.states())],
+                         ["Small soon", "Unscored", "Big later", "No date", "Missed"])
 
 
 if __name__ == "__main__":

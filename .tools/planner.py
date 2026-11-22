@@ -10,6 +10,14 @@ score = weight x urgency x hub x (mistakes + weakness + overdue + slip)
 Two slots go to the best reviews, the third to the next new topic (a lesson), at most 2 picks per
 subject.
 
+Focus (exam mode): a subject is in focus when something graded is close: its CLAUDE.md exam date or a
+test/exam in deadlines.md within 14 days, homework within 7, a lab within 3. While any subject is in
+focus, it may fill every slot and gets the lessons; the others are quiet: urgency x 0.2 and at most one
+review each, no new topics. Without anything close the plan works as above.
+
+Points at stake (`stakes`): the open rows of every deadlines.md, most points per remaining day first
+(a row without points counts as 10), then rows without a date, then dates that have passed.
+
 Links (links.json, "from is needed before to") change two things:
   root cause  a struggling review (level <= 2 or open mistakes) whose prerequisite, direct or further
               back, is weaker (lower level, or the same level with open mistakes of its own) becomes a
@@ -28,6 +36,8 @@ from pathlib import Path
 import studydata as sd
 
 SLOTS, PER_SUBJECT, MINUTES = 3, 2, 5
+FOCUS_DAYS = {"exam": 14, "test": 14, "homework": 7, "lab": 3}
+QUIET, DEFAULT_POINTS = 0.2, 10
 
 
 def urgency(exam):
@@ -57,7 +67,42 @@ def subject_state(root, name, today):
         t["slip"] = sd.topic_key(t["topic"]) in slipping
         t["started"] = t["level"] > 0 or bool(t["last"])
     return {"name": name, "exam": sd.parse_exam(claude, today), "reviews": reviews,
-            "diagrams": sd.has_diagrams(claude), "lastSession": sd.last_session(folder), "topics": topics}
+            "diagrams": sd.has_diagrams(claude), "lastSession": sd.last_session(folder), "topics": topics,
+            "deadlines": sd.parse_deadlines(sd._read(folder / "deadlines.md"), today)}
+
+
+def focus(states):
+    """{subject: the closest graded thing that puts it in focus}. Paused subjects never are."""
+    out = {}
+    for s in states:
+        if s["reviews"]["paused"]:
+            continue
+        near = [{"item": d["item"], "kind": d["kind"], "date": d["date"], "days": d["days"]}
+                for d in s.get("deadlines", ()) if not d["done"] and d["days"] is not None
+                and 0 <= d["days"] <= FOCUS_DAYS[d["kind"]]]
+        if s["exam"]["state"] == "date" and s["exam"]["days"] <= FOCUS_DAYS["exam"]:
+            near.append({"item": "Exam", "kind": "exam", "date": s["exam"]["label"], "days": s["exam"]["days"]})
+        if near:
+            out[s["name"]] = min(near, key=lambda d: (d["days"], d["kind"] not in ("exam", "test")))
+    return out
+
+
+def stakes(states):
+    """Open deadlines across subjects, ranked: points per remaining day, then undated, then passed."""
+    rows = []
+    for s in states:
+        for d in s.get("deadlines", ()):
+            if d["done"]:
+                continue
+            pts = d["points"] if d["points"] is not None else DEFAULT_POINTS
+            if d["days"] is None:
+                key = (1, -pts)
+            elif d["days"] < 0:
+                key = (2, d["days"])
+            else:
+                key = (0, -pts / max(d["days"], 1), d["days"])
+            rows.append((key, s["name"], dict(d, subject=s["name"])))
+    return [r for _, _, r in sorted(rows, key=lambda r: (r[0], r[1], r[2]["item"]))]
 
 
 def score(t, urg):
@@ -132,12 +177,18 @@ def lesson_order(states):
 def build_picks(states, slots=SLOTS, taken=()):
     """Pick up to `slots` topics. `taken` = (subject, topic) pairs already in today's plan."""
     active = [s for s in states if not s["reviews"]["paused"]]
+    focused = focus(active)
     count = Counter(subj for subj, _ in taken)
     used = {(subj, sd.topic_key(top)) for subj, top in taken}
     picks = []
 
+    def cap(s):
+        if not focused:
+            return PER_SUBJECT
+        return SLOTS if s["name"] in focused else 1
+
     def free(s, t):
-        return count[s["name"]] < PER_SUBJECT and (s["name"], sd.topic_key(t["topic"])) not in used
+        return count[s["name"]] < cap(s) and (s["name"], sd.topic_key(t["topic"])) not in used
 
     def add(s, t, kind, why, value, builds=None):
         picks.append(_pick(s, t, kind, why, value, builds))
@@ -147,6 +198,8 @@ def build_picks(states, slots=SLOTS, taken=()):
     reviews = []
     for s in active:
         urg = urgency(s["exam"])
+        if focused:
+            urg = max(urg, 2) if s["name"] in focused else urg * QUIET
         for t in s["topics"]:
             if t["started"] and (t["overdue"] is not None or t["open"]):
                 value, top = score(t, urg)
@@ -177,7 +230,7 @@ def build_picks(states, slots=SLOTS, taken=()):
                 add(s, t, kind, why, value, builds)
 
     take_reviews(min(2, slots))
-    order = lesson_order(active)
+    order = lesson_order([s for s in active if not focused or s["name"] in focused])
     while len(picks) < slots:
         added = False
         for s in order:
@@ -185,7 +238,7 @@ def build_picks(states, slots=SLOTS, taken=()):
                 break
             new = [t for t in s["topics"] if not t["started"] and free(s, t)]
             nxt = next((t for t in new if ready(s["topics"], t)), new[0] if new else None)
-            if nxt and count[s["name"]] < PER_SUBJECT:
+            if nxt and count[s["name"]] < cap(s):
                 add(s, nxt, "lesson", "Next new topic", 0)
                 added = True
         if not added:

@@ -98,6 +98,28 @@ class Upload(unittest.TestCase):
             self.assertIsNone(gui.screen_file(self.root, "PRI", bad))
 
 
+class Deadlines(unittest.TestCase):
+    MD = ("# Deadlines\n\n| Item | Kind | Date | Points | Got | Need | Notes |\n|---|---|---|---|---|---|---|\n"
+          "| Kolokwium 1 | test | 29.11.2026 | 40 | | 25 | |\n| Sprawdzian 2 | test | | 40 | | | zjazd 6 |\n"
+          "| Lab 1 | quiz? | 2026-10-10 | 5 | done | | |\n")
+
+    def test_parse(self):
+        rows = gui.sd.parse_deadlines(self.MD, "2026-11-22")
+        self.assertEqual([(r["item"], r["kind"], r["date"], r["days"], r["done"]) for r in rows],
+                         [("Kolokwium 1", "test", "2026-11-29", 7, False), ("Sprawdzian 2", "test", None, None, False),
+                          ("Lab 1", "homework", "2026-10-10", -43, True)])
+
+    def test_set_date_only_touches_that_row(self):
+        out = gui.sd.set_deadline_date(self.MD, "sprawdzian 2", "2026-12-13")
+        self.assertIn("| Sprawdzian 2 | test | 2026-12-13 | 40 |", out)
+        self.assertEqual(out.replace("2026-12-13", ""), self.MD.replace("| Sprawdzian 2 | test | | 40 | | | zjazd 6 |",
+                                                                        "| Sprawdzian 2 | test |  | 40 |  |  | zjazd 6 |"))
+        with self.assertRaises(KeyError):
+            gui.sd.set_deadline_date(self.MD, "Nope", "2026-12-13")
+        with self.assertRaises(ValueError):
+            gui.sd.set_deadline_date(self.MD, "Kolokwium 1", "13.12.2026")
+
+
 class Handover(unittest.TestCase):
     def test_empty_or_junk_gives_nothing(self):
         for recent in (None, [], "text", [None, 3, {"role": "me", "text": "  "}]):
