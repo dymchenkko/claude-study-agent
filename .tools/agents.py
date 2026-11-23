@@ -12,6 +12,7 @@ output into simple events for the page. Another agent would be another class wit
 
 import json
 import os
+from datetime import datetime
 import re
 import shutil
 import subprocess
@@ -27,8 +28,17 @@ NOTE = (
     "Markdown. The subject open on the page is {subject}: use it unless the student names another. "
     "Ask questions in plain text (no option pickers). Keep updating progress.md, mistakes.md and "
     "sessions/ as usual. You may use the student's Chrome (Claude in Chrome) to look at pages, but do "
-    "not submit, post or change anything there unless the student asks for that exact action."
+    "not submit, post or change anything there unless the student asks for that exact action.\n"
+    "Right now it is {now} (the student's local time). Notes, progress.md and chat transcripts were written "
+    "on earlier days: words like today, this morning, yesterday, dziś, rano or wczoraj in them mean the date "
+    "of that file or entry, not today. Say the real day (\"yesterday morning\", \"on 22.11\") when you refer "
+    "to them, and write absolute dates in anything you save."
 )
+
+def note(subject, now=None):
+    now = now or datetime.now()
+    return NOTE.format(subject=subject, now=f"{now:%A} {now:%Y-%m-%d} {now:%H:%M}")
+
 
 LABELS = {"Grep": "Searching your lectures", "Glob": "Searching your lectures",
           "Read": "Reading your materials", "Edit": "Saving notes", "Write": "Saving notes"}
@@ -70,7 +80,7 @@ class ClaudeAdapter:
         cmd = [self.binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
                "--include-partial-messages", "--disallowedTools", "AskUserQuestion",
                "--chrome", "--allowedTools", "mcp__claude-in-chrome",
-               "--append-system-prompt", NOTE.format(subject=subject)]
+               "--append-system-prompt", note(subject)]
         if session_id:
             cmd += ["--resume", session_id]
         return Run(subprocess.Popen(cmd, cwd=self.root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,

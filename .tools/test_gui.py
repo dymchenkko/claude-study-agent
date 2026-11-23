@@ -120,6 +120,16 @@ class Deadlines(unittest.TestCase):
             gui.sd.set_deadline_date(self.MD, "Kolokwium 1", "13.12.2026")
 
 
+class TutorNote(unittest.TestCase):
+    def test_note_names_the_subject_and_the_real_date(self):
+        import agents
+        from datetime import datetime
+        text = agents.note("BSI", datetime(2026, 11, 23, 16, 39))
+        self.assertIn("The subject open on the page is BSI", text)
+        self.assertIn("Monday 2026-11-23 16:39", text)
+        self.assertIn("rano", text)
+
+
 class Handover(unittest.TestCase):
     def test_empty_or_junk_gives_nothing(self):
         for recent in (None, [], "text", [None, 3, {"role": "me", "text": "  "}]):
