@@ -115,6 +115,7 @@ Everything the tutor knows about you is plain Markdown that you can read and edi
   _template/              ← blank subject skeleton
   <Subject>/
     CLAUDE.md             ← course facts: exam date, format, lecturer emphasis
+    deadlines.md          ← graded items with dates and points: "Points at stake" and focus mode
     syllabus.md           ← topic map with sources
     progress.md           ← level and next review date per topic
     mistakes.md           ← every wrong answer and the misconception behind it

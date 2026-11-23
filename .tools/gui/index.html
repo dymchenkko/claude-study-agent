@@ -96,6 +96,8 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01
 .today-card .pick .why, .today-card .pick .mins { display: none; }
 .today-card .btn { padding: 6px 14px; font-size: 13.5px; }
 .today-card.done .picks, .today-card.done .btn { display: none; }
+.focus-line { font-size: 13px; color: var(--muted); margin: -2px 0 8px; }
+.focus-line b { color: var(--accent); }
 .session-notes { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: var(--shadow); }
 .session-notes ul, .session-notes ol { margin: 4px 0 8px; padding-left: 20px; } .session-notes li { margin-bottom: 4px; }
 .session-notes h4 { margin: 12px 0 4px; font-family: var(--head); font-size: 15px; font-weight: 650; }
@@ -115,6 +117,9 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01
 .badge { font-size: 12px; font-weight: 600; border-radius: 99px; padding: 1px 8px; }
 .badge.due { background: var(--due-soft); color: var(--due-text); }
 .badge.ok { color: var(--good); }
+.badge.infocus { background: var(--accent); color: var(--accent-ink); }
+.badge.quiet { background: var(--m0); color: var(--muted); }
+.subj.quiet .strip { opacity: .5; }
 .strip { display: flex; gap: 2px; margin: 8px 0 5px; }
 .strip i { flex: 1; height: 6px; border-radius: 2px; background: var(--m0); max-width: 14px; }
 .strip i.due { box-shadow: inset 0 -2px 0 var(--due); }
@@ -258,6 +263,21 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
 .tag.kind { background: none; color: var(--accent); border-color: var(--accent-soft); }
 .note-line { font-size: 13px; color: var(--muted); margin-top: 10px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* points at stake: deadlines.md of every subject */
+.stakes { max-width: 760px; display: grid; gap: 6px; }
+.stakes .sub { color: var(--muted); font-size: 14px; margin: 4px 0 8px; }
+.stake { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.stake.infocus { border-color: var(--accent); }
+.stake .when { font-size: 12.5px; font-weight: 650; border-radius: 99px; padding: 2px 8px; text-align: center; white-space: nowrap; background: var(--m0); color: var(--muted); font-variant-numeric: tabular-nums; }
+.stake .when.soon { background: var(--bad-soft); color: var(--bad); }
+.stake .when.near { background: var(--due-soft); color: var(--due-text); }
+.stake .what { min-width: 0; font-weight: 600; }
+.stake .what small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.stake .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.stake input { font: inherit; font-size: 13px; color: var(--ink); background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; }
+@media (max-width: 640px) { .stake { grid-template-columns: minmax(0, 1fr); } .stake .acts { justify-content: flex-start; } }
 
 /* prompts: exam dates and pausing */
 .prompt { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); max-width: 760px; }
@@ -460,6 +480,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; margin:
     <div class="pp-head"><h2>Progress</h2><button class="pp-close" data-view="study" aria-label="Close progress">×</button></div>
     <main class="main" id="view-plan">
     <div id="prompts"></div>
+    <section id="stakesBox"></section>
     <section>
       <div class="head"><h2 id="title">Loading…</h2><div class="chips" id="facts"></div></div>
       <div class="sec-head"><h3>Next three weeks</h3></div>
@@ -542,11 +563,18 @@ const prompts = {
 function renderList() {
   const { today, subjects } = state.list;
   document.getElementById('today').textContent = fmtDay(today, { weekday: 'long', day: 'numeric', month: 'long' });
-  const sorted = [...subjects].sort((a, b) => b.due - a.due || a.name.localeCompare(b.name));
+  // focus subjects first (closest first), then by overdue reviews
+  const rank = s => s.focus ? s.focus.days : 1e6;
+  const sorted = [...subjects].sort((a, b) => rank(a) - rank(b) || b.due - a.due || a.name.localeCompare(b.name));
+  const focusNames = subjects.filter(s => s.focus).map(s => s.name).join(', ');
+  const dueTip = n => `${n} topic${n === 1 ? ' is' : 's are'} past the review date`;
   document.getElementById('subjects').innerHTML = sorted.map(s => `
-    <button class="subj ${s.name === state.current ? 'active' : ''}" data-name="${esc(s.name)}">
+    <button class="subj ${s.name === state.current ? 'active' : ''} ${s.quiet ? 'quiet' : ''}" data-name="${esc(s.name)}">
       <div class="row"><span class="name">${esc(s.name)}</span>
-        ${s.paused ? '<span class="badge">paused</span>' : s.due ? `<span class="badge due">${s.due} due</span>` : s.topics ? '<span class="badge ok">✓</span>' : ''}</div>
+        ${s.paused ? '<span class="badge">paused</span>'
+          : s.focus ? `<span class="badge infocus" title="${esc(s.focus.item)} ${esc(inDays(s.focus.days))}. ${s.due ? esc(dueTip(s.due)) : ''}">focus · ${s.focus.days}d</span>`
+          : s.quiet && s.due ? `<span class="badge quiet" title="${esc(dueTip(s.due))}. Waits while ${esc(focusNames)} is in focus.">${s.due} due</span>`
+          : s.due ? `<span class="badge due" title="${esc(dueTip(s.due))}">${s.due} due</span>` : s.topics ? '<span class="badge ok">✓</span>' : ''}</div>
       <div class="strip">${(s.strip || []).map(t => `<i class="${t.due ? 'due' : ''}" style="background:var(--m${t.level})"></i>`).join('')}</div>
       <div class="meta">${s.started}/${s.topics} started${s.awayDays !== null ? ` · ${ago(s.awayDays)}` : ''}</div>
     </button>`).join('') || '<div class="empty">No subjects yet. Run <code>study new "Subject"</code>.</div>';
@@ -568,7 +596,10 @@ function renderToday() {
   const sub = !left.length ? `All ${picks.length} picks finished. Anything more is a bonus. Open Progress for what moved.`
     : 'Picked from your open mistakes, exam dates and what has waited longest. The rest can wait without you falling behind.';
   el.classList.toggle('done', !left.length);
-  el.innerHTML = `<div class="kicker">Today · about ${left.length * 5} minutes</div><h2>${esc(head)}</h2><p class="sub">${esc(sub)}</p>
+  const fo = state.list.focus ?? [], quiet = state.list.subjects.filter(s => s.quiet).map(s => s.name);
+  const focusLine = fo.length ? `<div class="focus-line">Focus: ${fo.map(f => `<b>${esc(f.subject)}</b> · ${esc(f.item)} ${esc(inDays(f.days))}`).join(', ')}.${
+    quiet.length ? ` ${esc(quiet.join(', '))} wait until then.` : ''}</div>` : '';
+  el.innerHTML = `<div class="kicker">Today · about ${left.length * 5} minutes</div><h2>${esc(head)}</h2>${focusLine}<p class="sub">${esc(sub)}</p>
     <div class="picks">${picks.map((p, i) => `
       <button class="pick ${p.done ? 'done' : ''}" data-pick="${i}" ${p.done ? 'disabled' : ''}>
         <span class="num">${p.done ? '✓' : i + 1}</span>
@@ -578,6 +609,35 @@ function renderToday() {
       </button>`).join('')}</div>
     ${left.length ? `<button class="btn primary" data-pick="${picks.indexOf(left[0])}">Start the ${left.length * 5} minutes</button>` : ''}
     ${pausedNote}`;
+}
+
+const inDays = d => d === 0 ? 'today' : d === 1 ? 'tomorrow' : d < 0 ? `${-d} days ago` : `in ${d} days`;
+const num = n => n == null ? '' : String(+n.toFixed(1));
+const stakePrompt = r => `Help me with "${r.item}" in ${r.subject}${r.date ? ` (due ${r.date})` : ''}${r.points != null ? `, ${num(r.points)} points` : ''}. `
+  + 'Check deadlines.md and my materials, then start with one small step.';
+
+function renderStakes() {
+  const rows = state.list.stakes ?? [], el = document.getElementById('stakesBox'), cur = state.current;
+  const focus = new Set((state.list.focus ?? []).map(f => f.subject));
+  if (!rows.length) {
+    el.innerHTML = `<div class="stakes"><h3>Points at stake</h3>
+      <p class="sub">Nothing yet. Graded homework, tests and exams go into each subject's <code>deadlines.md</code>, with dates and points.
+      Then the most points per remaining day come first, and a subject with a close test goes into focus.</p>
+      ${cur ? `<div><button class="btn small" data-fill-deadlines="${esc(cur)}">Ask the tutor to fill in ${esc(cur)}</button></div>` : ''}</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="stakes"><h3>Points at stake</h3>
+    <p class="sub">Most points per remaining day first. Items without a date can't be ranked yet: add the date when you know it.</p>
+    ${rows.map((r, i) => {
+      const cls = r.days == null || r.days < 0 ? '' : r.days <= 7 ? 'soon' : r.days <= 21 ? 'near' : '';
+      const pts = r.got != null ? `${num(r.got)}/${num(r.points)} pts` : r.points != null ? `${num(r.points)} pts` : '';
+      const meta = [r.kind, pts, r.need != null ? `need ${num(r.need)}` : '', r.notes].filter(Boolean).join(' · ');
+      return `<div class="stake ${focus.has(r.subject) ? 'infocus' : ''}">
+        <span class="when ${cls}" title="${esc(r.date ?? 'no date')}">${r.date ? esc(r.days < 0 ? 'passed' : inDays(r.days)) : 'date?'}</span>
+        <span class="what"><span class="tag">${esc(r.subject)}</span>${esc(r.item)}<small>${esc(meta)}</small></span>
+        <span class="acts">${r.date ? '' : `<input type="date" aria-label="Date for ${esc(r.item)}" data-stake-date="${i}"><button class="btn small" data-stake-save="${i}">Save</button>`}
+          <button class="btn small ${r.days != null && r.days >= 0 && r.days <= 7 ? 'primary' : ''}" data-stake="${i}">Work on it</button></span>
+      </div>`; }).join('')}</div>`;
 }
 
 function renderPrompts() {
@@ -1289,7 +1349,7 @@ function renderDetail() {
 }
 
 function renderAll() {
-  renderList(); renderToday(); renderPrompts(); renderRhythm();
+  renderList(); renderToday(); renderPrompts(); renderStakes(); renderRhythm();
   if (state.detail) renderDetail();
 }
 
@@ -1306,7 +1366,7 @@ async function reload() {
   if (!state.current && state.list.subjects.length) {
     state.current = [...state.list.subjects].sort((a, b) => b.due - a.due)[0].name;
   }
-  renderList(); renderToday(); renderPrompts(); renderRhythm();
+  renderList(); renderToday(); renderPrompts(); renderStakes(); renderRhythm();
   if (state.current) await openSubject(state.current, true);
   else document.getElementById('title').textContent = 'No subjects yet';
 }
@@ -1615,6 +1675,16 @@ document.querySelector('.work').addEventListener('click', async e => {
   if (save) { const s = save.dataset.examSave, v = document.querySelector(`[data-exam-date="${CSS.escape(s)}"]`).value;
     if (!v) { alertLine(`Pick a date for ${s} first, or choose Unknown.`); return; }
     write('/api/exam', { subject: s, value: v }); return; }
+  const sk = t.closest('[data-stake]');
+  if (sk) { const r = state.list.stakes[+sk.dataset.stake]; if (r) startStudy(r.subject, null, stakePrompt(r)); return; }
+  const ss = t.closest('[data-stake-save]');
+  if (ss) { const r = state.list.stakes[+ss.dataset.stakeSave], v = document.querySelector(`[data-stake-date="${ss.dataset.stakeSave}"]`).value;
+    if (!v) { alertLine(`Pick a date for ${r.item} first.`); return; }
+    write('/api/deadline', { subject: r.subject, item: r.item, date: v }); return; }
+  const fd = t.closest('[data-fill-deadlines]');
+  if (fd) { const n = fd.dataset.fillDeadlines;
+    startStudy(n, null, `Fill in ${n}/deadlines.md: every graded item (homework, tests, exams, labs) with its date and points, `
+      + 'from CLAUDE.md and my course materials. Ask me about anything you cannot find.'); return; }
   const ex = t.closest('[data-exam]'); if (ex) { write('/api/exam', { subject: ex.dataset.exam, value: ex.dataset.value }); return; }
   const rv = t.closest('[data-reviews]'); if (rv) { write('/api/reviews', { subject: rv.dataset.reviews, action: rv.dataset.action }); return; }
   const dm = t.closest('[data-dismiss]'); if (dm) { write('/api/dismiss', { key: dm.dataset.dismiss }); return; }

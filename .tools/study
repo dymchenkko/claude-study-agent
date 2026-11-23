@@ -561,13 +561,16 @@ def run_plan(a):
     """Today's picks, the same list the gui's Plan shows."""
     from datetime import date
     root, today = study_root(a), date.today().isoformat()
-    plan = planner.today_plan(root, today)
+    states = [planner.subject_state(root, n, today) for n in studydata.subject_names(root)]
+    plan = planner.today_plan(root, today, states=states)
     todo = planner.for_session(plan, a.subject, a.minutes)
-    paused = [n for n in studydata.subject_names(root)
-              if studydata.parse_reviews(studydata._read(root / n / "CLAUDE.md"))["paused"]]
+    paused = [s["name"] for s in states if s["reviews"]["paused"]]
+    focus = planner.focus(states)
     if a.json:
-        print(json.dumps(dict(plan, todo=todo, paused=paused), ensure_ascii=False, indent=2))
+        print(json.dumps(dict(plan, todo=todo, paused=paused, focus=focus), ensure_ascii=False, indent=2))
         return
+    for n, f in focus.items():
+        print(f"Focus: {n} · {f['item']} in {f['days']} day(s), {f['date']}")
     if not plan["picks"]:
         print("Nothing to plan today." + (f" Paused: {', '.join(paused)}." if paused else ""))
     for i, p in enumerate(plan["picks"], 1):

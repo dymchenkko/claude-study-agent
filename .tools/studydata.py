@@ -241,6 +241,85 @@ def parse_exam(claude_md, today):
     return {"state": "unset", "days": None, "label": "exam date not set"}
 
 
+# ---------- deadlines.md: what earns points, and when ----------
+
+DEADLINE_KINDS = ("exam", "test", "homework", "lab")
+EU_DATE = re.compile(r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b")
+
+
+def _any_date(text):
+    """An ISO date, or a Polish-style 29.11.2026, as ISO. None when there is no valid one."""
+    d = _date(text)
+    if d and _valid_date(d):
+        return d
+    m = EU_DATE.search(text or "")
+    if m:
+        d = f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+        return d if _valid_date(d) else None
+    return None
+
+
+def _number(text):
+    m = re.search(r"\d+(?:[.,]\d+)?", text or "")
+    return float(m.group(0).replace(",", ".")) if m else None
+
+
+def parse_deadlines(md, today):
+    """Rows of the | Item | Kind | Date | Points | Got | Need | Notes | table. An item is done once Got
+    has a number (the points are in) or Got says done. days: until the date, None when it is not set."""
+    out = []
+    for r in table_rows(md, ["item", "date"]):
+        item = _col(r, "item").strip()
+        if not item or set(item) <= set("-:"):
+            continue
+        kind = _col(r, "kind").strip().lower()
+        d = _any_date(_col(r, "date"))
+        got_text = _col(r, "got").strip()
+        got = _number(got_text)
+        out.append({
+            "item": item,
+            "kind": kind if kind in DEADLINE_KINDS else "homework",
+            "date": d,
+            "days": days_between(today, d) if d else None,
+            "points": _number(_col(r, "points")),
+            "got": got,
+            "need": _number(_col(r, "need")),
+            "done": got is not None or got_text.lower() in ("done", "yes", "✓", "✅", "tak"),
+            "notes": _col(r, "notes").strip(),
+        })
+    return out
+
+
+def set_deadline_date(md, item, value):
+    """Set the Date cell of the row whose Item is `item` (exact, case-insensitive). Raises KeyError."""
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value or "") or not _valid_date(value):
+        raise ValueError("date must be YYYY-MM-DD")
+    lines = md.split("\n")
+    head = None
+    for i, line in enumerate(lines):
+        if not line.strip().startswith("|"):
+            head = None
+            continue
+        cells = _cells(line.strip())
+        if head is None:
+            low = [c.lower() for c in cells]
+            if any(c.startswith("item") for c in low) and any(c.startswith("date") for c in low):
+                head = low
+            continue
+        if set("".join(cells)) <= set("-: "):
+            continue
+        row = dict(zip(head, cells))
+        name = next((v for h, v in row.items() if h.startswith("item")), "")
+        if name.strip().casefold() == item.strip().casefold():
+            col = next(k for k, h in enumerate(head) if h.startswith("date"))
+            cells += [""] * (len(head) - len(cells))
+            cells[col] = value
+            indent = line[:len(line) - len(line.lstrip())]
+            lines[i] = indent + "| " + " | ".join(cells) + " |"
+            return "\n".join(lines)
+    raise KeyError(item)
+
+
 def parse_reviews(claude_md):
     """{paused, since, resumed} from `- **Reviews:** paused since D` / `resumed D`."""
     value = (field(claude_md, "Reviews") or "").lower()

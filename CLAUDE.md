@@ -12,6 +12,7 @@ what I know, and later drill me for exams.
     syllabus.md      topic map with sources (built by /ingest)
     progress.md      level + spaced-repetition schedule per topic  ← my memory
     mistakes.md      every wrong answer + the misconception        ← my memory
+    deadlines.md     graded items: date, points, got, need — drives focus + "Points at stake"
     materials/       originals (slides, pdfs, videos, notes) — never modify
     converted/       text versions with page / slide / [timestamp] markers — search these
     exams/quizzes/, exams/mock-exams/   generated practice
@@ -60,6 +61,16 @@ entry, the Diagrams rules below apply.
 - **Paused reviews:** a subject whose `CLAUDE.md` has `- **Reviews:** paused since …` gets no review questions
   (in /today, /review or interleaving) until I resume it. `resumed <date>` means reviews are back on.
 Dates: use today's real date (run `date +%F` if unsure).
+
+## Deadlines and focus
+Each subject's `deadlines.md` lists everything graded (homework, tests, labs, exam) as
+`| Item | Kind | Date | Points | Got | Need | Notes |`, Kind one of exam · test · homework · lab, dates as YYYY-MM-DD.
+- Keep it current: when I mention a deadline, a grade or points, or you read them in course rules or materials,
+  add or update the row (create the file from `~/Study/_template/deadlines.md` if it is missing). Fill **Got**
+  once I have the points; that marks the row done. Leave a date blank rather than guess, and ask me for it.
+- **Focus:** a test or exam within 14 days (homework 7, lab 3) puts that subject in focus. `study plan` already
+  gives it the slots; in /today and interleaving, ask recall questions only from the focus subject, and if I start
+  another subject, mention the focus in one line, then do what I asked.
 
 ## Exams
 Match the exam format in the subject's `CLAUDE.md`. MCQs need plausible distractors built from real

@@ -169,8 +169,15 @@ def overview(root, today, rebuild=False):
     names = subject_names(root)
     details = [subject_detail(root, n, today) for n in names]
     summaries = [subject_summary(d) for d in details]
+    states = [planner.subject_state(root, n, today) for n in names]
+    focus = planner.focus([s for s in states if not s["reviews"]["paused"]])
+    for s in summaries:  # the rail: which subject is in focus, which ones wait
+        s["focus"] = focus.get(s["name"])
+        s["quiet"] = bool(focus) and s["name"] not in focus and not s["paused"]
     return {"subjects": summaries, "rhythm": rhythm(summaries, today), "prompts": prompts(root, summaries),
-            "plan": planner.today_plan(root, today, rebuild)}
+            "plan": planner.today_plan(root, today, rebuild, states=states),
+            "focus": [dict(f, subject=n) for n, f in sorted(focus.items(), key=lambda kv: kv[1]["days"])],
+            "stakes": planner.stakes(states)}
 
 
 def import_history(root, today):
@@ -323,7 +330,7 @@ def make_handler(root, token):
                 return self._json({"error": "requests must come from the study gui page"}, 403)
             if url.path == "/api/chat":
                 return self._chat(body)
-            if url.path in ("/api/exam", "/api/reviews", "/api/dismiss"):
+            if url.path in ("/api/exam", "/api/reviews", "/api/dismiss", "/api/deadline"):
                 return self._write(url.path, body)
             if url.path == "/api/links":
                 return self._links(body)
@@ -354,6 +361,13 @@ def make_handler(root, token):
             try:
                 if path == "/api/exam":
                     sd.write_exam(root / subject, body.get("value"))
+                elif path == "/api/deadline":
+                    f = root / subject / "deadlines.md"
+                    try:
+                        md = sd.set_deadline_date(sd._read(f), str(body.get("item", "")), str(body.get("date", "")))
+                    except KeyError:
+                        return self._json({"error": "no such item in deadlines.md"}, 404)
+                    f.write_text(md, encoding="utf-8")
                 else:
                     action = body.get("action")
                     if action not in ("pause", "resume"):
