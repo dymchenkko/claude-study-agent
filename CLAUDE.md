@@ -60,7 +60,9 @@ entry, the Diagrams rules below apply.
   This feeds the timeline, "what moved" and the replay in `study gui`.
 - **Paused reviews:** a subject whose `CLAUDE.md` has `- **Reviews:** paused since …` gets no review questions
   (in /today, /review or interleaving) until I resume it. `resumed <date>` means reviews are back on.
-Dates: use today's real date (run `date +%F` if unsure).
+Dates: use today's real date (run `date +%F` if unsure). Write absolute dates in everything you save
+("22.11 rano", never a bare "rano", "dziś", "today" or "this morning"): notes are reread on later days. When
+older notes or chat transcripts say "today" or "this morning", that means the date of that file, not today.
 
 ## Deadlines and focus
 Each subject's `deadlines.md` lists everything graded (homework, tests, labs, exam) as
