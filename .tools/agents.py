@@ -18,10 +18,16 @@ import shutil
 import subprocess
 from pathlib import Path
 
-# A resumed chat reloads its whole history on every message. Past this size (screenshots and pasted
-# terminal output add up fast) the tutor gets slow and is more likely to be blocked, so the server
-# starts a fresh session and hands over the last few messages instead.
-MAX_SESSION_BYTES = 2_500_000
+# Every step of a reply (each file read, each command) re-sends the whole chat, so its size is what uses
+# up the student's Claude limit. Past this many tokens the server starts a fresh session and hands over
+# the last few messages. Tokens, not file size: a screenshot is ~0.5 MB in the log but only a few
+# thousand tokens. The byte cap only catches logs with no usage figures.
+MAX_CONTEXT_TOKENS = 90_000
+MAX_SESSION_BYTES = 25_000_000
+
+# Tutoring does not need the largest model, and the largest one uses the limit several times faster.
+# STUDY_TUTOR_MODEL overrides it (any value `claude --model` takes; empty = the user's own default).
+TUTOR_MODEL = os.environ.get("STUDY_TUTOR_MODEL", "sonnet")
 
 NOTE = (
     "The student is using the study dashboard, a web page, not the terminal. Replies are shown as "
@@ -32,7 +38,11 @@ NOTE = (
     "Right now it is {now} (the student's local time). Notes, progress.md and chat transcripts were written "
     "on earlier days: words like today, this morning, yesterday, dziś, rano or wczoraj in them mean the date "
     "of that file or entry, not today. Say the real day (\"yesterday morning\", \"on 22.11\") when you refer "
-    "to them, and write absolute dates in anything you save."
+    "to them, and write absolute dates in anything you save.\n"
+    "Every tool call re-sends this whole chat and uses up the student's limit, so work lean: read each file "
+    "at most once per chat and reuse what you already read (reread progress.md only to edit it); find "
+    "pages with `study search` or Grep and read just those lines (Read with offset/limit), never a whole "
+    "converted lecture; open a screenshot only when the student points you to it."
 )
 
 def note(subject, now=None):
@@ -71,7 +81,9 @@ class ClaudeAdapter:
     def too_long(self, session_id):
         f = self.session_file(session_id)
         try:
-            return bool(f) and f.stat().st_size > MAX_SESSION_BYTES
+            if not f or f.stat().st_size > MAX_SESSION_BYTES:
+                return bool(f)
+            return context_tokens(f) > MAX_CONTEXT_TOKENS
         except OSError:
             return False
 
@@ -81,10 +93,28 @@ class ClaudeAdapter:
                "--include-partial-messages", "--disallowedTools", "AskUserQuestion",
                "--chrome", "--allowedTools", "mcp__claude-in-chrome",
                "--append-system-prompt", note(subject)]
+        if TUTOR_MODEL:
+            cmd += ["--model", TUTOR_MODEL]
         if session_id:
             cmd += ["--resume", session_id]
         return Run(subprocess.Popen(cmd, cwd=self.root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, encoding="utf-8", bufsize=1))
+
+
+def context_tokens(log):
+    """How much the chat re-sends per step now: the prompt size of the last call in a session log."""
+    last = 0
+    with open(log, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if '"usage"' not in line:
+                continue
+            try:
+                u = (json.loads(line).get("message") or {}).get("usage") or {}
+            except ValueError:
+                continue
+            n = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+            last = n or last
+    return last
 
 
 def _refused(kind, e, ev):
