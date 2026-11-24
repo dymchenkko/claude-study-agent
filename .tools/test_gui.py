@@ -167,6 +167,11 @@ class Blocked(unittest.TestCase):
 
 
 class LongSession(unittest.TestCase):
+    @staticmethod
+    def call(read, write=0, new=3):
+        return json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": new, "cache_read_input_tokens": read, "cache_creation_input_tokens": write}}})
+
     def test_size_check(self):
         import agents
         with tempfile.TemporaryDirectory() as d, unittest.mock.patch.dict("os.environ", {"CLAUDE_CONFIG_DIR": d}):
@@ -179,6 +184,32 @@ class LongSession(unittest.TestCase):
                 self.assertTrue(a.too_long("abc-1"))
             self.assertFalse(a.too_long("missing"))
             self.assertIsNone(a.session_file("../etc"))
+
+    def test_counts_tokens_not_bytes(self):
+        import agents
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.dict("os.environ", {"CLAUDE_CONFIG_DIR": d}):
+            a = agents.ClaudeAdapter(d)
+            f = a.session_file("s")
+            f.parent.mkdir(parents=True)
+            screenshot = json.dumps({"type": "user", "message": {"content": [{"type": "image", "data": "A" * 3_000_000}]}})
+            f.write_text("\n".join([self.call(30_000, 4_000), screenshot, self.call(40_000, 2_000), "not json"]))
+            self.assertEqual(agents.context_tokens(f), 42_003)
+            self.assertFalse(a.too_long("s"))  # 3 MB on disk, but a small chat
+            with f.open("a") as fh:
+                fh.write("\n" + self.call(85_000, 6_000))
+            self.assertTrue(a.too_long("s"))
+
+    def test_runs_on_the_tutor_model(self):
+        import agents
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(agents.subprocess, "Popen") as popen:
+            a = agents.ClaudeAdapter(d)
+            a.binary = "claude"
+            a.start("hi", "BSI")
+            cmd = popen.call_args[0][0]
+            self.assertEqual(cmd[cmd.index("--model") + 1], agents.TUTOR_MODEL)
+            with unittest.mock.patch.object(agents, "TUTOR_MODEL", ""):
+                a.start("hi", "BSI")
+                self.assertNotIn("--model", popen.call_args[0][0])
 
 
 if __name__ == "__main__":

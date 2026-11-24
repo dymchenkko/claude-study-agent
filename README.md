@@ -196,6 +196,7 @@ Measured on an M2 Pro with a real 24-file course (432 passages). Each search sta
 ./.tools/study links "Biology"             # suggest course-map links from the local model (--write saves them)
 ./.tools/study draw "Biology" cell-cycle     # open a diagram in draw.io (--show prints its contents)
 ./.tools/study gui                         # the dashboard: Plan (today's 3 picks, rhythm), Study (tutor), Reflect (map, replay)
+                                           # tutor runs on Sonnet to save your limit; STUDY_TUTOR_MODEL=opus (or empty = your default) to change
 ./.tools/study update                      # newest tools and skills (never touches your subjects)
 ./.tools/study plan                        # today's picks, the same list as the dashboard and /today
 ./.tools/study log "Biology" --topic "Osmosis" --kind recall --verdict correct --level 3 --interval 7
