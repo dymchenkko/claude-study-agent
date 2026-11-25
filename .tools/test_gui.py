@@ -207,6 +207,8 @@ class LongSession(unittest.TestCase):
             a.start("hi", "BSI")
             cmd = popen.call_args[0][0]
             self.assertEqual(cmd[cmd.index("--model") + 1], agents.TUTOR_MODEL)
+            self.assertIn("--strict-mcp-config", cmd)
+            self.assertEqual(cmd[cmd.index("--setting-sources") + 1], "project,local")
             with unittest.mock.patch.object(agents, "TUTOR_MODEL", ""):
                 a.start("hi", "BSI")
                 self.assertNotIn("--model", popen.call_args[0][0])

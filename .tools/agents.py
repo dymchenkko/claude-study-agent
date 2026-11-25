@@ -92,6 +92,9 @@ class ClaudeAdapter:
         cmd = [self.binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
                "--include-partial-messages", "--disallowedTools", "AskUserQuestion",
                "--chrome", "--allowedTools", "mcp__claude-in-chrome",
+               # only the study folder's settings and skills: the user's own plugins, connectors and their
+               # skill lists add ~9K tokens that every step of every reply would re-send
+               "--strict-mcp-config", "--setting-sources", "project,local",
                "--append-system-prompt", note(subject)]
         if TUTOR_MODEL:
             cmd += ["--model", TUTOR_MODEL]
